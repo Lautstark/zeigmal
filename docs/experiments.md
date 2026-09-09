@@ -37,6 +37,7 @@ instrument.
 | S8 | An unknown card shows the neutral line and the next known card plays | by hand | ⬜ not tested |
 | S9 | A replaced `kartensatz/` directory is in use after leaving and reopening the app | diagnostics shows the new name and counts | ⬜ not tested |
 | S10 | `cards.json` copied off the phone and onto a second install maps the same cards | the second install plays them without a rescan | ⬜ not tested |
+| S11 | (branch `claude/stream-latency`) a streamed clip reaches its first frame within a second of the tap, and a local file within 300 ms | the diagnostics "S11" panel: tap Stream / Datei five times each on the home Wi-Fi, note lookup, link and first-frame ms; add E1's NFC latency for card-to-picture. From the Mac the network part alone measured 100–170 ms for the link and 240–470 ms for the whole 550 KB clip | ⬜ not tested |
 
 ## Material coupons
 

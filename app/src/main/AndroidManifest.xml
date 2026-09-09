@@ -15,6 +15,13 @@
     xmlns:tools="http://schemas.android.com/tools">
 
     <uses-permission android:name="android.permission.NFC" />
+    <!--
+      EXPERIMENT BRANCH ONLY. This permission exists so the diagnostics screen
+      can time how long a streamed clip takes to its first frame, against the
+      public sign "schön" on sign-digital.de, nothing stored. It does not land
+      on main; the measurement does, in docs/experiments.md S11.
+    -->
+    <uses-permission android:name="android.permission.INTERNET" />
     <!-- Required, and meant: a station without NFC is a black screen. -->
     <uses-feature
         android:name="android.hardware.nfc"

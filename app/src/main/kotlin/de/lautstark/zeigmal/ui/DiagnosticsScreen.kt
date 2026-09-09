@@ -20,6 +20,7 @@ import de.lautstark.zeigmal.BuildConfig
 import de.lautstark.zeigmal.R
 import de.lautstark.zeigmal.UiState
 import de.lautstark.zeigmal.cardset.Loaded
+import de.lautstark.zeigmal.probe.ProbePanel
 import java.io.File
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -76,6 +77,14 @@ fun DiagnosticsScreen(
                 }
             }
         }
+        ProbePanel(
+            localVideo =
+                (state.loaded as? Loaded.Ready)?.let { l ->
+                    l.set.entries.values
+                        .firstOrNull()
+                        ?.let { l.file(it.video) }
+                },
+        )
         val clock = SimpleDateFormat("HH:mm:ss.SSS", Locale.ROOT)
         LazyColumn(Modifier.weight(1f).padding(top = 12.dp)) {
             items(state.log.asReversed()) { line ->
