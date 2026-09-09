@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Two permissions' worth of manifest, and one of them is NFC.
+
+  There is no INTERNET permission, and there is no reason for one: the
+  Kartensatz arrives over a cable into this app's own external files directory,
+  nothing here fetches anything, and nothing here can send anything. That is the
+  structural half of the licensing rule the family calls SPEC.md 5.2 — a
+  non-redistributable set must have no path off the device — and it is cheaper
+  to keep than to argue back into place later, which is what vorlaut-app had to
+  do after adding a LAN receiver. Adding the permission is a decision, and
+  docs/media-import.md is where it would be taken.
+-->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+
+    <uses-permission android:name="android.permission.NFC" />
+    <!-- Required, and meant: a station without NFC is a black screen. -->
+    <uses-feature
+        android:name="android.hardware.nfc"
+        android:required="true"
+        tools:ignore="UnnecessaryRequiredFeature" />
+
+    <application
+        android:allowBackup="false"
+        android:dataExtractionRules="@xml/data_extraction_rules"
+        android:fullBackupContent="@xml/backup_rules"
+        android:icon="@mipmap/ic_launcher"
+        android:label="@string/app_name"
+        android:supportsRtl="true"
+        android:theme="@style/Theme.Zeigmal"
+        tools:targetApi="33">
+
+        <!--
+          Landscape, pinned. The Galaxy A51 is a phone, not a large screen, so
+          Android honours a fixed orientation here — the tablet caveat recorded
+          in vorlaut-app's AlwaysLandscape does not apply. sensorLandscape rather
+          than landscape so the enclosure may hold the phone either way up.
+
+          The configChanges list keeps a video playing through whatever the
+          window does; nothing here is qualified by orientation.
+        -->
+        <activity
+            android:name=".MainActivity"
+            android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize|keyboardHidden"
+            android:exported="true"
+            android:launchMode="singleTask"
+            android:screenOrientation="sensorLandscape"
+            tools:ignore="DiscouragedApi">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
+    </application>
+
+</manifest>

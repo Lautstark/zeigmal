@@ -1,0 +1,9 @@
+{
+  "format": "zeigmal.karten",
+  "version": 1,
+  "cards": [
+    { "tag": "04:00:00:00:00:00:01", "entry": "trinken", "note": "replace with the UID the diagnostics screen shows" },
+    { "tag": "04:00:00:00:00:00:02", "entry": "essen", "note": "replace with the UID the diagnostics screen shows" },
+    { "tag": "04:00:00:00:00:00:03", "entry": "schlafen", "note": "replace with the UID the diagnostics screen shows" }
+  ]
+}

@@ -1,0 +1,32 @@
+{
+  "format": "zeigmal.kartensatz",
+  "version": 1,
+  "name": "Beispiel",
+  "modified": "2026-09-09",
+  "redistributable": true,
+  "voice": "piper:de_DE-thorsten-medium",
+  "entries": [
+    {
+      "id": "trinken",
+      "label": "Trinken",
+      "video": { "file": "videos/trinken.mp4", "provider": "example", "attribution": "generated test pattern, no licence owed" },
+      "speech": "external",
+      "audio": { "file": "audio/trinken.mp3", "text": "Trinken", "voice": "piper:de_DE-thorsten-medium" },
+      "symbol": { "arasaac": 6061 }
+    },
+    {
+      "id": "essen",
+      "label": "Essen",
+      "video": { "file": "videos/essen.mp4", "provider": "example", "attribution": "generated test pattern, no licence owed" },
+      "speech": "video",
+      "symbol": { "arasaac": 6456 }
+    },
+    {
+      "id": "schlafen",
+      "label": "Schlafen",
+      "video": { "file": "videos/schlafen.mp4", "provider": "example", "attribution": "generated test pattern, no licence owed" },
+      "speech": "none",
+      "symbol": { "arasaac": 6479 }
+    }
+  ]
+}

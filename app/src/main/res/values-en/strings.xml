@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources xmlns:tools="http://schemas.android.com/tools">
+    <string name="idle_hint">Card in. See the sign.</string>
+    <string name="unknown_card">I do not know this card yet.</string>
+    <string name="nfc_missing">This device has no NFC.</string>
+    <string name="nfc_off">NFC is switched off.</string>
+    <string name="nfc_ready">NFC ready.</string>
+    <string name="no_kartensatz">No Kartensatz on the device yet.</string>
+    <string name="kartensatz_refused">The Kartensatz was not read: %1$s</string>
+    <string name="no_cards">The Kartensatz knows no cards yet.</string>
+    <string name="kartensatz_summary" tools:ignore="PluralsCandidate">%1$s: %2$d entries, %3$d cards</string>
+    <string name="diagnostics">Diagnostics</string>
+    <string name="close">Close</string>
+</resources>

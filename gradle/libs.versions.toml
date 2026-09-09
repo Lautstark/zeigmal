@@ -1,0 +1,38 @@
+[versions]
+agp = "9.3.1"
+kotlin = "2.4.10"
+activityCompose = "1.13.0"
+composeBom = "2026.08.00"
+coroutines = "1.11.0"
+junit = "4.13.2"
+lifecycle = "2.11.0"
+media3 = "1.11.0"
+serialization = "1.9.0"
+spotless = "8.9.0"
+
+[libraries]
+activity-compose = { module = "androidx.activity:activity-compose", version.ref = "activityCompose" }
+compose-bom = { module = "androidx.compose:compose-bom", version.ref = "composeBom" }
+compose-foundation = { module = "androidx.compose.foundation:foundation" }
+compose-material3 = { module = "androidx.compose.material3:material3" }
+compose-ui = { module = "androidx.compose.ui:ui" }
+coroutines-android = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-android", version.ref = "coroutines" }
+junit = { module = "junit:junit", version.ref = "junit" }
+lifecycle-viewmodel-compose = { module = "androidx.lifecycle:lifecycle-viewmodel-compose", version.ref = "lifecycle" }
+# Media3 rather than android.media.MediaPlayer: the player has to say when a
+# video has ended, reliably, for a file that may be two seconds long. Media3 does
+# that through one listener; MediaPlayer's completion callback is the thing
+# knopfpost and vorlaut-app each had to work around.
+media3-exoplayer = { module = "androidx.media3:media3-exoplayer", version.ref = "media3" }
+media3-ui = { module = "androidx.media3:media3-ui", version.ref = "media3" }
+# kotlinx-serialization rather than org.json: org.json is a stub on Android and a
+# real library on the JVM, so a parser tested on one would not be the parser
+# running on the other. This behaves identically in both.
+serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "serialization" }
+
+[plugins]
+android-application = { id = "com.android.application", version.ref = "agp" }
+compose-compiler = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
+kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
+kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
+spotless = { id = "com.diffplug.spotless", version.ref = "spotless" }

@@ -1,0 +1,15 @@
+// Renovate, for this repository.
+//
+// Everything general - when updates arrive, what groups with what, what may
+// merge itself - lives in Lautstark/.github and names no package. The preset's
+// header says it was written before an Android repository existed; vorlaut-app
+// found that nothing in it is npm-specific, and the same holds here. The .json5
+// is spelled out because the //path syntax implies .json otherwise.
+//
+// One pin Renovate does not see: the Gradle wrapper's distributionSha256Sum in
+// gradle/wrapper/gradle-wrapper.properties moves with the wrapper, and only
+// the gradle-wrapper manager (enabled by config:recommended) updates both.
+{
+  $schema: "https://docs.renovatebot.com/renovate-schema.json",
+  extends: ["github>Lautstark/.github//renovate-shared.json5"],
+}
