@@ -36,8 +36,8 @@ thickness that still reads every time at the coil centre, and how far off
 centre it still reads through each. That decides the wall at the coil: a
 uniform 2.4 mm wall, or a 1 mm window in it.
 
-**D. The card.** Width, height, thickness of a SIGNbox 1 card (the 25 × 25 mm
-velcro cards in `card-case.scad` are a different family). Then:
+**D. The card.** Width, height, thickness of the card set the slot is for
+(the 25 × 25 mm velcro cards in `card-case.scad` are a different family). Then:
 
 - slot width = card width + 2 × 0.3 mm per side, 0.8 mm lead-in chamfer — the
   family's numbers for a moving part (`card-case.scad`, the talker's key caps);

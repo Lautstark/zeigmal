@@ -45,9 +45,11 @@ or copy it out in the file manager. Put the copy where the family's other
 Sicherung lives. Moving to another phone is the same file pushed into the same
 directory beside the same manifest — no rescan.
 
-The app writes `cards.json` when a card is mapped on the phone; today that is a
-text edit on the laptop, and the write path exists in `Cards.write` for the day
-the diagnostics screen gains a "this UID is *trinken*" step.
+The app writes `cards.json` when a card is mapped on the phone. Today that is
+a text edit on the laptop with the UID from the diagnostics screen; the
+planned adult mode walks the manifest's entries, names the next card to hold to
+the back, and writes the file through `Cards.write`. A sticker is scanned once,
+on the device that will read it.
 
 ## Not in v1
 

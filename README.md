@@ -3,14 +3,17 @@
 **Karte rein. Gebärde sehen.**
 
 A small station on the table: a Samsung Galaxy A51 lying in a printed holder,
-a slot behind it, and a box of picture cards. A child pushes a card into the
-slot and the phone plays the sign for the word on it. Where the video does not
-say the word, the phone says it, in the same voice the family's other Lautstark
-tools use.
+a slot behind it, and a box of picture cards with NFC stickers on them. A child
+pushes a card into the slot and the phone plays the sign video for the word on
+it. Where the video does not say the word, the phone says it, in the same voice
+the family's other Lautstark tools use.
 
-I am building it for my children, who have around three hundred cards — a
-SIGNbox from SIGNdigital — with a METACOM symbol, a word and a sign on each. The cards exist; the station is what
-was missing.
+I am building it for my children, who have around three hundred picture cards
+with a symbol, a word and a sign on each. The cards exist; the station is what
+was missing. Which cards does not matter to it: a bought card set, cards printed
+from METACOM or ARASAAC symbols, or a plain sticker on anything. Where the
+videos come from does not matter to it either: a provider's files, an open
+dictionary, or a parent in front of a camera.
 
 zeigmal belongs to the [Lautstark](https://github.com/Lautstark) family of AAC
 tools. Like its siblings it runs without a server or an account, and the
@@ -23,11 +26,14 @@ child-facing part has no menu, no button and no keyboard.
 | **does** | reads the NFC sticker on a card, looks the tag up, plays the sign video, plays a prepared spoken word when the manifest says so, and waits for the next card |
 | **does not** | make cards, search symbols, generate audio, fetch videos, edit anything, talk to a network, or show a child any user interface |
 
-Card preparation happens elsewhere in the family and arrives here as a
-**Kartensatz**: a directory holding a manifest, a card map and the media. What
-that directory looks like is [docs/media-model.md](docs/media-model.md); how it
-gets onto the phone is [docs/media-import.md](docs/media-import.md); which
-sibling makes which part of it is
+Card preparation happens in a browser, like everything else in the family,
+and arrives here as a **Kartensatz**: a directory holding a manifest, a card
+map and the media. The one thing the phone itself does with content is the
+step only the phone can do: learning which sticker is which card, by holding
+it to the back. What the directory looks like is
+[docs/media-model.md](docs/media-model.md); how it gets onto the phone is
+[docs/media-import.md](docs/media-import.md); which sibling makes which part
+of it, and what the preparation tool will be, is
 [docs/lautstark-integration.md](docs/lautstark-integration.md).
 
 ## Status

@@ -30,10 +30,10 @@ its own: ADR 0003.
       "label": "Trinken",
       "video": {
         "file": "videos/trinken.mp4",
-        "provider": "signdigital",
-        "licence": "subscription, private use",
-        "attribution": "SIGNdigital",
-        "url": "https://…"
+        "provider": "own",
+        "licence": "family recording",
+        "attribution": null,
+        "url": null
       },
       "speech": "external",
       "audio": {
@@ -91,13 +91,24 @@ own: the media can be prepared again, three hundred scans cannot.
 
 ## Video
 
-The cards are SIGNdigital's SIGNbox 1, and SIGNdigital's subscription carries
-a sign video for each of their words, so the natural first source is that one
-and the natural entry id is the card's word slugged. Whether the subscription's
-terms allow a local copy on the child's own device is a question for their
-terms and for SIGNdigital, not for this repository: no scraping, no download
-automation, nothing provider-specific in the player. `provider: "signdigital"`
-in the manifest is a label for the attribution, nothing more.
+A video is a video. The player knows nothing about where one came from, and
+the manifest carries only what a person needs to see beside it: `provider`,
+`licence`, `attribution`, `url`. Sources that have come up, none of them
+special to the code:
+
+- **a parent in front of a camera** — no licence, the child's own people, and
+  the word spoken while signing, so `speech: video`
+- **a provider's files** under that provider's terms, for the words of a
+  bought card set; `provider` names it and `attribution` carries the notice
+  it asks for
+- **an open dictionary** such as SignDict, Creative Commons per video, with the
+  attribution shown where the video is
+
+Whether a source's terms permit a local copy on the child's device is settled
+before a file enters a Kartensatz, by the person preparing it, not by the
+player. Playing from a provider's site instead of from a file would mean a
+login, a network permission and a working Wi-Fi in the child's path; it is not
+in this format, and ADR 0006 says why.
 
 Local files, H.264 in MP4 with AAC or no audio, landscape. Media3 plays these
 without transcoding; knopfpost never found a case that needed FFmpeg. A video

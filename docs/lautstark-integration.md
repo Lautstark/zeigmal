@@ -39,18 +39,35 @@ ideas, and extracts no code.
 
 ## Where preparation belongs
 
-Not here (ADR 0001). The honest options, in order of fit:
+Not on the phone (ADR 0001). The plan is the family's own split, the one
+vorlaut-editor and vorlaut-app already have: **a browser tool on GitHub Pages
+prepares, the app plays.**
 
-1. **A small Node script beside stimmquelle** (its `conformance/` already runs
-   the synthesiser under Node): word list in, `<slug>.mp3` + the fingerprint
-   facts out. About 150 lines against an API that exists.
-2. **druckwerk's NFC target**, when druckwerk is resumed: card faces printed,
-   Kartensatz written.
-3. **bildhaft's Wortschatz**, exporting a one-part entry per card — the day it
-   has a second reader.
+The browser tool, not yet started, would hold a Kartensatz in the browser the
+way its siblings hold a Sammlung, and do the four things a Kartensatz needs:
 
-Until one of those exists, `example/` shows the manifest and a person writes
-it by hand for the ten MVP cards.
+1. **Entries** — a word list typed or pasted, ids by mitreden's slug rule,
+   symbols by name or number through bildquelle where a printed card face is
+   wanted.
+2. **Videos** — a file per entry, from wherever the person has them, or
+   **recorded in the browser**: the tool shows the word, the camera records a
+   few seconds, the parent signs and speaks. That is the source with no licence
+   and the child's own people in the picture.
+3. **Spoken words** for entries whose video is silent, through stimmquelle's
+   chain, the same voice as mitreden and vorlaut, with the fingerprint facts
+   written into the manifest.
+4. **Export** — the Kartensatz as a directory or ZIP to copy onto the phone,
+   and the standing Sicherung for the card map.
+
+What the browser tool does not do is read stickers. A desktop browser cannot
+reach a USB NFC reader on macOS (PC/SC claims the device before WebUSB can),
+and a phone is the reader anyway. So **mapping happens on the phone, in the
+adult mode**: the app walks the entries, says which card to hold to the back
+next, records the UID, and writes `cards.json`. That is the one authoring step
+ADR 0001 leaves to the phone, and it shows a word, never a symbol picker.
+
+Until the tool exists, `example/` shows the manifest and a person writes it by
+hand for the ten MVP cards.
 
 ## Rules inherited, not restated
 

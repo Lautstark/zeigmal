@@ -36,7 +36,8 @@ E5, S1–S4, S7, S10 and step 8.
 
 ## After the MVP, in this order
 
-1. The preparation tool — where docs/lautstark-integration.md says, not here.
+1. The browser preparation tool on GitHub Pages, and the phone-side mapping
+   mode — the shape docs/lautstark-integration.md describes.
 2. The full library: ~300 stickers, ~300 scans, one `cards.json`.
 3. Enclosure CAD in `case/`, in the talker case's style (tagged dimensions,
    `verify.py`, a "measure first" table), only after step 7.
