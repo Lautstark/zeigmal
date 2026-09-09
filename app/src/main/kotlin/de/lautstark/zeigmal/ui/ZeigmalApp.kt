@@ -3,6 +3,7 @@ package de.lautstark.zeigmal.ui
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
@@ -22,13 +23,15 @@ import androidx.compose.ui.unit.sp
 import de.lautstark.zeigmal.R
 import de.lautstark.zeigmal.StationViewModel
 import de.lautstark.zeigmal.cardset.Loaded
+import de.lautstark.zeigmal.cardset.SpeechMode
+import de.lautstark.zeigmal.station.Phase
 import de.lautstark.zeigmal.station.StationState
 
 /**
  * The player screen claims the same exemption from the shared look that
- * wochenwerk's board does: it is a black surface with a video on it, and a
- * child never sees anything else. The diagnostics screen behind the long press
- * is for an adult with the phone in hand.
+ * wochenwerk's board does: it is a black surface with a card and a video on it,
+ * and a child never sees anything else. The diagnostics screen behind the long
+ * press is for an adult with the phone in hand.
  */
 @Composable
 fun ZeigmalApp(model: StationViewModel) {
@@ -53,21 +56,33 @@ fun ZeigmalApp(model: StationViewModel) {
                         UnknownCard()
                     }
 
-                    is StationState.Playing -> {
+                    is StationState.Card -> {
                         val loaded = state.loaded as? Loaded.Ready
                         if (loaded == null) {
                             IdleScreen(state.loaded, state.nfcAvailable, state.nfcEnabled)
                         } else {
-                            SignVideo(
-                                video = loaded.file(s.entry.video),
-                                audio =
-                                    s.entry.audio?.let { loaded.file(it.file) }?.takeIf {
-                                        s.entry.speech ==
-                                            de.lautstark.zeigmal.cardset.SpeechMode.EXTERNAL
-                                    },
-                                run = s.run,
-                                onEnded = model::onPlaybackEnded,
+                            // The card first, the video over it: what the child sees
+                            // while the player starts, and again when it has ended.
+                            CardFace(
+                                s.entry.label,
+                                s.entry.symbol
+                                    ?.file
+                                    ?.let(loaded::file),
                             )
+                            if (s.phase != Phase.ENDED) {
+                                SignVideo(
+                                    video = loaded.file(s.entry.video),
+                                    audio =
+                                        s.entry.audio
+                                            ?.file
+                                            ?.let(loaded::file)
+                                            ?.takeIf { s.entry.speech == SpeechMode.EXTERNAL },
+                                    run = s.run,
+                                    visible = s.phase == Phase.PLAYING,
+                                    onFirstFrame = model::onFirstFrame,
+                                    onEnded = model::onPlaybackEnded,
+                                )
+                            }
                         }
                     }
                 }
@@ -84,7 +99,7 @@ private fun IdleScreen(
 ) {
     Column(
         Modifier.fillMaxSize().padding(32.dp),
-        verticalArrangement = androidx.compose.foundation.layout.Arrangement.Center,
+        verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         Text(stringResource(R.string.app_name), color = Color.White, fontSize = 40.sp)

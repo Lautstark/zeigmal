@@ -37,17 +37,21 @@ is the instrument for the hardware experiments.
 ## The state machine
 
 ```text
-Idle ──CardSeen(known)──► Playing(entry, tag, run)
-Idle ──CardSeen(unknown)► Unknown(tag) ──CardGone(tag)──► Idle
-Playing ──CardSeen(known)──► Playing(other, tag, 1)   or   Playing(same, tag, run+1)
-Playing ──PlaybackEnded──► Idle
-Playing ──CardGone──► Playing   (removal changes nothing, by design, until measured)
+Idle ──CardSeen(known)──► Card(entry, tag, run, LOADING)   the card face is on screen
+Card(LOADING) ──FirstFrame──► Card(PLAYING)                  the video fades in over it
+Card(PLAYING) ──PlaybackEnded──► Card(ENDED)                 the card face again
+Card(ENDED) ──CardGone──► Idle
+Card(any) ──CardGone──► Card(present = false) … ──PlaybackEnded──► Idle
+Card ──CardSeen(other)──► Card(other, tag, 1, LOADING)   at once
+Card ──CardSeen(same)──► Card(same, tag, run+1, LOADING)  the video restarts
+Idle ──CardSeen(unknown)──► Unknown(tag) ──CardGone(tag)──► Idle
 ```
 
-`run` rises when the same card is presented again so the screen restarts the
-video. Removal is informational because Android's presence reporting is what
-docs/experiments.md E2 measures; if it turns out prompt and reliable, "card
-gone stops the video" is one line in `Station.next` and one test.
+The card is on screen the instant the tag is seen; the video is invisible
+until Media3 reports its first rendered frame, then fades in over 150 ms, and
+the spoken word starts on that same frame. A removed card never stops a running
+video (removal reporting is what docs/experiments.md E2 measures); it only
+decides whether the card face or the idle screen follows the video.
 
 ## Playback
 

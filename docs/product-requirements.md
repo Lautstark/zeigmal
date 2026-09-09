@@ -14,10 +14,16 @@ cards.
 ## The interaction
 
 ```text
-idle  →  card in  →  sign video at once  →  spoken word when the entry says so  →  ready
-                     another card in  →  the new video replaces the old one at once
+idle  →  card in  →  the card on screen at once (symbol and word)
+                  →  the sign video fades in over it on its first frame
+                  →  spoken word with the first frame, when the entry says so
+                  →  the card again when the video has ended, while it stays in the slot
+                     another card in  →  the new card, then its video, at once
                      unknown card in  →  a quiet "I do not know this card yet"  →  ready
 ```
+
+Nothing is ever black. Whatever the player needs to start — a decoder, the
+disk, one day perhaps a network — happens behind the card.
 
 Nothing else is visible to a child: no menu, no button, no navigation bar, no
 notification, no keyboard, no settings, no "add card" flow. The idle screen is

@@ -12,21 +12,21 @@
       "video": { "file": "videos/trinken.mp4", "provider": "example", "attribution": "generated test pattern, no licence owed" },
       "speech": "external",
       "audio": { "file": "audio/trinken.mp3", "text": "Trinken", "voice": "piper:de_DE-thorsten-medium" },
-      "symbol": { "arasaac": 6061 }
+      "symbol": { "arasaac": 6061, "file": "symbols/trinken.png" }
     },
     {
       "id": "essen",
       "label": "Essen",
       "video": { "file": "videos/essen.mp4", "provider": "example", "attribution": "generated test pattern, no licence owed" },
       "speech": "video",
-      "symbol": { "arasaac": 6456 }
+      "symbol": { "arasaac": 6456, "file": "symbols/essen.png" }
     },
     {
       "id": "schlafen",
       "label": "Schlafen",
       "video": { "file": "videos/schlafen.mp4", "provider": "example", "attribution": "generated test pattern, no licence owed" },
       "speech": "none",
-      "symbol": { "arasaac": 6479 }
+      "symbol": { "arasaac": 6479, "file": "symbols/schlafen.png" }
     }
   ]
 }

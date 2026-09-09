@@ -11,7 +11,7 @@
 #     tools/make-example-media.sh          # writes into example/kartensatz/
 set -eu
 cd "$(dirname "$0")/../example/kartensatz"
-mkdir -p videos audio
+mkdir -p videos audio symbols
 
 # essen: the video carries the word (a tone stands in for it) -> speech: video
 ffmpeg -y -loglevel error -f lavfi -i "testsrc2=size=640x360:rate=25:duration=3" \
@@ -25,4 +25,9 @@ ffmpeg -y -loglevel error -f lavfi -i "sine=frequency=440:duration=0.6" -c:a lib
 ffmpeg -y -loglevel error -f lavfi -i "color=c=0x334455:size=640x360:rate=25:duration=3" \
   -c:v libx264 -pix_fmt yuv420p -profile:v baseline -an videos/schlafen.mp4
 
-ls -l videos audio
+# A coloured square per entry stands in for the symbol on the card face.
+ffmpeg -y -loglevel error -f lavfi -i "color=c=0x2A9D8F:size=400x400:duration=0.04" -frames:v 1 symbols/trinken.png
+ffmpeg -y -loglevel error -f lavfi -i "color=c=0xE9C46A:size=400x400:duration=0.04" -frames:v 1 symbols/essen.png
+ffmpeg -y -loglevel error -f lavfi -i "color=c=0x264653:size=400x400:duration=0.04" -frames:v 1 symbols/schlafen.png
+
+ls -l videos audio symbols

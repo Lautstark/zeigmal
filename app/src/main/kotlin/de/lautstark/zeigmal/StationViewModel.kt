@@ -87,6 +87,10 @@ class StationViewModel(
         }
     }
 
+    fun onFirstFrame() {
+        apply(StationEvent.FirstFrame)
+    }
+
     fun onPlaybackEnded() {
         apply(StationEvent.PlaybackEnded)
     }
@@ -112,9 +116,18 @@ class StationViewModel(
 
     private fun describe(state: StationState): String =
         when (state) {
-            StationState.Idle -> "idle"
-            is StationState.Playing -> "playing ${state.entry.id} (${state.entry.speech.name.lowercase()}) run ${state.run}"
-            is StationState.Unknown -> "unknown ${state.tag}"
+            StationState.Idle -> {
+                "idle"
+            }
+
+            is StationState.Card -> {
+                "${state.phase.name.lowercase()} ${state.entry.id} (${state.entry.speech.name.lowercase()}) run ${state.run}" +
+                    if (state.present) "" else " card gone"
+            }
+
+            is StationState.Unknown -> {
+                "unknown ${state.tag}"
+            }
         }
 
     private fun log(text: String) {
