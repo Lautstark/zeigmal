@@ -91,6 +91,14 @@ own: the media can be prepared again, three hundred scans cannot.
 
 ## Video
 
+The cards are SIGNdigital's SIGNbox 1, and SIGNdigital's subscription carries
+a sign video for each of their words, so the natural first source is that one
+and the natural entry id is the card's word slugged. Whether the subscription's
+terms allow a local copy on the child's own device is a question for their
+terms and for SIGNdigital, not for this repository: no scraping, no download
+automation, nothing provider-specific in the player. `provider: "signdigital"`
+in the manifest is a label for the attribution, nothing more.
+
 Local files, H.264 in MP4 with AAC or no audio, landscape. Media3 plays these
 without transcoding; knopfpost never found a case that needed FFmpeg. A video
 is a relative path with provenance beside it. There is no remote video in v1 —

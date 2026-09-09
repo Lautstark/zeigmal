@@ -5,8 +5,8 @@ of 2026-09-09 is the source; this is the part of it that binds the code.
 
 ## Who
 
-Two children who use around three hundred physical cards. Each card carries a
-METACOM symbol, a German word and a sign. The adults in the house prepare
+Two children who use around three hundred physical cards — SIGNdigital's
+SIGNbox 1. Each card carries a METACOM symbol, a German word and a sign. The adults in the house prepare
 content on a laptop; the children only ever touch cards.
 
 ## The interaction

@@ -30,9 +30,9 @@ the style of the talker's case file:
 
 | | value | tag |
 |---|---|---|
-| the sign cards | portrait; a METACOM symbol, a word, a sign | [A] **width, height, thickness to measure** |
-| the 25 × 25 mm cards in `~/Code/card-case` | 25 × 25 mm, 1.5 mm thick with a 10 mm velcro coin (designed at 1.6 mm pitch) | [M] Stefanie, 2026-08 — possibly a different card family; confirm |
-| wochenwerk's NFC cards | 85 × 120 mm laminated, sticker at a fixed marked position | [K] from `wochenwerk/docs/hardware.md`; the two sets may or may not be the same |
+| the sign cards | **SIGNdigital SIGNbox 1**: portrait, laminated; a METACOM symbol, a word, a sign drawing on each | [R] the product; width, height and thickness are [A] **to measure** |
+| the 25 × 25 mm cards in `~/Code/card-case` | 25 × 25 mm, 1.5 mm thick with a 10 mm velcro coin (designed at 1.6 mm pitch) | [M] Stefanie, 2026-08 — a different card family; only the wall and clearance numbers carry over |
+| wochenwerk's NFC cards | 85 × 120 mm laminated, sticker at a fixed marked position | [K] from `wochenwerk/docs/hardware.md`; not the SIGNbox cards, but the same slot idea |
 | sticker | NTAG213, 25 mm round | [K] docs/nfc.md |
 | sticker position on the card | | [K] after E4: the slot's stop puts it over the coil |
 | insertion depth | | [K] after E4 and the card height: the symbol stays visible above the phone |

@@ -59,6 +59,15 @@ jobs:
             fi
           fi
 
+          # A repository's first push: the tip has no parent, so "$head^" is
+          # not a revision. Found on this repository's own first run, where
+          # the inherited workflow failed on the commit that brought it in.
+          # An empty base tells the next step to check the tip by itself.
+          if ! git rev-parse --verify -q "$base" >/dev/null 2>&1; then
+            base=""
+            echo "The tip is a root commit; checking it on its own."
+          fi
+
           echo "base=$base" >> "$GITHUB_OUTPUT"
           echo "head=$head" >> "$GITHUB_OUTPUT"
 
@@ -72,7 +81,11 @@ jobs:
           # --no-merges: a merge commit is not a change and has no changelog
           # entry to lose. Merging a branch into main therefore checks the
           # branch's own commits, which is the moment that matters.
-          commits=$(git rev-list --no-merges "$BASE..$HEAD")
+          if [ -z "$BASE" ]; then
+            commits=$(git rev-list --no-merges --max-count=1 "$HEAD")
+          else
+            commits=$(git rev-list --no-merges "$BASE..$HEAD")
+          fi
 
           if [ -z "$commits" ]; then
             echo "No non-merge commits in $BASE..$HEAD. Nothing to check."
@@ -121,7 +134,7 @@ jobs:
             echo "$failed of $checked commit(s) have no conventional-commit prefix."
             echo
             echo "If they are still only on a branch, the fix is a rebase:"
-            echo "    git rebase -i $BASE            # reword each one"
+            echo "    git rebase -i ${BASE:-$HEAD^}  # reword each one"
             echo
             echo "If they are already on main, do not rewrite it. Their changes"
             echo "are simply missing from the changelog, and the honest repair is"

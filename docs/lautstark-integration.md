@@ -21,7 +21,7 @@ ideas, and extracts no code.
 | **druckwerk** (archived) | printable material; a *targets* seam of code carrier + audio bundle, with "QR/NFC" named as a future target | **referenced**: a Kartensatz is what a druckwerk NFC target would emit — printed card faces plus a map — and the seam's rule that an export file never holds provider pixels binds here too |
 | **design** | tokens, components, conventions | **not a dependency**. The player screen is a black surface and claims wochenwerk's exemption. A settings screen, if one ever exists, takes `products/zeigmal.json` and a Kotlin token port headed like vorlaut-app's |
 | **sicherung**, **werkzeuge**, **sammlungen** | folder backup (Chromium desktop only), small browser helpers, the public shelf | **not applicable**: no browser, and a household's 300 METACOM cards cannot be a shelf entry (the shelf refuses the `metacom` string in any file, on purpose) |
-| **card-case** (`~/Code/card-case`, not a repository) | an OpenSCAD tray for 25 × 25 mm velcro cards | **measurements reused** in docs/hardware.md; they may be a different card than the sign cards — to confirm |
+| **card-case** (`~/Code/card-case`, not a repository) | an OpenSCAD tray for 25 × 25 mm velcro cards | **clearance and wall numbers reused** in docs/enclosure.md; the cards themselves are a different family from the SIGNbox 1 cards |
 
 ## Duplicated concepts, named
 

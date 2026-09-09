@@ -8,8 +8,8 @@ slot and the phone plays the sign for the word on it. Where the video does not
 say the word, the phone says it, in the same voice the family's other Lautstark
 tools use.
 
-I am building it for my children, who have around three hundred cards with a
-METACOM symbol, a word and a sign on each. The cards exist; the station is what
+I am building it for my children, who have around three hundred cards — a
+SIGNbox from SIGNdigital — with a METACOM symbol, a word and a sign on each. The cards exist; the station is what
 was missing.
 
 zeigmal belongs to the [Lautstark](https://github.com/Lautstark) family of AAC
