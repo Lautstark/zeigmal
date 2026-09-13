@@ -41,7 +41,7 @@ Not a conventional commit:
 
 The prefix says what a commit is before the sentence says what it does, and
 it is what makes a one-line log skimmable across a repository that holds an
-Android app and a plain-JVM Kartensatz reader. Put it in front of the
+Android app and a plain-JVM core. Put it in front of the
 sentence you were going to write anyway.
 
   feat:      a capability that was not there before
@@ -53,14 +53,14 @@ sentence you were going to write anyway.
 
   feat!: or a "BREAKING CHANGE:" trailer marks a breaking change
 
-A scope is optional and is a path-ish word, not a sentence: fix(cardset):,
+A scope is optional and is a path-ish word, not a sentence: fix(core):,
 docs(releasing):.
 
 Keep writing the subject the way this repository always has - a sentence that
 says what changed, in the present tense. The prefix goes in front of it:
 
   feat: start the video the moment a card is seen
-  fix: refuse a manifest whose video path points out of the Kartensatz
+  fix: refuse a sticker whose record names a provider the app does not know
 
 MSG
 exit 1

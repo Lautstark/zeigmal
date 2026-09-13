@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
   Nothing this app stores may be backed up to the cloud or transferred to another
-  device. A Kartensatz holds licensed video and METACOM names, and Android's
-  automatic backup is exactly the off-device path SPEC.md 5.2 forbids. Everything
+  device. The preferences hold the SIGNdigital login and its token, and Android's
+  automatic backup is exactly the off-device path they must not take. Everything
   is excluded rather than one directory, because an allow-list somebody widens
   later is how the rule stops being true. Same file as in vorlaut-app.
 -->

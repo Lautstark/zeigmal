@@ -60,9 +60,10 @@ of a debug build keeps all of it.
 Code, comments, commits and documentation are English. Text a person sees on
 the phone is German first (`res/values`), English as a translation
 (`res/values-en`). Domain nouns stay German in code where they are the
-family's word for the thing: Kartensatz, Karten.
+family's word for the thing: Karte, Aufkleber, SIGNbox.
 
 ## Licensing, in one sentence
 
-Nothing licensed is ever in this repository, and the app has no path that
-moves a Kartensatz off the phone. Keep both true.
+Nothing licensed is ever in this repository, and the app stores no clip and
+no card picture: it streams from the provider while the card lies there
+(ADR 0008). Keep both true.

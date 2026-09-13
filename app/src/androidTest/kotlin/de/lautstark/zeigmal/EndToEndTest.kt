@@ -55,6 +55,7 @@ class EndToEndTest {
             )
         }
         Deps.tagSource = { source }
+        Deps.pin = false
         scenario = ActivityScenario.launch(MainActivity::class.java)
     }
 
@@ -62,6 +63,7 @@ class EndToEndTest {
     fun restore() {
         scenario.close()
         Deps.store = { context -> PreferencesStore(context) }
+        Deps.pin = true
         Deps.providers = { s -> listOf<Provider>(SignDigitalProvider(s)).associateBy { it.id } }
         Deps.tagSource = { activity ->
             de.lautstark.zeigmal.nfc

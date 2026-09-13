@@ -21,6 +21,9 @@ object Deps {
         KeyValueStore,
     ) -> Map<String, Provider> = { store -> listOf<Provider>(SignDigitalProvider(store)).associateBy { it.id } }
     var tagSource: (Activity) -> TagSource = { activity -> AndroidTagSource(activity) }
+
+    /** Whether the activity pins itself on start; a test turns it off. */
+    var pin: Boolean = true
 }
 
 /** The app's private preferences: the login and the writing progress, nothing else. */

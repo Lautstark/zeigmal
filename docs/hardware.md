@@ -75,6 +75,24 @@ wording is One UI 5's and may differ by a word.
 9. After a reboot: one tap on the icon. There is no boot receiver, on purpose
    (docs/architecture.md).
 
+## Lock screen
+
+The phone has one, and the app copes: it shows over the keyguard, turns the
+screen on, and asks Android to dismiss the lock when it comes to the front.
+On a swipe lock that is silent; on a PIN lock the phone asks once after each
+boot. NFC polling is off while the keyguard is up (E7), so the station is
+only a station once that dismissal has gone through. A swipe lock, or none,
+is the setup that never asks.
+
+## Screen pinning
+
+Every build pins itself on start (`startLockTask`): Home and Recents do
+nothing, the notification shade stays shut. Android asks the person once,
+and only if "Apps anheften" is on: Einstellungen → Sicherheit und Datenschutz
+→ Weitere Sicherheitseinstellungen → Apps anheften. Leaving is Back and
+Recents held together. Without that setting the call is a no-op and the
+children can reach the launcher.
+
 ## Power
 
 The station is on a wall charger, never on a laptop port. Measured 2026-09-13:

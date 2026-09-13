@@ -1,11 +1,11 @@
-# ADR 0008 — The phone writes the stickers
+# ADR 0009 — The phone writes the stickers
 
 **Status:** accepted · **Date:** 2026-09-13 · **Applies to:** `app/ui/WriteScreen.kt`, `app/nfc/NfcReader.kt`, `core/SignBox.kt`
 
 ## Context
 
 ADR 0001 said zeigmal plays and does not prepare, and pointed at a browser tool
-for everything else. With the record on the sticker (ADR 0007) the one
+for everything else. With the record on the sticker (ADR 0008) the one
 preparation step left is writing 224 stickers, and a browser on a Mac cannot
 do it: Web NFC exists only in Chrome on Android, and macOS's smart-card
 service holds a USB reader before WebUSB can claim it.

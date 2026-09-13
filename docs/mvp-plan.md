@@ -4,11 +4,15 @@ Ten cards from SIGNbox 1, one phone on a wall charger, one printed fit test.
 
 ## Done
 
-- The core: card record, station with repeat rounds, presence filter, provider
-  seam, SIGNdigital behind it, the box's word list; 23 tests.
+- The core: card record, station that counts the loops, presence filter,
+  provider seam, SIGNdigital behind it, the box's word list, the PIN and the
+  settings; 40 unit tests, 9 instrumented on the managed emulator.
 - The app: reader mode with NDEF read and write, the child screen with the
-  mark and the ring, the login, the writing mode.
+  mark and the ring, the corner and the PIN, the login, the writing mode with
+  the box's list, the settings, screen pinning and keep-screen-on.
 - Measured on the A51: E1, E2, S1 (docs/experiments.md).
+- Step 1: "schmutzig" written on the phone, the SIGN video played from the
+  sticker (2026-09-13).
 
 ## Order
 
@@ -24,8 +28,8 @@ Ten cards from SIGNbox 1, one phone on a wall charger, one printed fit test.
 
 ## After the MVP
 
-The rest of the box (224 stickers, one afternoon). Screen pinning and the
-battery protection setting. A second provider. The browser tool.
+The rest of the box (224 stickers, one afternoon). The battery protection
+setting. A second provider.
 
 ## Not on the plan
 

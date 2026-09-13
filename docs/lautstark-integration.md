@@ -26,7 +26,7 @@ ideas, and extracts no code.
 ## Duplicated concepts, named
 
 - **A card.** wochenwerk has `Card`, bildhaft has `wordcard`, druckwerk had
-  `kartensatz`, zeigmal has `MediaEntry` + `CardMapping`. Four dialects of the
+  `kartensatz`, zeigmal has `CardRecord` on the sticker. Four dialects of the
   family's one noun; the Wortschatz proposal in `lautstark.github.io/docs` is
   where they would meet, and a zeigmal entry is a one-part *Wort* by its
   derivation, with a video as a third rendering beside picture and sound. Not

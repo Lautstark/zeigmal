@@ -89,14 +89,15 @@ class MainActivity : ComponentActivity() {
     }
 
     /**
-     * Screen pinning, release builds only: Home and Recents do nothing, the
-     * notification shade stays closed. It is Android's pinned mode, not a lock
-     * (Back+Overview held together still leaves), and it needs the person to
-     * turn "Apps anheften" on once and confirm the first pin; it is off in
-     * debug builds because that dialog would block every test run.
+     * Screen pinning: Home and Recents do nothing, the notification shade
+     * stays closed. It is Android's pinned mode, not a lock (Back+Overview
+     * held together still leaves), and it needs the person to turn "Apps
+     * anheften" on once and confirm the first pin. The instrumented tests
+     * switch it off through [Deps.pin], because that dialog would sit over
+     * every run.
      */
     private fun pin() {
-        if (BuildConfig.DEBUG) return
+        if (!Deps.pin) return
         val activityManager = getSystemService(ActivityManager::class.java)
         if (activityManager.lockTaskModeState == ActivityManager.LOCK_TASK_MODE_NONE) {
             runCatching { startLockTask() }
