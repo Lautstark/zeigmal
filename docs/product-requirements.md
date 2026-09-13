@@ -14,7 +14,7 @@ on each. An adult sets the station up once and writes the stickers once.
 idle: black, the mark
 card in  →  a ring around the mark, at once
          →  the sign video, full screen, with its sound, when its first frame is there
-         →  again while the card stays, up to twenty times, a second of ring between
+         →  looping while the card stays, up to twenty times, no gap
 after twenty →  the card's own picture, until the card goes
 card out →  the video finishes, then the mark
 blank sticker  →  a grey ring, once

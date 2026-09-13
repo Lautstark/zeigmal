@@ -7,6 +7,7 @@ import de.lautstark.zeigmal.core.AdultModel
 import de.lautstark.zeigmal.core.KeyValueStore
 import de.lautstark.zeigmal.core.Logger
 import de.lautstark.zeigmal.core.Login
+import de.lautstark.zeigmal.core.Pin
 import de.lautstark.zeigmal.core.Provider
 import de.lautstark.zeigmal.core.SignDigitalProvider
 import de.lautstark.zeigmal.core.StationController
@@ -19,8 +20,8 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
-/** The three faces of the app. A long press leaves KID; Back returns to it. */
-enum class Mode { KID, LOGIN, WRITE }
+/** The faces of the app. The corner held for two seconds leaves KID for PIN; Back returns to KID. */
+enum class Mode { KID, PIN, LOGIN, WRITE }
 
 data class LogLine(
     val atMillis: Long,
@@ -42,6 +43,13 @@ class ZeigmalViewModel(
     private val logger = Logger { line -> _log.update { (it + LogLine(System.currentTimeMillis(), line)).takeLast(LOG_LINES) } }
 
     val station = StationController(viewModelScope, providers, logger)
+    val pin = Pin(store)
+
+    /** True on the PIN screen when no PIN exists yet: the first entry sets it. */
+    val pinIsNew: Boolean get() = !pin.isSet
+
+    private val _pinRejected = MutableStateFlow(false)
+    val pinRejected: StateFlow<Boolean> = _pinRejected
     val adult = AdultModel(viewModelScope, providers.getValue(SignDigitalProvider.ID) as SignDigitalProvider, store, logger)
 
     private val _mode = MutableStateFlow(Mode.KID)
@@ -77,6 +85,30 @@ class ZeigmalViewModel(
         attached = emptyList()
     }
 
+    /** The corner was held: ask for the PIN. */
+    fun askPin() {
+        _pinRejected.value = false
+        _mode.value = Mode.PIN
+    }
+
+    /** Four digits typed. The first ones ever become the PIN. */
+    fun pinEntered(digits: String) {
+        if (!pin.isSet) {
+            pin.set(digits)
+            logger.log("pin gesetzt")
+            enterAdult()
+            return
+        }
+        if (pin.verify(digits)) {
+            _pinRejected.value = false
+            enterAdult()
+        } else {
+            logger.log("pin falsch")
+            _pinRejected.value = true
+        }
+    }
+
+    /** Past the PIN (or the debug login): the login, or the writing mode when logged in. */
     fun enterAdult() {
         val next = if (adult.login.value is Login.In) Mode.WRITE else Mode.LOGIN
         _mode.value = next

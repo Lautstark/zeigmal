@@ -19,7 +19,6 @@ class StationControllerTest {
             scope = scope,
             providers = mapOf("fake" to FakeProvider(media = mapOf("trinken" to Media("https://cdn/trinken", null)))),
             logger = logger,
-            station = Station(maxRounds = 2),
             holdMillis = 1000,
         )
 

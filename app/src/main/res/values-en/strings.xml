@@ -19,4 +19,7 @@
     <string name="overwrite_as">Overwrite as “%1$s”</string>
     <string name="card_not_found">No card for this at SIGNdigital.</string>
     <string name="done">Done</string>
+    <string name="pin_choose">Choose a PIN (four digits)</string>
+    <string name="pin_enter">PIN</string>
+    <string name="pin_wrong">That was not the PIN.</string>
 </resources>

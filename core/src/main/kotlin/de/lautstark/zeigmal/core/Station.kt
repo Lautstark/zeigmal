@@ -7,11 +7,11 @@ package de.lautstark.zeigmal.core
  * milliseconds and the screen only draws them.
  *
  * The ring around the mark is on screen the instant the tag is seen; the video
- * takes over when its first frame has rendered; when it ends the card is
- * still there, so it plays again — up to [Station.MAX_ROUNDS] — with the ring
- * between rounds; after that the card's own picture stays on screen until the
- * card goes; and when the card is gone the station is idle once the current
- * round has finished.
+ * takes over when its first frame has rendered and loops in the player, with
+ * no reload and no ring between rounds, up to [Station.MAX_ROUNDS] times;
+ * after that the card's own picture stays on screen until the card goes; and
+ * when the card is gone the station is idle once the current round has
+ * finished. A card taken away and put back starts from the first round.
  *
  * Presence arrives already debounced (see [Presence]); the station trusts it.
  */
@@ -22,9 +22,7 @@ sealed interface StationState {
         val record: CardRecord,
         val tag: TagId,
         val phase: Phase,
-        /** 1 for the first playback of this card, counting up while it stays. */
-        val round: Int = 1,
-        /** False once the reader reported the card gone; decides what ENDED leads to. */
+        /** False once the reader reported the card gone; decides what the end leads to. */
         val present: Boolean = true,
     ) : StationState
 
@@ -38,7 +36,7 @@ enum class Phase {
     /** The ring: the card is known, the video is on its way. */
     LOADING,
 
-    /** The video's first frame has rendered; it is in front. */
+    /** The video's first frame has rendered; it is in front, looping. */
     PLAYING,
 
     /** The rounds are used up, or nothing could be fetched; the card's picture stays until the card goes. */
@@ -57,15 +55,14 @@ sealed interface StationEvent {
 
     data object FirstFrame : StationEvent
 
+    /** The last loop has ended. */
     data object PlaybackEnded : StationEvent
 
     /** The video could not be fetched or played; the card stays, the ring stays. */
     data object PlaybackFailed : StationEvent
 }
 
-class Station(
-    private val maxRounds: Int = MAX_ROUNDS,
-) {
+class Station {
     fun next(
         state: StationState,
         event: StationEvent,
@@ -102,7 +99,6 @@ class Station(
                 when {
                     state !is StationState.Card -> state
                     !state.present -> StationState.Idle
-                    state.round < maxRounds -> state.copy(phase = Phase.LOADING, round = state.round + 1)
                     else -> state.copy(phase = Phase.DONE)
                 }
             }
@@ -117,10 +113,7 @@ class Station(
         }
 
     companion object {
-        /** How often a card that stays in the slot plays. A card left in overnight is not a loop. */
+        /** How often a card that stays in the slot plays before its picture takes over. */
         const val MAX_ROUNDS = 20
-
-        /** The ring between two rounds, so "again" reads as again and not as a stutter. */
-        const val PAUSE_BETWEEN_ROUNDS_MILLIS = 1000L
     }
 }

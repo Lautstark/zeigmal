@@ -88,10 +88,10 @@ class EndToEndTest {
 
         source.seen(tag, record)
         compose.waitUntil(5_000) { state().let { it is StationState.Card && it.phase == Phase.PLAYING } }
-        assertEquals(1, (state() as StationState.Card).round)
 
-        // The card lies there: the clip ends, a second of ring, round two.
-        compose.waitUntil(15_000) { state().let { it is StationState.Card && it.round == 2 } }
+        // The card lies there: the clip loops, still PLAYING, no ring in between.
+        Thread.sleep(3_000)
+        assertEquals(Phase.PLAYING, (state() as StationState.Card).phase)
 
         source.gone(tag)
         compose.waitUntil(15_000) { state() == StationState.Idle }

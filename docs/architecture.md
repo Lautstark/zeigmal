@@ -39,16 +39,14 @@ antenna.
 ```text
 Idle ──CardSeen(record)──► Card(LOADING)          the ring
 Card(LOADING) ──FirstFrame──► Card(PLAYING)       the video
-Card(PLAYING) ──PlaybackEnded──► Card(LOADING, round+1)   again, up to MAX_ROUNDS
-Card(PLAYING) ──PlaybackEnded──► Card(DONE)       rounds used up: the card's picture stays
+Card(PLAYING) ──PlaybackEnded──► Card(DONE)       the last loop ended: the card's picture stays
 Card(any) ──CardGone──► present=false … ──PlaybackEnded──► Idle
 Card ──CardSeen(other)──► Card(other, LOADING)    at once
 Idle ──CardSeen(no record)──► Unknown             the grey ring ──CardGone──► Idle
 Card ──PlaybackFailed──► Card(DONE)               no network, no link: the ring stays
 ```
 
-`MAX_ROUNDS` is 20 and the pause between rounds is one second, both named
-constants in `Station`, to be tuned after watching a child with it.
+The clip loops in the player itself, no reload and no ring in between; `MAX_ROUNDS` is 20, a named constant in `Station`, to be tuned after watching a child with it.
 
 ## The provider seam
 

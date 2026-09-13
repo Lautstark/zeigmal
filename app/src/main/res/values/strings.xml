@@ -26,4 +26,7 @@
     <string name="overwrite_as">Als „%1$s“ überschreiben</string>
     <string name="card_not_found">Keine Karte dazu bei SIGNdigital gefunden.</string>
     <string name="done">Fertig</string>
+    <string name="pin_choose">PIN wählen (vier Ziffern)</string>
+    <string name="pin_enter">PIN</string>
+    <string name="pin_wrong">Das war nicht die PIN.</string>
 </resources>

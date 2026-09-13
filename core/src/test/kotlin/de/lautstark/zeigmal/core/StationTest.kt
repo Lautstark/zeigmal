@@ -9,7 +9,7 @@ class StationTest {
     private val a = TagId("04a791b2c3d480")
     private val b = TagId("04a791b2c3d481")
     private val x = TagId("04a791b2c3d4ff")
-    private val station = Station(maxRounds = 3)
+    private val station = Station()
 
     private fun StationState.then(vararg events: StationEvent): StationState = events.fold(this) { s, e -> station.next(s, e) }
 
@@ -26,12 +26,9 @@ class StationTest {
     }
 
     @Test
-    fun `a card that stays plays again, up to the cap, then rests on the ring`() {
-        var s = StationState.Idle.then(seen(a, trinken), StationEvent.FirstFrame)
-        s = s.then(StationEvent.PlaybackEnded)
-        assertEquals(StationState.Card(trinken, a, Phase.LOADING, round = 2), s)
-        s = s.then(StationEvent.FirstFrame, StationEvent.PlaybackEnded, StationEvent.FirstFrame, StationEvent.PlaybackEnded)
-        assertEquals(StationState.Card(trinken, a, Phase.DONE, round = 3), s)
+    fun `when the last loop has ended the card's picture stays until the card goes`() {
+        val s = StationState.Idle.then(seen(a, trinken), StationEvent.FirstFrame, StationEvent.PlaybackEnded)
+        assertEquals(StationState.Card(trinken, a, Phase.DONE), s)
         assertEquals(s, s.then(StationEvent.PlaybackEnded))
         assertEquals(StationState.Idle, s.then(StationEvent.CardGone(a)))
     }

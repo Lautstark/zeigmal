@@ -73,7 +73,7 @@ fun KidScreen(
         if (station is StationState.Card && station.phase != Phase.DONE) {
             SignVideo(
                 player = player,
-                round = Triple(station.tag, station.record.ref, station.round),
+                round = station.tag to station.record.ref,
                 resolve = { videoUrl(station.record) },
                 visible = station.phase == Phase.PLAYING,
                 onFirstFrame = onFirstFrame,

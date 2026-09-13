@@ -2,7 +2,6 @@ package de.lautstark.zeigmal.ui
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
-import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
@@ -12,7 +11,6 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.testTag
 import de.lautstark.zeigmal.Mode
 import de.lautstark.zeigmal.ZeigmalViewModel
@@ -33,14 +31,9 @@ fun ZeigmalApp(model: ZeigmalViewModel) {
     ) {
         when (mode) {
             Mode.KID -> {
-                Box(
-                    Modifier
-                        .fillMaxSize()
-                        .background(Color.Black)
-                        .testTag("kid")
-                        .pointerInput(Unit) { detectTapGestures(onLongPress = { model.enterAdult() }) },
-                ) {
+                Box(Modifier.fillMaxSize().background(Color.Black).testTag("kid")) {
                     val station by model.station.state.collectAsState()
+                    HoldCorner(onHeld = model::askPin)
                     KidScreen(
                         station = station,
                         videoUrl = model.station::videoUrl,
@@ -50,6 +43,12 @@ fun ZeigmalApp(model: ZeigmalViewModel) {
                         onFailed = model.station::onPlaybackFailed,
                     )
                 }
+            }
+
+            Mode.PIN -> {
+                BackHandler { model.leaveAdult() }
+                val rejected by model.pinRejected.collectAsState()
+                PinScreen(isNew = model.pinIsNew, rejected = rejected, onEntered = model::pinEntered, onBack = model::leaveAdult)
             }
 
             Mode.LOGIN -> {

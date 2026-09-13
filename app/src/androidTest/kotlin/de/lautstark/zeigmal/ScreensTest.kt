@@ -21,6 +21,7 @@ import de.lautstark.zeigmal.core.WriteOutcome
 import de.lautstark.zeigmal.core.Writing
 import de.lautstark.zeigmal.ui.KidScreen
 import de.lautstark.zeigmal.ui.LoginScreen
+import de.lautstark.zeigmal.ui.PinScreen
 import de.lautstark.zeigmal.ui.WriteScreen
 import org.junit.Before
 import org.junit.Rule
@@ -52,6 +53,20 @@ class ScreensTest {
     fun kidScreenIsOnlyTheMarkWhenIdle() {
         compose.setContent { KidScreen(StationState.Unknown(a), videoUrl = { "" }, onFirstFrame = {}, onEnded = {}, onFailed = {}) }
         compose.onNodeWithTag("ring-unknown").assertIsDisplayed()
+    }
+
+    @Test
+    fun pinScreenHandsOverFourDigitsAndShowsARejection() {
+        var entered: String? = null
+        compose.setContent { PinScreen(isNew = false, rejected = false, onEntered = { entered = it }, onBack = {}) }
+        listOf("4", "7", "1", "1").forEach { compose.onNodeWithTag("key-$it").performSemanticsAction(SemanticsActions.OnClick) }
+        assert(entered == "4711")
+    }
+
+    @Test
+    fun pinScreenSaysWhenItWasWrong() {
+        compose.setContent { PinScreen(isNew = false, rejected = true, onEntered = {}, onBack = {}) }
+        compose.onNodeWithTag("pin-wrong").assertExists()
     }
 
     @Test

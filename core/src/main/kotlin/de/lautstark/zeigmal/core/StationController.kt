@@ -115,7 +115,7 @@ class StationController(
             }
 
             is StationState.Card -> {
-                "${state.phase.name.lowercase()} ${state.record.ref} round ${state.round}" +
+                "${state.phase.name.lowercase()} ${state.record.ref}" +
                     if (state.present) "" else " (card gone)"
             }
 

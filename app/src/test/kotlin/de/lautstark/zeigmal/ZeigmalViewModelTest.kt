@@ -64,6 +64,23 @@ class ZeigmalViewModelTest {
         }
 
     @Test
+    fun `the first pin sets, the next has to match`() =
+        runTest(dispatcher) {
+            val m = model()
+            m.askPin()
+            assertEquals(Mode.PIN, m.mode.value)
+            m.pinEntered("1234")
+            assertEquals(Mode.LOGIN, m.mode.value)
+            m.leaveAdult()
+            m.askPin()
+            m.pinEntered("0000")
+            assertEquals(Mode.PIN, m.mode.value)
+            assertTrue(m.pinRejected.value)
+            m.pinEntered("1234")
+            assertEquals(Mode.LOGIN, m.mode.value)
+        }
+
+    @Test
     fun `the hardware is told to write only in the writing mode, logged in`() =
         runTest(dispatcher) {
             val source = FakeTagSource()

@@ -24,12 +24,13 @@ import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.ui.PlayerView
 import de.lautstark.zeigmal.R
 import de.lautstark.zeigmal.core.Station
-import kotlinx.coroutines.delay
 
 /**
- * One round of one sign video on the shared [player], from a link [resolve]
- * hands back. Invisible until the first frame has rendered — the ring is what
- * shows until then — and faded in over a few frames.
+ * One sign video on the shared [player], from a link [resolve] hands back,
+ * looping in the player itself — no reload, no gap — until [Station.MAX_ROUNDS]
+ * loops have played or the card is gone. Invisible until the first frame has
+ * rendered — the ring is what shows until then — and faded in over a few
+ * frames.
  *
  * Listener first, then the media item, prepare and play: a short clip can end
  * before a listener attached afterwards hears about it, and a station that
@@ -49,10 +50,22 @@ fun SignVideo(
     var ended by remember(round) { mutableStateOf(false) }
 
     DisposableEffect(round) {
+        var loops = 1
         val listener =
             object : Player.Listener {
                 override fun onRenderedFirstFrame() {
                     firstFrame = true
+                }
+
+                override fun onMediaItemTransition(
+                    mediaItem: MediaItem?,
+                    reason: Int,
+                ) {
+                    // Each repeat is one more loop; the last one is left to end on its own.
+                    if (reason == Player.MEDIA_ITEM_TRANSITION_REASON_REPEAT) {
+                        loops += 1
+                        if (loops >= Station.MAX_ROUNDS) player.repeatMode = Player.REPEAT_MODE_OFF
+                    }
                 }
 
                 override fun onPlaybackStateChanged(playbackState: Int) {
@@ -66,6 +79,7 @@ fun SignVideo(
         player.addListener(listener)
         onDispose {
             player.removeListener(listener)
+            player.repeatMode = Player.REPEAT_MODE_OFF
             player.stop()
             player.clearMediaItems()
         }
@@ -79,17 +93,12 @@ fun SignVideo(
                 return@LaunchedEffect
             }
         player.setMediaItem(MediaItem.fromUri(url.toUri()))
+        player.repeatMode = if (Station.MAX_ROUNDS > 1) Player.REPEAT_MODE_ONE else Player.REPEAT_MODE_OFF
         player.prepare()
         player.playWhenReady = true
     }
     LaunchedEffect(firstFrame) { if (firstFrame) onFirstFrame() }
-    LaunchedEffect(ended) {
-        if (ended) {
-            // The ring between two rounds, so "again" reads as again.
-            delay(Station.PAUSE_BETWEEN_ROUNDS_MILLIS)
-            onEnded()
-        }
-    }
+    LaunchedEffect(ended) { if (ended) onEnded() }
 
     val alpha by animateFloatAsState(if (visible && !ended) 1f else 0f, tween(FADE_MILLIS), label = "video")
     AndroidView(
