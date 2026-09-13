@@ -23,13 +23,13 @@ CI; `git config core.hooksPath .githooks` tells you before the push).
 
 ## What this repository is
 
-A player. Not an editor, not a card maker, not a symbol search, not a voice.
-Every one of those exists somewhere else in the family, and
+A player that writes its own stickers. Not an editor, not a symbol search,
+not a voice. Every one of those exists somewhere else in the family, and
 `docs/lautstark-integration.md` says where. If a task here starts to need one,
 it is the wrong repository for that task.
 
-`:cardset` must stay free of `android.*` — the build fails if it does not, on
-purpose. `:app` may not decide anything a `:cardset` test could decide.
+`:core` must stay free of `android.*` — the build fails if it does not, on
+purpose. `:app` may not decide anything a `:core` test could decide.
 
 ## Building
 
@@ -38,11 +38,22 @@ Studio's bundled runtime:
 
 ```sh
 export JAVA_HOME="/Applications/Android Studio.app/Contents/jbr/Contents/Home"
-./gradlew :cardset:check :app:assembleDebug :app:testDebugUnitTest :app:lintDebug spotlessCheck
+./gradlew :core:check :app:assembleDebug :app:testDebugUnitTest :app:lintDebug spotlessCheck
 ```
 
 Lint warnings are errors and ktlint is checked; `./gradlew spotlessApply` fixes
 formatting.
+
+The instrumented tests run on Gradle's managed emulator and nowhere else:
+
+```sh
+./gradlew :app:emulatorDebugAndroidTest
+```
+
+Never `connectedAndroidTest` with the family's phone attached — the build
+refuses it, on purpose. Those tests uninstall the app, and on the phone that
+is the SIGNdigital login, the PIN and the writing progress. `adb install -r`
+of a debug build keeps all of it.
 
 ## Language
 

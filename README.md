@@ -63,8 +63,14 @@ export JAVA_HOME="/Applications/Android Studio.app/Contents/jbr/Contents/Home"
 adb install -r app/build/outputs/apk/debug/app-debug.apk
 ```
 
-Long-press the black screen for the adult mode: log in to SIGNdigital once,
-then write stickers card by card through the box.
+Hold the faint dot in the bottom-right corner for two seconds and enter the
+PIN (the first entry sets it) for the adult mode: log in to SIGNdigital once,
+then write stickers card by card through the box. The settings behind the gear
+hold the number of loops, the PIN and the login.
+
+Instrumented tests run on Gradle's managed emulator only
+(`./gradlew :app:emulatorDebugAndroidTest`); the build refuses to run them on
+an attached phone because they uninstall the app and its data.
 
 ## Documentation
 

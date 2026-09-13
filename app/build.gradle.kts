@@ -35,6 +35,23 @@ android {
         }
     }
 
+    testOptions {
+        // Instrumented tests run on this managed emulator and nowhere else:
+        // `./gradlew :app:emulatorDebugAndroidTest`. They uninstall the app
+        // under test, which on the family's phone means the login, the PIN
+        // and the writing progress. The `connected*` tasks below refuse a
+        // phone for the same reason.
+        managedDevices {
+            localDevices {
+                create("emulator") {
+                    device = "Pixel 2"
+                    apiLevel = 33
+                    systemImageSource = "aosp-atd"
+                }
+            }
+        }
+    }
+
     lint {
         warningsAsErrors = true
         abortOnError = true
@@ -77,4 +94,36 @@ dependencies {
     androidTestImplementation(platform(libs.compose.bom))
     androidTestImplementation(libs.compose.ui.test.junit4)
     debugImplementation(libs.compose.ui.test.manifest)
+}
+
+// The `connected*AndroidTest` tasks take every device adb sees. A phone with
+// the app in use must never be one of them, so they stop before installing
+// anything when a device that is not an emulator is attached. There is no
+// property to override this; the managed emulator is the way to run them.
+val adbPath = androidComponents.sdkComponents.adb.map { it.asFile.absolutePath }
+tasks.matching { it.name.startsWith("connected") && it.name.contains("AndroidTest") }.configureEach {
+    val adb = adbPath.get()
+    doFirst {
+        val out =
+            ProcessBuilder(adb, "devices")
+                .redirectErrorStream(true)
+                .start()
+                .inputStream
+                .bufferedReader()
+                .readText()
+        val phones =
+            out
+                .lines()
+                .drop(1)
+                .filter { it.isNotBlank() }
+                .map { it.substringBefore('\t').trim() }
+                .filterNot { it.startsWith("emulator-") }
+        if (phones.isNotEmpty()) {
+            throw GradleException(
+                "Refusing to run instrumented tests: a real device is attached (${phones.joinToString()}). " +
+                    "They uninstall the app and with it the login, the PIN and the writing progress. " +
+                    "Use `./gradlew :app:emulatorDebugAndroidTest`.",
+            )
+        }
+    }
 }

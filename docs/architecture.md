@@ -31,8 +31,9 @@ hardware, and three screens drawn from core state. `AndroidTagSource` is the
 replaceable factories so a test can swap the hardware. Tests: the ViewModel's
 wiring on the JVM with the fakes; the screens against plain state and the
 whole path from a fake tag to Media3's first rendered frame as instrumented
-tests on the device. The one thing no test can do is put a sticker on the
-antenna.
+tests on Gradle's managed emulator, never on the phone: they uninstall the app
+and with it the login, the PIN and the writing progress. The one thing no test
+can do is put a sticker on the antenna.
 
 ## The state machine
 
