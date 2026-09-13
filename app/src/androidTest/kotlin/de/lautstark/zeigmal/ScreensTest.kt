@@ -2,6 +2,7 @@ package de.lautstark.zeigmal
 
 import android.content.pm.ActivityInfo
 import androidx.activity.ComponentActivity
+import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.assertTextEquals
@@ -9,6 +10,7 @@ import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performSemanticsAction
 import androidx.compose.ui.test.performTextInput
 import de.lautstark.zeigmal.core.CardRecord
 import de.lautstark.zeigmal.core.Login
@@ -77,7 +79,8 @@ class ScreensTest {
             }, onSkip = { skipped = true }, onBack = {}, onOverwrite = {}, onLogout = {}, onToggleLog = {}, log = null)
         }
         compose.onNodeWithTag("word").assertTextEquals("allein")
-        compose.onNodeWithTag("skip").performClick()
+        // Off-screen in a portrait host; the action is what is under test, not the position.
+        compose.onNodeWithTag("skip").performSemanticsAction(SemanticsActions.OnClick)
         assert(skipped)
     }
 
@@ -96,7 +99,7 @@ class ScreensTest {
                 log = null,
             )
         }
-        compose.onNodeWithTag("overwrite").performClick()
+        compose.onNodeWithTag("overwrite").performSemanticsAction(SemanticsActions.OnClick)
         assert(overwrite)
     }
 }
