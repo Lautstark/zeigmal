@@ -156,7 +156,11 @@ considerably. Every one is a variable in section 1 or 2 of the `.scad`, and
 
 **The two numbers the slot is computed from.** `coil_x` from the phone's
 left end, `coil_from_top` below the top edge, both in landscape with the port
-to the right. Tape a 10 mm grid to the back, touch a sticker to every square
+to the right. The coil is in the corner by the camera, so the slot sits in
+that corner and the card stands about 20 mm past the phone's left end; the
+plate follows the card there and is that much wider than the frame. What is
+still missing is the *centre* of the area that reads reliably, and a 25 mm
+sticker forgives about 10 mm of error, not more. Tape a 10 mm grid to the back, touch a sticker to every square
 with the diagnostics screen open, mark the squares that read 5 of 5, take the
 centre. Half an hour, no printing.
 

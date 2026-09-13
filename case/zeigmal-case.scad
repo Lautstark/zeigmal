@@ -90,8 +90,10 @@ speaker_u = [55.0, 68.0];   // [A]
 
 // >>> THE two numbers E4 measures. <<<
 // Where the NFC coil's centre sits behind the back glass, in landscape.
-coil_x        = 42.0;  // [A] from the phone's left end
-coil_from_top = 20.0;  // [A] below the phone's top edge
+// Stefanie, 2026-09-13, by eye: in the corner by the camera. The centre of
+// the reliable area is still E4's to find; these put the slot in that corner.
+coil_x        = 20.0;  // [A] from the phone's left end
+coil_from_top = 15.0;  // [A] below the phone's top edge
 coil_r        = 15.0;  // [A] radius of the area that reads 5 of 5 (E4)
 
 
@@ -194,10 +196,16 @@ slot_w   = card_w + 2 * clr;                  // 80.6
 slot_x0  = coil_x - slot_w / 2;               // the slot's left wall, inside
 slot_u0  = phone_h - insert;                  // the stop, up the plane
 
-// The plate: as wide as the frame, and it rises `mouth` above the frame's
-// top rail so the slot has a lip to open in.
+// The frame's ends, round the phone with play.
 x_left   = -play - frame_wall;
 x_right  = phone_l + play + frame_wall;
+
+// The plate: as wide as the frame, or wider where the slot needs it — a coil
+// in the corner puts the card past the phone's end, and the plate follows
+// the card, the frame does not. It rises `mouth` above the frame's top rail
+// so the slot has a lip to open in.
+plate_x_left  = min(x_left, slot_x0 - wall);
+plate_x_right = max(x_right, slot_x0 + slot_w + wall);
 u_top    = phone_h + play + frame_wall + mouth;
 
 // Where the plane frame sits in the world. The phone's bottom edge is
@@ -230,9 +238,10 @@ slope_y = py(rear_u, -plate_t) + (pz(rear_u, -plate_t) - floor_t) / tan(slope_de
 echo(str("channel   ", channel, " mm front to back, card ", card_t, " + sticker ", sticker_t, " + 2 x ", clr));
 echo(str("plate     ", plate_t, " mm thick = window ", win_t, " + channel + rear wall ", back_t));
 echo(str("insert    ", insert, " mm of card in the slot, ", card_proud, " mm standing proud"));
-echo(str("slot      x ", slot_x0 - wall, " .. ", slot_x0 + slot_w + wall, " of plate ", x_left, " .. ", x_right));
+echo(str("slot      x ", slot_x0 - wall, " .. ", slot_x0 + slot_w + wall, " of plate ", plate_x_left, " .. ", plate_x_right));
+echo(str("card      stands ", max(0, -(slot_x0 + clr)), " mm past the phone's left end"));
 echo(str("read path ", win_t + clr + sticker_t, " mm from back glass to sticker face"));
-echo(str("body      ", x_right - x_left, " x ", base_depth, " x ", pz(u_top, -plate_t) , " mm (l x d x h)"));
+echo(str("body      ", plate_x_right - plate_x_left, " x ", base_depth, " x ", pz(u_top, -plate_t) , " mm (l x d x h)"));
 echo(str("base      front apron ", py(plate_u_at_floor, 0) - y_front, ", slope foot at y ", slope_y, ", rear apron ", y_back - slope_y));
 echo(str("with card ", pz(slot_u0 + card_h, -win_t - channel), " mm high"));
 echo(str("frame     ", x_right - x_left, " x ", u_top - mouth + play + frame_wall, " x ", foot_n, " mm"));
@@ -290,7 +299,7 @@ function cavity_profile() = [
 // rotate([90, 0, 90]) turns the (y, z) profile so that it extrudes along
 // +x; the extrusion starts at x = 0, hence the translate to the plate's end.
 module base_solid() {
-    translate([x_left, 0, 0]) rotate([90, 0, 90]) linear_extrude(x_right - x_left)
+    translate([plate_x_left, 0, 0]) rotate([90, 0, 90]) linear_extrude(plate_x_right - plate_x_left)
         polygon(base_profile());
 }
 
@@ -303,14 +312,14 @@ module base_hollow_2d() {
 }
 
 module base_hollow() {
-    bays = concat([x_left + wall], [for (r = rib_x) each [r - rib_t / 2, r + rib_t / 2]], [x_right - wall]);
+    bays = concat([plate_x_left + wall], [for (r = rib_x) each [r - rib_t / 2, r + rib_t / 2]], [plate_x_right - wall]);
     for (i = [0 : 2 : len(bays) - 2])
         translate([bays[i], 0, 0]) rotate([90, 0, 90]) linear_extrude(bays[i + 1] - bays[i])
             base_hollow_2d();
 }
 
 module plate() {
-    plane() pbox(x_left, x_right, plate_u_at_floor - 5, u_top, -plate_t, 0);
+    plane() pbox(plate_x_left, plate_x_right, plate_u_at_floor - 5, u_top, -plate_t, 0);
 }
 
 module slot_cut() {
@@ -350,7 +359,7 @@ module body() {
             intersection() {
                 plate();
                 // nothing below the table, nothing behind the base
-                translate([x_left, y_front, 0]) cube([x_right - x_left, base_depth, 200]);
+                translate([plate_x_left, y_front, 0]) cube([plate_x_right - plate_x_left, base_depth, 200]);
             }
         }
         base_hollow();

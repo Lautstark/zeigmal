@@ -23,7 +23,7 @@ the style of the talker's case file:
 | screen border | about 2.5 mm of black round the AMOLED; the frame covers 2 mm of it | [A] `screen_inset` — measure before the frame is printed |
 | headphone jack | 3.5 mm, bottom edge | [R] a speaker option if the built-in one is too quiet in the holder |
 | speaker | single bottom-firing | [R] the holder must not cover it |
-| NFC coil position | upper half of the back, roughly behind the camera island; in landscape that is the child's left | [A] **E4 measures it** — `coil_x`, `coil_from_top` in the case file, the two numbers the slot is computed from |
+| NFC coil position | in the corner by the camera island — in landscape the top-left, `coil_x` 20 / `coil_from_top` 15 | [A] Stefanie, 2026-09-13, by eye; **E4 finds the centre** of the reliable area, the two numbers the slot is computed from |
 | camera island | top-left of the back in landscape, about 22 × 22 mm, 1.2 mm proud | [A] `cam_*` — it gets a relief pocket in the plate |
 | reliable read area | a circle a few centimetres across around the coil centre | [A] E4 |
 | read distance through 1 / 2 / 3 mm PLA | | [A] E5 — PLA only, that is the printer's filament |

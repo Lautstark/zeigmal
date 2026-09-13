@@ -196,10 +196,15 @@ def compute(p, bed, phone_mass, fill):
     # --- 3. The slot inside the plate --------------------------------------
     g = '3. The slot inside the plate'
     b.check(g, 'left slot wall inside the plate',
-            G('slot_x0') - G('wall') - G('x_left'), '>=', 0.0,
-            note='move the slot or widen the plate')
+            G('slot_x0') - G('wall') - G('plate_x_left'), '>=', 0.0,
+            note='the plate follows the slot; this cannot fail unless plate_x_left was edited')
     b.check(g, 'right slot wall inside the plate',
-            G('x_right') - (G('slot_x0') + G('slot_w') + G('wall')), '>=', 0.0)
+            G('plate_x_right') - (G('slot_x0') + G('slot_w') + G('wall')), '>=', 0.0)
+    past = max(0.0, -(G('slot_x0') + G('clr')))
+    b.info(g, 'card past the phone\'s left end', '%.0f mm - the plate is %.0f mm wider than the frame there'
+           % (past, G('x_left') - G('plate_x_left')))
+    b.check(g, 'card does not stand past the phone by more than half its width', past, '<=', G('card_w') / 2,
+            note='the coil is too near the end for a centred sticker')
     b.check(g, 'stop sits above the floor slab, one wall clear',
             G('slot_u0') - (G('plate_u_at_floor') + G('wall')), '>=', 0.0)
     b.check(g, 'mouth opens above the frame\'s top rail',
@@ -277,13 +282,14 @@ def compute(p, bed, phone_mass, fill):
 
     # --- 6. Printing ------------------------------------------------------
     g = '6. Printing - Ender 3 V2, 0.4 mm nozzle, 0.2 mm layers, PLA'
-    body_l = G('x_right') - G('x_left')
+    body_l = G('plate_x_right') - G('plate_x_left')
     body_h = pz(G('u_top'), -G('plate_t'))
     b.check(g, 'body fits the bed (length)', body_l, '<=', bed[0])
     b.check(g, 'body fits the bed (depth)', G('base_depth'), '<=', bed[1])
     b.check(g, 'body fits the bed (height)', body_h, '<=', bed[2])
     frame_d = G('u_top') - G('mouth') + G('play') + G('frame_wall')
-    b.check(g, 'frame fits the bed', max(body_l, frame_d), '<=', max(bed[0], bed[1]))
+    frame_l = G('x_right') - G('x_left')
+    b.check(g, 'frame fits the bed', max(frame_l, frame_d), '<=', max(bed[0], bed[1]))
     for n in ('wall', 'win_t', 'back_t', 'frame_wall', 'rib_t'):
         b.check(g, '%s is whole perimeters (0.4)' % n,
                 1.0 if multiple_of(G(n), 0.4) else 0.0, '==', 1.0, unit='')
@@ -294,7 +300,7 @@ def compute(p, bed, phone_mass, fill):
             unit='deg', note='steeper slope_deg')
     b.check(g, 'slope foot in front of the back edge', G('y_back') - G('slope_y'), '>=', G('wall'))
     b.info(g, 'body', '%.1f x %.1f x %.1f mm, base down' % (body_l, G('base_depth'), body_h))
-    b.info(g, 'frame', '%.1f x %.1f x %.1f mm, face down' % (body_l, frame_d, G('foot_n')))
+    b.info(g, 'frame', '%.1f x %.1f x %.1f mm, face down' % (frame_l, frame_d, G('foot_n')))
     b.info(g, 'with a card', '%.1f mm tall' % pz(G('slot_u0') + G('card_h'), -G('win_t') - channel))
 
     # --- 7. Stability -------------------------------------------------------
@@ -302,7 +308,7 @@ def compute(p, bed, phone_mass, fill):
     # masses from the geometry: PLA at 1.24 g/cm3, thin walls solid, the
     # plate at `fill` of solid (perimeters, top/bottom and infill) [A]
     rho = 1.24e-3  # g/mm3
-    L = G('x_right') - G('x_left')
+    L = G('plate_x_right') - G('plate_x_left')
     u_lo = G('plate_u_at_floor')
     plate_m = (G('u_top') - u_lo) * G('plate_t') * L * rho * fill
     fy, fz = py(G('rear_u'), -G('plate_t')), pz(G('rear_u'), -G('plate_t'))
@@ -312,8 +318,9 @@ def compute(p, bed, phone_mass, fill):
     apron_m = (G('y_back') - G('slope_y')) * G('floor_t') * L * rho
     cavity_a = 0.5 * (G('slope_y') - py(u_lo, -G('plate_t'))) * (fz - G('floor_t'))
     ribs_m = cavity_a * G('wall') * (2 + len(G('rib_x'))) * rho * 0.8
-    frame_m = (L * (G('u_top') - G('mouth') + G('play') + G('frame_wall')) * G('frame_face')
-               + 2 * L * G('frame_wall') * G('foot_n') + 10 * L * G('frame_wall')) * rho
+    Lf = G('x_right') - G('x_left')
+    frame_m = (Lf * (G('u_top') - G('mouth') + G('play') + G('frame_wall')) * G('frame_face')
+               + 2 * Lf * G('frame_wall') * G('foot_n') + 10 * Lf * G('frame_wall')) * rho
     u_mid = (u_lo + G('u_top')) / 2
     parts = [
         (plate_m, py(u_mid, -G('plate_t') / 2)),
