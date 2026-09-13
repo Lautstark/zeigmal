@@ -450,12 +450,15 @@ module card_dummy() {
    11.  FIT TEST AND COUPONS
    ===================================================================== */
 
-// One slot and one corner of the stand, standing at the real tilt: the slot
-// clearance, the chamfer and the tilt in one print of about an hour.
+// The slot and the plate around it, standing at the real tilt: the slot
+// clearance, the chamfer and the tilt in one print. It is the top of the
+// body cut off level below the stop, so it stands on the cut and leans like
+// the whole thing does; the frame corner covers the foot and the screw.
+fit_cut_z = 40.0;   // [K] where the fit test is cut off, above the table
 module fit_test() {
-    intersection() {
+    translate([0, 0, -fit_cut_z]) intersection() {
         body();
-        translate([slot_x0 - wall - 3, y_front - 1, -1])
+        translate([slot_x0 - wall - 3, y_front - 1, fit_cut_z])
             cube([slot_w + 2 * wall + 6, py(rear_u, -plate_t) - y_front + 12, 300]);
     }
 }

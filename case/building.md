@@ -222,8 +222,10 @@ openscad -o fit-test.stl     -D 'part="fit-test"'     case/zeigmal-case.scad
 openscad -o frame-corner.stl -D 'part="frame-corner"' case/zeigmal-case.scad
 ```
 
-The fit test is the slot and the left end of the body, cut 6 mm behind the
-plate and standing at the real tilt; about an hour. The frame corner is the
+The fit test is the slot and the plate around it, cut off level 40 mm above
+the table so it stands on the cut at the real tilt; the foot and the screw are
+the frame corner's job. For both test parts two walls and 15 % infill are
+enough; the body's three walls are for the phone's weight, not for a test. The frame corner is the
 left 40 mm of the frame, full height, with its screw hole in the foot and
 the end of the top rail, already lying face down; twenty minutes. Together
 they try every clearance in the design:
