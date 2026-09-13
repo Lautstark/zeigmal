@@ -1,5 +1,6 @@
 package de.lautstark.zeigmal.core
 
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
@@ -28,11 +29,13 @@ import java.util.concurrent.TimeUnit
  * 2026-09-09): `POST /api/authentication` with the local strategy for a token,
  * `GET /api/signs?slug=…` for the sign (the only lookup the server allows), and
  * `POST /cargo/presigned-url` for links that expire. The login and the token
- * live in the [CredentialStore] the app hands in, and nowhere else.
+ * live in the [KeyValueStore] the app hands in, and nowhere else.
  */
 class SignDigitalProvider(
-    private val credentials: CredentialStore,
+    private val credentials: KeyValueStore,
     private val baseUrl: String = "https://sign-digital.de",
+    /** Where the blocking calls run; a test passes its own so virtual time sees them. */
+    private val io: CoroutineDispatcher = Dispatchers.IO,
     private val client: OkHttpClient =
         OkHttpClient
             .Builder()
@@ -56,7 +59,7 @@ class SignDigitalProvider(
     suspend fun login(
         email: String,
         password: String,
-    ) = withContext(Dispatchers.IO) {
+    ) = withContext(io) {
         val body =
             buildJsonObject {
                 put("strategy", JsonPrimitive("local"))
@@ -77,7 +80,7 @@ class SignDigitalProvider(
     }
 
     override suspend fun resolve(ref: String): Media =
-        withContext(Dispatchers.IO) {
+        withContext(io) {
             try {
                 media(ref, token())
             } catch (e: Refused) {

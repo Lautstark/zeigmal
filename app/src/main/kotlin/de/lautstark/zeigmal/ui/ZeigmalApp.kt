@@ -13,12 +13,13 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.testTag
 import de.lautstark.zeigmal.Mode
-import de.lautstark.zeigmal.StationViewModel
+import de.lautstark.zeigmal.ZeigmalViewModel
 
 @Composable
-fun ZeigmalApp(model: StationViewModel) {
-    val state by model.state.collectAsState()
+fun ZeigmalApp(model: ZeigmalViewModel) {
+    val mode by model.mode.collectAsState()
     MaterialTheme(
         colorScheme =
             darkColorScheme(
@@ -30,26 +31,55 @@ fun ZeigmalApp(model: StationViewModel) {
                 onBackground = Palette.text,
             ),
     ) {
-        when (state.mode) {
+        when (mode) {
             Mode.KID -> {
                 Box(
                     Modifier
                         .fillMaxSize()
                         .background(Color.Black)
+                        .testTag("kid")
                         .pointerInput(Unit) { detectTapGestures(onLongPress = { model.enterAdult() }) },
                 ) {
-                    KidScreen(state, model)
+                    val station by model.station.state.collectAsState()
+                    KidScreen(
+                        station = station,
+                        videoUrl = model.station::videoUrl,
+                        onFirstFrame = model.station::onFirstFrame,
+                        onEnded = model.station::onPlaybackEnded,
+                        onFailed = model.station::onPlaybackFailed,
+                    )
                 }
             }
 
             Mode.LOGIN -> {
                 BackHandler { model.leaveAdult() }
-                LoginScreen(state, model)
+                val login by model.adult.login.collectAsState()
+                val showLog by model.showLog.collectAsState()
+                val log by model.log.collectAsState()
+                LoginScreen(
+                    login = login,
+                    onLogin = model.adult::login,
+                    onBack = model::leaveAdult,
+                    onToggleLog = model::toggleLog,
+                    log = if (showLog) log else null,
+                )
             }
 
             Mode.WRITE -> {
                 BackHandler { model.leaveAdult() }
-                WriteScreen(state, model)
+                val writing by model.adult.writing.collectAsState()
+                val showLog by model.showLog.collectAsState()
+                val log by model.log.collectAsState()
+                WriteScreen(
+                    writing = writing,
+                    onGoTo = model.adult::goTo,
+                    onSkip = model.adult::skip,
+                    onBack = model.adult::back,
+                    onOverwrite = model.adult::overwriteNext,
+                    onLogout = model.adult::logout,
+                    onToggleLog = model::toggleLog,
+                    log = if (showLog) log else null,
+                )
             }
         }
     }

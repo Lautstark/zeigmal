@@ -17,10 +17,22 @@ card in and one card out, the `Provider` interface and the SIGNdigital
 implementation over OkHttp, and the SIGNbox 1 word list. Tested with JUnit,
 coroutines-test and MockWebServer, in milliseconds.
 
-**`:app`** is one activity, one ViewModel and three screens. `NfcReader`
-owns reader mode and does the NDEF read and write. `KidScreen` draws the mark,
-the ring and the video. `LoginScreen` and `WriteScreen` are the adult mode. It
-is thin on purpose; nothing in it decides anything a core test could decide.
+**`:core`** also holds the two things that used to be a ViewModel:
+`StationController` (reader events in through the presence filter, the
+station's state out, the provider asked for the link) and `AdultModel` (login
+as state, the writing mode walking the box). Both take a `CoroutineScope` and
+their collaborators as constructor arguments and are tested with virtual time
+against `FakeTagSource`, `FakeProvider` and an in-memory store from the
+module's test fixtures.
+
+**`:app`** is one activity, a ViewModel that only wires core pieces to the
+hardware, and three screens drawn from core state. `AndroidTagSource` is the
+`TagSource` over reader mode with the NDEF read and write; `Deps` is three
+replaceable factories so a test can swap the hardware. Tests: the ViewModel's
+wiring on the JVM with the fakes; the screens against plain state and the
+whole path from a fake tag to Media3's first rendered frame as instrumented
+tests on the device. The one thing no test can do is put a sticker on the
+antenna.
 
 ## The state machine
 

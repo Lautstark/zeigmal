@@ -11,16 +11,20 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
-import de.lautstark.zeigmal.StationViewModel
-import de.lautstark.zeigmal.UiState
+import androidx.media3.exoplayer.ExoPlayer
+import de.lautstark.zeigmal.core.CardRecord
 import de.lautstark.zeigmal.core.Phase
 import de.lautstark.zeigmal.core.StationState
 
@@ -30,13 +34,21 @@ import de.lautstark.zeigmal.core.StationState
  * for a sticker with nothing on it; the video in front once its first frame has
  * rendered. No words — the children cannot read yet, and the word is on the
  * card in their hand.
+ *
+ * One player for the life of the screen; each round swaps the media item.
  */
 @Composable
 fun KidScreen(
-    state: UiState,
-    model: StationViewModel,
+    station: StationState,
+    videoUrl: suspend (CardRecord) -> String,
+    onFirstFrame: () -> Unit,
+    onEnded: () -> Unit,
+    onFailed: (String) -> Unit,
 ) {
-    val station = state.station
+    val context = LocalContext.current
+    val player = remember { ExoPlayer.Builder(context).build() }
+    DisposableEffect(player) { onDispose { player.release() } }
+
     val ring =
         when (station) {
             is StationState.Card -> if (station.phase == Phase.PLAYING) Ring.NONE else Ring.SEEN
@@ -47,12 +59,13 @@ fun KidScreen(
         MarkWithRing(ring)
         if (station is StationState.Card && station.phase != Phase.DONE) {
             SignVideo(
-                key = Triple(station.tag, station.record.ref, station.round),
-                resolve = { model.mediaFor(station.record).videoUrl ?: throw IllegalStateException("kein Video") },
+                player = player,
+                round = Triple(station.tag, station.record.ref, station.round),
+                resolve = { videoUrl(station.record) },
                 visible = station.phase == Phase.PLAYING,
-                onFirstFrame = model::onFirstFrame,
-                onEnded = model::onPlaybackEnded,
-                onFailed = model::onPlaybackFailed,
+                onFirstFrame = onFirstFrame,
+                onEnded = onEnded,
+                onFailed = onFailed,
             )
         }
     }
@@ -67,7 +80,7 @@ private fun MarkWithRing(ring: Ring) {
     val alpha by animateFloatAsState(if (ring == Ring.NONE) 0f else 1f, tween(150), label = "ringAlpha")
     val color = if (ring == Ring.UNKNOWN) Color(0xFF4A4F4D) else Palette.accent
     val breathing = ring == Ring.SEEN
-    Box(Modifier.size(220.dp), contentAlignment = Alignment.Center) {
+    Box(Modifier.size(220.dp).testTag("ring-${ring.name.lowercase()}"), contentAlignment = Alignment.Center) {
         Canvas(Modifier.fillMaxSize().graphicsLayer { this.alpha = alpha }) {
             val stroke = (8f + if (breathing) 6f * breath else 0f) * density
             val radius = size.minDimension / 2 - stroke

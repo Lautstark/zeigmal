@@ -20,6 +20,7 @@ android {
         targetSdk = 37
         versionCode = providers.gradleProperty("release.versionCode").getOrElse("1").toInt()
         versionName = providers.gradleProperty("release.versionName").getOrElse("0.1.0")
+        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
     buildFeatures {
@@ -63,4 +64,17 @@ dependencies {
     implementation(libs.media3.ui)
 
     testImplementation(libs.junit)
+    testImplementation(libs.coroutines.test)
+    testImplementation(testFixtures(project(":core")))
+
+    // Instrumented: the screens against fake state, and the whole path from a
+    // (fake) tag to the first rendered frame on a real device.
+    androidTestImplementation(testFixtures(project(":core")))
+    androidTestImplementation(libs.androidx.test.runner)
+    androidTestImplementation(libs.androidx.test.rules)
+    androidTestImplementation(libs.androidx.test.ext.junit)
+    androidTestImplementation(libs.coroutines.test)
+    androidTestImplementation(platform(libs.compose.bom))
+    androidTestImplementation(libs.compose.ui.test.junit4)
+    debugImplementation(libs.compose.ui.test.manifest)
 }

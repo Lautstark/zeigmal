@@ -1,6 +1,9 @@
 plugins {
     alias(libs.plugins.kotlin.jvm)
     alias(libs.plugins.kotlin.serialization)
+    // Fakes for the tag source and the provider live in testFixtures, so the
+    // app's tests and its instrumented tests use the same ones the core does.
+    `java-test-fixtures`
 }
 
 // A plain JVM module on purpose. The card record, the station's rules and the provider
@@ -20,6 +23,7 @@ dependencies {
     implementation(libs.serialization.json)
     implementation(libs.coroutines.core)
     implementation(libs.okhttp)
+    testFixturesImplementation(libs.coroutines.core)
     testImplementation(libs.junit)
     testImplementation(libs.coroutines.test)
     testImplementation(libs.okhttp.mockwebserver)

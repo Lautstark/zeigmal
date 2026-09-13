@@ -31,17 +31,18 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil3.compose.AsyncImage
+import de.lautstark.zeigmal.LogLine
 import de.lautstark.zeigmal.R
-import de.lautstark.zeigmal.StationViewModel
-import de.lautstark.zeigmal.UiState
 import de.lautstark.zeigmal.core.SignBox
-import de.lautstark.zeigmal.nfc.WriteOutcome
+import de.lautstark.zeigmal.core.WriteOutcome
+import de.lautstark.zeigmal.core.Writing
 
 /**
  * Writing the box, card by card. Left the box's order with what is done and
@@ -50,19 +51,26 @@ import de.lautstark.zeigmal.nfc.WriteOutcome
  */
 @Composable
 fun WriteScreen(
-    state: UiState,
-    model: StationViewModel,
+    writing: Writing,
+    onGoTo: (Int) -> Unit,
+    onSkip: () -> Unit,
+    onBack: () -> Unit,
+    onOverwrite: () -> Unit,
+    onLogout: () -> Unit,
+    onToggleLog: () -> Unit,
+    log: List<LogLine>?,
 ) {
-    val w = state.writing
+    val w = writing
     Row(
         Modifier
             .fillMaxSize()
             .background(Palette.bg)
             .systemBarsPadding()
-            .padding(horizontal = 22.dp, vertical = 18.dp),
+            .padding(horizontal = 22.dp, vertical = 18.dp)
+            .testTag("write"),
         horizontalArrangement = Arrangement.spacedBy(24.dp),
     ) {
-        WordList(state, model, Modifier.width(210.dp).fillMaxHeight())
+        WordList(w, onGoTo, Modifier.width(210.dp).fillMaxHeight())
         CardImage(w.cardImageUrl, w.lookupFailed, Modifier.fillMaxHeight().aspectRatio(2f / 3f))
         Column(Modifier.weight(1f).fillMaxHeight()) {
             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -75,8 +83,8 @@ fun WriteScreen(
                     fontWeight = FontWeight.SemiBold,
                 )
                 Spacer(Modifier.weight(1f))
-                TextButton(onClick = model::toggleLog) { Text(stringResource(R.string.log), color = Palette.textFaint) }
-                TextButton(onClick = model::logout) { Text(stringResource(R.string.logout), color = Palette.textFaint) }
+                TextButton(onClick = onToggleLog) { Text(stringResource(R.string.log), color = Palette.textFaint) }
+                TextButton(onClick = onLogout) { Text(stringResource(R.string.logout), color = Palette.textFaint) }
             }
             val outcome = w.lastOutcome
             if (outcome is WriteOutcome.AlreadyWritten) {
@@ -100,8 +108,11 @@ fun WriteScreen(
                 )
                 Spacer(Modifier.weight(1f))
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    TextButton(onClick = model::skip) { Text(stringResource(R.string.next)) }
-                    Button(onClick = model::overwriteNext) { Text(stringResource(R.string.overwrite_as, w.word.label)) }
+                    TextButton(onClick = onSkip) { Text(stringResource(R.string.next)) }
+                    Button(
+                        onClick = onOverwrite,
+                        modifier = Modifier.testTag("overwrite"),
+                    ) { Text(stringResource(R.string.overwrite_as, w.word.label)) }
                 }
             } else {
                 Text(
@@ -119,7 +130,7 @@ fun WriteScreen(
                     Text(stringResource(R.string.step_3), color = Palette.textDim, fontSize = 17.sp)
                 }
                 Spacer(Modifier.weight(1f))
-                if (state.showLog) LogPanel(state)
+                if (log != null) LogPanel(log)
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     when (outcome) {
                         is WriteOutcome.Written -> {
@@ -142,8 +153,8 @@ fun WriteScreen(
                         }
                     }
                     Spacer(Modifier.weight(1f))
-                    TextButton(onClick = model::back) { Text(stringResource(R.string.back)) }
-                    TextButton(onClick = model::skip) { Text(stringResource(R.string.skip)) }
+                    TextButton(onClick = onBack) { Text(stringResource(R.string.back)) }
+                    TextButton(onClick = onSkip, modifier = Modifier.testTag("skip")) { Text(stringResource(R.string.skip)) }
                 }
             }
             LinearProgressIndicator(
@@ -158,11 +169,10 @@ fun WriteScreen(
 
 @Composable
 private fun WordList(
-    state: UiState,
-    model: StationViewModel,
+    w: Writing,
+    onGoTo: (Int) -> Unit,
     modifier: Modifier,
 ) {
-    val w = state.writing
     val list = rememberLazyListState()
     LaunchedEffect(w.index) { list.animateScrollToItem((w.index - 3).coerceAtLeast(0)) }
     Column(modifier) {
@@ -181,7 +191,7 @@ private fun WordList(
                         .fillMaxWidth()
                         .clip(RoundedCornerShape(6.dp))
                         .background(if (current) Palette.accentSoft else Color.Transparent)
-                        .clickable { model.goTo(i) }
+                        .clickable { onGoTo(i) }
                         .padding(horizontal = 8.dp, vertical = 6.dp),
                 ) {
                     Text(

@@ -13,7 +13,7 @@ import org.junit.Test
 
 class SignDigitalProviderTest {
     private val server = MockWebServer()
-    private val store = InMemoryCredentialStore()
+    private val store = InMemoryStore()
     private lateinit var provider: SignDigitalProvider
 
     @Before

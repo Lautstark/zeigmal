@@ -95,26 +95,3 @@ interface Provider {
 
     suspend fun resolve(ref: String): Media
 }
-
-/** Where a provider's login lives. The app backs it with private preferences; tests with a map. */
-interface CredentialStore {
-    fun get(key: String): String?
-
-    fun put(
-        key: String,
-        value: String?,
-    )
-}
-
-class InMemoryCredentialStore : CredentialStore {
-    private val map = HashMap<String, String>()
-
-    override fun get(key: String): String? = map[key]
-
-    override fun put(
-        key: String,
-        value: String?,
-    ) {
-        if (value == null) map.remove(key) else map[key] = value
-    }
-}

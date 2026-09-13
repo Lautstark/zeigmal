@@ -14,10 +14,11 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.net.toUri
 import androidx.media3.common.MediaItem
+import androidx.media3.common.PlaybackException
 import androidx.media3.common.Player
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.ui.PlayerView
@@ -26,30 +27,28 @@ import de.lautstark.zeigmal.core.Station
 import kotlinx.coroutines.delay
 
 /**
- * One round of one sign video, from a link [resolve] hands back. Invisible
- * until the first frame has rendered — the ring is what shows until then —
- * and faded in over a few frames.
+ * One round of one sign video on the shared [player], from a link [resolve]
+ * hands back. Invisible until the first frame has rendered — the ring is what
+ * shows until then — and faded in over a few frames.
  *
- * The order inside the effect is the part that matters, learnt the hard way in
- * knopfpost: attach the listener, then prepare and play. A short clip can reach
- * STATE_ENDED before a listener attached afterwards ever hears about it, and a
- * station that misses that stays on the last frame forever.
+ * Listener first, then the media item, prepare and play: a short clip can end
+ * before a listener attached afterwards hears about it, and a station that
+ * misses that stays on the last frame forever.
  */
 @Composable
 fun SignVideo(
-    key: Any,
+    player: ExoPlayer,
+    round: Any,
     resolve: suspend () -> String,
     visible: Boolean,
     onFirstFrame: () -> Unit,
     onEnded: () -> Unit,
     onFailed: (String) -> Unit,
 ) {
-    val context = LocalContext.current
-    val player = remember(key) { ExoPlayer.Builder(context).build() }
-    var firstFrame by remember(player) { mutableStateOf(false) }
-    var ended by remember(player) { mutableStateOf(false) }
+    var firstFrame by remember(round) { mutableStateOf(false) }
+    var ended by remember(round) { mutableStateOf(false) }
 
-    DisposableEffect(player) {
+    DisposableEffect(round) {
         val listener =
             object : Player.Listener {
                 override fun onRenderedFirstFrame() {
@@ -60,17 +59,18 @@ fun SignVideo(
                     if (playbackState == Player.STATE_ENDED) ended = true
                 }
 
-                override fun onPlayerError(error: androidx.media3.common.PlaybackException) {
+                override fun onPlayerError(error: PlaybackException) {
                     onFailed(error.errorCodeName)
                 }
             }
         player.addListener(listener)
         onDispose {
             player.removeListener(listener)
-            player.release()
+            player.stop()
+            player.clearMediaItems()
         }
     }
-    LaunchedEffect(player) {
+    LaunchedEffect(round) {
         val url =
             try {
                 resolve()
@@ -93,7 +93,7 @@ fun SignVideo(
 
     val alpha by animateFloatAsState(if (visible && !ended) 1f else 0f, tween(FADE_MILLIS), label = "video")
     AndroidView(
-        modifier = Modifier.fillMaxSize().graphicsLayer { this.alpha = alpha },
+        modifier = Modifier.fillMaxSize().graphicsLayer { this.alpha = alpha }.testTag("video"),
         factory = { ctx -> LayoutInflater.from(ctx).inflate(R.layout.view_sign_video, FrameLayout(ctx), false) as PlayerView },
         update = { view -> view.player = player },
     )
