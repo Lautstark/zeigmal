@@ -33,6 +33,7 @@ import androidx.media3.exoplayer.ExoPlayer
 import coil3.compose.AsyncImage
 import de.lautstark.zeigmal.core.CardRecord
 import de.lautstark.zeigmal.core.Phase
+import de.lautstark.zeigmal.core.Station
 import de.lautstark.zeigmal.core.StationState
 
 /**
@@ -47,6 +48,7 @@ import de.lautstark.zeigmal.core.StationState
 @Composable
 fun KidScreen(
     station: StationState,
+    maxLoops: Int = Station.MAX_ROUNDS,
     videoUrl: suspend (CardRecord) -> String,
     cardImageUrl: suspend (CardRecord) -> String? = { null },
     onFirstFrame: () -> Unit,
@@ -75,6 +77,8 @@ fun KidScreen(
                 player = player,
                 round = station.tag to station.record.ref,
                 resolve = { videoUrl(station.record) },
+                maxLoops = maxLoops,
+                present = station.present,
                 visible = station.phase == Phase.PLAYING,
                 onFirstFrame = onFirstFrame,
                 onEnded = onEnded,

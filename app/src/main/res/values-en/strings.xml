@@ -5,7 +5,6 @@
     <string name="signdigital_password">Password</string>
     <string name="login">Sign in</string>
     <string name="login_failed">Sign-in failed. Are email and password right, and is the phone on Wi-Fi?</string>
-    <string name="logout">Sign out</string>
     <string name="log">Log</string>
     <string name="back">Back</string>
     <string name="skip">Skip</string>
@@ -22,4 +21,15 @@
     <string name="pin_choose">Choose a PIN (four digits)</string>
     <string name="pin_enter">PIN</string>
     <string name="pin_wrong">That was not the PIN.</string>
+    <string name="settings">Settings</string>
+    <string name="setting_loops">Repeats</string>
+    <string name="setting_loops_hint">How often a video plays while the card lies there. Then the card picture stays.</string>
+    <string name="setting_pin">PIN</string>
+    <string name="setting_pin_hint">Four digits before the adult mode.</string>
+    <string name="setting_not_logged_in">not signed in</string>
+    <string name="setting_log_hint">What the reader and the station saw, with times.</string>
+    <string name="change">Change</string>
+    <string name="relogin">Sign in again</string>
+    <string name="show">Show</string>
+    <string name="hide">Hide</string>
 </resources>

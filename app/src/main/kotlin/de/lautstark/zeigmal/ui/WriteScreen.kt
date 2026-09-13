@@ -56,8 +56,7 @@ fun WriteScreen(
     onSkip: () -> Unit,
     onBack: () -> Unit,
     onOverwrite: () -> Unit,
-    onLogout: () -> Unit,
-    onToggleLog: () -> Unit,
+    onSettings: () -> Unit,
     onDone: () -> Unit,
     log: List<LogLine>?,
 ) {
@@ -84,8 +83,9 @@ fun WriteScreen(
                     fontWeight = FontWeight.SemiBold,
                 )
                 Spacer(Modifier.weight(1f))
-                TextButton(onClick = onToggleLog) { Text(stringResource(R.string.log), color = Palette.textFaint, maxLines = 1) }
-                TextButton(onClick = onLogout) { Text(stringResource(R.string.logout), color = Palette.textFaint, maxLines = 1) }
+                TextButton(onClick = onSettings, modifier = Modifier.testTag("settings")) {
+                    Text(stringResource(R.string.settings), color = Palette.textFaint, maxLines = 1)
+                }
                 TextButton(onClick = onDone, modifier = Modifier.testTag("done")) {
                     Text(stringResource(R.string.done), color = Palette.accentStrong, fontWeight = FontWeight.SemiBold, maxLines = 1)
                 }

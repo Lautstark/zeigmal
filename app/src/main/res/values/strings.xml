@@ -12,7 +12,6 @@
     <string name="signdigital_password">Passwort</string>
     <string name="login">Anmelden</string>
     <string name="login_failed">Anmeldung fehlgeschlagen. Stimmen E-Mail und Passwort, und ist das Handy im WLAN?</string>
-    <string name="logout">Abmelden</string>
     <string name="log">Protokoll</string>
     <string name="back">Zurück</string>
     <string name="skip">Überspringen</string>
@@ -29,4 +28,15 @@
     <string name="pin_choose">PIN wählen (vier Ziffern)</string>
     <string name="pin_enter">PIN</string>
     <string name="pin_wrong">Das war nicht die PIN.</string>
+    <string name="settings">Einstellungen</string>
+    <string name="setting_loops">Wiederholungen</string>
+    <string name="setting_loops_hint">So oft läuft ein Video, solange die Karte liegt. Danach bleibt das Kartenbild.</string>
+    <string name="setting_pin">PIN</string>
+    <string name="setting_pin_hint">Vier Ziffern vor dem Erwachsenen-Modus.</string>
+    <string name="setting_not_logged_in">nicht angemeldet</string>
+    <string name="setting_log_hint">Was der Leser und die Station gesehen haben, mit Uhrzeit.</string>
+    <string name="change">Ändern</string>
+    <string name="relogin">Neu anmelden</string>
+    <string name="show">Zeigen</string>
+    <string name="hide">Ausblenden</string>
 </resources>

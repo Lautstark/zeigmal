@@ -93,6 +93,7 @@ class EndToEndTest {
         Thread.sleep(3_000)
         assertEquals(Phase.PLAYING, (state() as StationState.Card).phase)
 
+        // Card out: the loop that is running ends, no other begins, idle follows.
         source.gone(tag)
         compose.waitUntil(15_000) { state() == StationState.Idle }
         assertTrue(state() == StationState.Idle)

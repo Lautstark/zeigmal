@@ -60,7 +60,7 @@ class ScreensTest {
         var entered: String? = null
         compose.setContent { PinScreen(isNew = false, rejected = false, onEntered = { entered = it }, onBack = {}) }
         listOf("4", "7", "1", "1").forEach { compose.onNodeWithTag("key-$it").performSemanticsAction(SemanticsActions.OnClick) }
-        assert(entered == "4711")
+        compose.waitUntil(2_000) { entered == "4711" }
     }
 
     @Test
@@ -91,7 +91,7 @@ class ScreensTest {
         var skipped = false
         compose.setContent {
             WriteScreen(Writing(index = 3), onGoTo = {
-            }, onSkip = { skipped = true }, onBack = {}, onOverwrite = {}, onLogout = {}, onToggleLog = {}, onDone = {}, log = null)
+            }, onSkip = { skipped = true }, onBack = {}, onOverwrite = {}, onSettings = {}, onDone = {}, log = null)
         }
         compose.onNodeWithTag("word").assertTextEquals("allein")
         // Off-screen in a portrait host; the action is what is under test, not the position.
@@ -109,8 +109,7 @@ class ScreensTest {
                 onSkip = {},
                 onBack = {},
                 onOverwrite = { overwrite = true },
-                onLogout = {},
-                onToggleLog = {},
+                onSettings = {},
                 onDone = {},
                 log = null,
             )

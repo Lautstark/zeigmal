@@ -9,6 +9,7 @@ import de.lautstark.zeigmal.core.Logger
 import de.lautstark.zeigmal.core.Login
 import de.lautstark.zeigmal.core.Pin
 import de.lautstark.zeigmal.core.Provider
+import de.lautstark.zeigmal.core.Settings
 import de.lautstark.zeigmal.core.SignDigitalProvider
 import de.lautstark.zeigmal.core.StationController
 import de.lautstark.zeigmal.core.TagMode
@@ -21,7 +22,7 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 /** The faces of the app. The corner held for two seconds leaves KID for PIN; Back returns to KID. */
-enum class Mode { KID, PIN, LOGIN, WRITE }
+enum class Mode { KID, PIN, LOGIN, WRITE, SETTINGS, PIN_CHANGE }
 
 data class LogLine(
     val atMillis: Long,
@@ -44,6 +45,7 @@ class ZeigmalViewModel(
 
     val station = StationController(viewModelScope, providers, logger)
     val pin = Pin(store)
+    val settings = Settings(store)
 
     /** True on the PIN screen when no PIN exists yet: the first entry sets it. */
     val pinIsNew: Boolean get() = !pin.isSet
@@ -91,8 +93,14 @@ class ZeigmalViewModel(
         _mode.value = Mode.PIN
     }
 
-    /** Four digits typed. The first ones ever become the PIN. */
+    /** Four digits typed. The first ones ever become the PIN; on the change screen they replace it. */
     fun pinEntered(digits: String) {
+        if (_mode.value == Mode.PIN_CHANGE) {
+            pin.set(digits)
+            logger.log("pin geändert")
+            _mode.value = Mode.SETTINGS
+            return
+        }
         if (!pin.isSet) {
             pin.set(digits)
             logger.log("pin gesetzt")
@@ -118,6 +126,26 @@ class ZeigmalViewModel(
     fun leaveAdult() {
         _mode.value = Mode.KID
         _showLog.value = false
+    }
+
+    fun openSettings() {
+        _mode.value = Mode.SETTINGS
+    }
+
+    fun closeSettings() {
+        _mode.value = if (adult.login.value is Login.In) Mode.WRITE else Mode.LOGIN
+        if (_mode.value == Mode.WRITE) adult.enterWriting()
+    }
+
+    fun changePin() {
+        _pinRejected.value = false
+        _mode.value = Mode.PIN_CHANGE
+    }
+
+    /** Sign out, then straight to the login: the "re-login" an adult asks for when the password changed. */
+    fun relogin() {
+        adult.logout()
+        _mode.value = Mode.LOGIN
     }
 
     fun toggleLog() = _showLog.update { !it }

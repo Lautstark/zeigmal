@@ -23,7 +23,6 @@ import androidx.media3.common.Player
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.ui.PlayerView
 import de.lautstark.zeigmal.R
-import de.lautstark.zeigmal.core.Station
 
 /**
  * One sign video on the shared [player], from a link [resolve] hands back,
@@ -41,6 +40,9 @@ fun SignVideo(
     player: ExoPlayer,
     round: Any,
     resolve: suspend () -> String,
+    maxLoops: Int,
+    /** False once the card is gone: the current loop is the last. */
+    present: Boolean,
     visible: Boolean,
     onFirstFrame: () -> Unit,
     onEnded: () -> Unit,
@@ -64,7 +66,7 @@ fun SignVideo(
                     // Each repeat is one more loop; the last one is left to end on its own.
                     if (reason == Player.MEDIA_ITEM_TRANSITION_REASON_REPEAT) {
                         loops += 1
-                        if (loops >= Station.MAX_ROUNDS) player.repeatMode = Player.REPEAT_MODE_OFF
+                        if (loops >= maxLoops) player.repeatMode = Player.REPEAT_MODE_OFF
                     }
                 }
 
@@ -93,9 +95,13 @@ fun SignVideo(
                 return@LaunchedEffect
             }
         player.setMediaItem(MediaItem.fromUri(url.toUri()))
-        player.repeatMode = if (Station.MAX_ROUNDS > 1) Player.REPEAT_MODE_ONE else Player.REPEAT_MODE_OFF
+        player.repeatMode = if (maxLoops > 1) Player.REPEAT_MODE_ONE else Player.REPEAT_MODE_OFF
         player.prepare()
         player.playWhenReady = true
+    }
+    LaunchedEffect(present) {
+        // The card is gone: let this loop end and no other begin.
+        if (!present) player.repeatMode = Player.REPEAT_MODE_OFF
     }
     LaunchedEffect(firstFrame) { if (firstFrame) onFirstFrame() }
     LaunchedEffect(ended) { if (ended) onEnded() }

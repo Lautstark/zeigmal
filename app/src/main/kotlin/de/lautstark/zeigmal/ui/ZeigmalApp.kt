@@ -33,9 +33,11 @@ fun ZeigmalApp(model: ZeigmalViewModel) {
             Mode.KID -> {
                 Box(Modifier.fillMaxSize().background(Color.Black).testTag("kid")) {
                     val station by model.station.state.collectAsState()
+                    val values by model.settings.values.collectAsState()
                     HoldCorner(onHeld = model::askPin)
                     KidScreen(
                         station = station,
+                        maxLoops = values.maxLoops,
                         videoUrl = model.station::videoUrl,
                         cardImageUrl = model.station::cardImageUrl,
                         onFirstFrame = model.station::onFirstFrame,
@@ -49,6 +51,29 @@ fun ZeigmalApp(model: ZeigmalViewModel) {
                 BackHandler { model.leaveAdult() }
                 val rejected by model.pinRejected.collectAsState()
                 PinScreen(isNew = model.pinIsNew, rejected = rejected, onEntered = model::pinEntered, onBack = model::leaveAdult)
+            }
+
+            Mode.PIN_CHANGE -> {
+                BackHandler { model.openSettings() }
+                PinScreen(isNew = true, rejected = false, onEntered = model::pinEntered, onBack = model::openSettings)
+            }
+
+            Mode.SETTINGS -> {
+                BackHandler { model.closeSettings() }
+                val values by model.settings.values.collectAsState()
+                val login by model.adult.login.collectAsState()
+                val showLog by model.showLog.collectAsState()
+                val log by model.log.collectAsState()
+                SettingsScreen(
+                    values = values,
+                    login = login,
+                    onMaxLoops = model.settings::setMaxLoops,
+                    onChangePin = model::changePin,
+                    onRelogin = model::relogin,
+                    onToggleLog = model::toggleLog,
+                    onClose = model::closeSettings,
+                    log = if (showLog) log else null,
+                )
             }
 
             Mode.LOGIN -> {
@@ -76,8 +101,7 @@ fun ZeigmalApp(model: ZeigmalViewModel) {
                     onSkip = model.adult::skip,
                     onBack = model.adult::back,
                     onOverwrite = model.adult::overwriteNext,
-                    onLogout = model.adult::logout,
-                    onToggleLog = model::toggleLog,
+                    onSettings = model::openSettings,
                     onDone = model::leaveAdult,
                     log = if (showLog) log else null,
                 )
