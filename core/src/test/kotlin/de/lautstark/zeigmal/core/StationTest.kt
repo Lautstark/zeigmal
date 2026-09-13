@@ -26,6 +26,21 @@ class StationTest {
     }
 
     @Test
+    fun `loops are counted while the card stays, and start over with every card in`() {
+        var s = StationState.Idle.then(seen(a, trinken), StationEvent.FirstFrame)
+        assertEquals(1, (s as StationState.Card).loop)
+        assertEquals(true, s.wantsAnotherLoop(maxLoops = 3))
+        s = s.then(StationEvent.Looped, StationEvent.Looped)
+        assertEquals(3, (s as StationState.Card).loop)
+        assertEquals(false, s.wantsAnotherLoop(maxLoops = 3))
+        // Gone mid-loop: no further loop, whatever the count.
+        assertEquals(false, (s.then(StationEvent.CardGone(a)) as StationState.Card).wantsAnotherLoop(maxLoops = 99))
+        // Out and in again: loop one.
+        val again = s.then(StationEvent.CardGone(a), StationEvent.PlaybackEnded, seen(a, trinken), StationEvent.FirstFrame)
+        assertEquals(StationState.Card(trinken, a, Phase.PLAYING, loop = 1), again)
+    }
+
+    @Test
     fun `when the last loop has ended the card's picture stays until the card goes`() {
         val s = StationState.Idle.then(seen(a, trinken), StationEvent.FirstFrame, StationEvent.PlaybackEnded)
         assertEquals(StationState.Card(trinken, a, Phase.DONE), s)

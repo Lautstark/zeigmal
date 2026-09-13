@@ -52,6 +52,7 @@ fun KidScreen(
     videoUrl: suspend (CardRecord) -> String,
     cardImageUrl: suspend (CardRecord) -> String? = { null },
     onFirstFrame: () -> Unit,
+    onLooped: () -> Unit = {},
     onEnded: () -> Unit,
     onFailed: (String) -> Unit,
 ) {
@@ -77,10 +78,10 @@ fun KidScreen(
                 player = player,
                 round = station.tag to station.record.ref,
                 resolve = { videoUrl(station.record) },
-                maxLoops = maxLoops,
-                present = station.present,
+                loopAgain = station.wantsAnotherLoop(maxLoops),
                 visible = station.phase == Phase.PLAYING,
                 onFirstFrame = onFirstFrame,
+                onLooped = onLooped,
                 onEnded = onEnded,
                 onFailed = onFailed,
             )

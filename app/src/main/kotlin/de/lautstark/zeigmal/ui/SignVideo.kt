@@ -40,11 +40,11 @@ fun SignVideo(
     player: ExoPlayer,
     round: Any,
     resolve: suspend () -> String,
-    maxLoops: Int,
-    /** False once the card is gone: the current loop is the last. */
-    present: Boolean,
+    /** Whether the player should start another loop after the running one; the station decides. */
+    loopAgain: Boolean,
     visible: Boolean,
     onFirstFrame: () -> Unit,
+    onLooped: () -> Unit,
     onEnded: () -> Unit,
     onFailed: (String) -> Unit,
 ) {
@@ -52,7 +52,6 @@ fun SignVideo(
     var ended by remember(round) { mutableStateOf(false) }
 
     DisposableEffect(round) {
-        var loops = 1
         val listener =
             object : Player.Listener {
                 override fun onRenderedFirstFrame() {
@@ -63,11 +62,7 @@ fun SignVideo(
                     mediaItem: MediaItem?,
                     reason: Int,
                 ) {
-                    // Each repeat is one more loop; the last one is left to end on its own.
-                    if (reason == Player.MEDIA_ITEM_TRANSITION_REASON_REPEAT) {
-                        loops += 1
-                        if (loops >= maxLoops) player.repeatMode = Player.REPEAT_MODE_OFF
-                    }
+                    if (reason == Player.MEDIA_ITEM_TRANSITION_REASON_REPEAT) onLooped()
                 }
 
                 override fun onPlaybackStateChanged(playbackState: Int) {
@@ -95,14 +90,11 @@ fun SignVideo(
                 return@LaunchedEffect
             }
         player.setMediaItem(MediaItem.fromUri(url.toUri()))
-        player.repeatMode = if (maxLoops > 1) Player.REPEAT_MODE_ONE else Player.REPEAT_MODE_OFF
         player.prepare()
         player.playWhenReady = true
     }
-    LaunchedEffect(present) {
-        // The card is gone: let this loop end and no other begin.
-        if (!present) player.repeatMode = Player.REPEAT_MODE_OFF
-    }
+    // The station says whether another loop follows; the player only obeys.
+    LaunchedEffect(loopAgain) { player.repeatMode = if (loopAgain) Player.REPEAT_MODE_ONE else Player.REPEAT_MODE_OFF }
     LaunchedEffect(firstFrame) { if (firstFrame) onFirstFrame() }
     LaunchedEffect(ended) { if (ended) onEnded() }
 

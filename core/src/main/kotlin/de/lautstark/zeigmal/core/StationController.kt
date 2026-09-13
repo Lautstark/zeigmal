@@ -78,6 +78,8 @@ class StationController(
 
     fun onFirstFrame() = apply(StationEvent.FirstFrame)
 
+    fun onLooped() = apply(StationEvent.Looped)
+
     fun onPlaybackEnded() = apply(StationEvent.PlaybackEnded)
 
     fun onPlaybackFailed(reason: String) {
@@ -115,7 +117,7 @@ class StationController(
             }
 
             is StationState.Card -> {
-                "${state.phase.name.lowercase()} ${state.record.ref}" +
+                "${state.phase.name.lowercase()} ${state.record.ref} loop ${state.loop}" +
                     if (state.present) "" else " (card gone)"
             }
 

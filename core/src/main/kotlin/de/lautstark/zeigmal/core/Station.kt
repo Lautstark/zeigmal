@@ -22,9 +22,14 @@ sealed interface StationState {
         val record: CardRecord,
         val tag: TagId,
         val phase: Phase,
+        /** Which loop of the video is running, from 1. Starts over with every card in. */
+        val loop: Int = 1,
         /** False once the reader reported the card gone; decides what the end leads to. */
         val present: Boolean = true,
-    ) : StationState
+    ) : StationState {
+        /** Whether the player should loop again after this one. */
+        fun wantsAnotherLoop(maxLoops: Int): Boolean = present && loop < maxLoops
+    }
 
     /** A sticker without a record: the grey ring, until it is gone. */
     data class Unknown(
@@ -54,6 +59,9 @@ sealed interface StationEvent {
     ) : StationEvent
 
     data object FirstFrame : StationEvent
+
+    /** One loop of the video ended and the player started the next. */
+    data object Looped : StationEvent
 
     /** The last loop has ended. */
     data object PlaybackEnded : StationEvent
@@ -93,6 +101,10 @@ class Station {
 
             StationEvent.FirstFrame -> {
                 if (state is StationState.Card && state.phase == Phase.LOADING) state.copy(phase = Phase.PLAYING) else state
+            }
+
+            StationEvent.Looped -> {
+                if (state is StationState.Card && state.phase == Phase.PLAYING) state.copy(loop = state.loop + 1) else state
             }
 
             StationEvent.PlaybackEnded -> {

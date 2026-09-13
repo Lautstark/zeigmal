@@ -70,7 +70,7 @@ fun WriteScreen(
             .testTag("write"),
         horizontalArrangement = Arrangement.spacedBy(18.dp),
     ) {
-        WordList(w, onGoTo, Modifier.width(170.dp).fillMaxHeight())
+        WordList(w, onGoTo, onSettings, Modifier.width(170.dp).fillMaxHeight())
         CardImage(w.cardImageUrl, w.lookupFailed, Modifier.fillMaxHeight(0.92f).aspectRatio(2f / 3f))
         Column(Modifier.weight(1f).fillMaxHeight()) {
             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -78,14 +78,11 @@ fun WriteScreen(
                 Spacer(Modifier.width(8.dp))
                 Text(
                     stringResource(R.string.app_name).lowercase(),
-                    color = Palette.text,
+                    color = Palette.textDim,
                     fontSize = 15.sp,
-                    fontWeight = FontWeight.SemiBold,
+                    fontWeight = FontWeight.Medium,
                 )
                 Spacer(Modifier.weight(1f))
-                TextButton(onClick = onSettings, modifier = Modifier.testTag("settings")) {
-                    Text(stringResource(R.string.settings), color = Palette.textFaint, maxLines = 1)
-                }
                 TextButton(onClick = onDone, modifier = Modifier.testTag("done")) {
                     Text(stringResource(R.string.done), color = Palette.accentStrong, fontWeight = FontWeight.SemiBold, maxLines = 1)
                 }
@@ -95,68 +92,67 @@ fun WriteScreen(
                 Text(
                     stringResource(R.string.sticker_already, outcome.record.label),
                     color = Palette.text,
-                    fontSize = 34.sp,
+                    fontSize = 28.sp,
                     fontWeight = FontWeight.SemiBold,
+                    lineHeight = 32.sp,
                 )
                 Text(
                     "${outcome.record.provider} / ${outcome.record.ref} · ${outcome.tag}",
                     color = Palette.textFaint,
-                    fontSize = 13.sp,
+                    fontSize = 12.sp,
                     fontFamily = FontFamily.Monospace,
                 )
                 Text(
                     stringResource(R.string.sticker_already_hint, w.word.label),
                     color = Palette.textDim,
-                    fontSize = 17.sp,
-                    modifier = Modifier.padding(top = 18.dp),
+                    fontSize = 15.sp,
+                    modifier = Modifier.padding(top = 14.dp),
                 )
                 Spacer(Modifier.weight(1f))
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    TextButton(onClick = onSkip) { Text(stringResource(R.string.next)) }
-                    Button(
-                        onClick = onOverwrite,
-                        modifier = Modifier.testTag("overwrite"),
-                    ) { Text(stringResource(R.string.overwrite_as, w.word.label)) }
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
+                    TextButton(onClick = onSkip) { Text(stringResource(R.string.next), maxLines = 1) }
+                    Button(onClick = onOverwrite, modifier = Modifier.testTag("overwrite")) {
+                        Text(stringResource(R.string.overwrite_as, w.word.label), maxLines = 1)
+                    }
                 }
             } else {
                 Text(
                     w.word.label,
                     color = Palette.text,
-                    fontSize = 52.sp,
+                    fontSize = 40.sp,
                     fontWeight = FontWeight.SemiBold,
-                    lineHeight = 56.sp,
-                    modifier = Modifier.padding(top = 8.dp).testTag("word"),
+                    lineHeight = 44.sp,
+                    modifier = Modifier.padding(top = 4.dp).testTag("word"),
                 )
-                Text("signdigital / ${w.word.ref}", color = Palette.textFaint, fontSize = 12.sp, fontFamily = FontFamily.Monospace)
+                // The one line read while writing, right under the word and large.
+                Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(top = 14.dp).fillMaxWidth()) {
+                    when (outcome) {
+                        is WriteOutcome.Failed -> {
+                            Text(stringResource(R.string.write_failed, outcome.reason), color = Palette.danger, fontSize = 17.sp)
+                        }
+
+                        else -> {
+                            Box(Modifier.size(14.dp).clip(RoundedCornerShape(7.dp)).background(Palette.accentStrong))
+                            Spacer(Modifier.width(12.dp))
+                            Text(stringResource(R.string.waiting_for_sticker), color = Palette.text, fontSize = 20.sp)
+                        }
+                    }
+                }
                 if (log != null) {
                     Box(Modifier.weight(1f).padding(top = 8.dp)) { LogPanel(log) }
                 } else {
                     Spacer(Modifier.weight(1f))
                 }
-                Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
-                    when (outcome) {
-                        is WriteOutcome.Written -> {
-                            Text(
-                                "✓ „${outcome.record.label}“ · ${outcome.tag}",
-                                color = Palette.accentStrong,
-                                fontSize = 17.sp,
-                                fontWeight = FontWeight.SemiBold,
-                            )
-                        }
-
-                        is WriteOutcome.Failed -> {
-                            Text(stringResource(R.string.write_failed, outcome.reason), color = Palette.danger, fontSize = 15.sp)
-                        }
-
-                        else -> {
-                            Box(Modifier.size(12.dp).clip(RoundedCornerShape(6.dp)).background(Palette.accentStrong))
-                            Spacer(Modifier.width(10.dp))
-                            Text(stringResource(R.string.waiting_for_sticker), color = Palette.textDim, fontSize = 17.sp)
-                        }
-                    }
+                if (outcome is WriteOutcome.Written) {
+                    Text(
+                        "✓ „${outcome.record.label}“ · ${outcome.tag}",
+                        color = Palette.accentStrong,
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        modifier = Modifier.testTag("written"),
+                    )
                 }
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
-                    TextButton(onClick = onBack) { Text(stringResource(R.string.back), maxLines = 1) }
                     TextButton(onClick = onSkip, modifier = Modifier.testTag("skip")) { Text(stringResource(R.string.skip), maxLines = 1) }
                 }
             }
@@ -164,7 +160,7 @@ fun WriteScreen(
                 progress = { w.written.size.toFloat() / w.total },
                 color = Palette.accentStrong,
                 trackColor = Palette.surface2,
-                modifier = Modifier.fillMaxWidth().padding(top = 10.dp).height(3.dp),
+                modifier = Modifier.fillMaxWidth().padding(top = 6.dp).height(3.dp),
             )
         }
     }
@@ -174,6 +170,7 @@ fun WriteScreen(
 private fun WordList(
     w: Writing,
     onGoTo: (Int) -> Unit,
+    onSettings: () -> Unit,
     modifier: Modifier,
 ) {
     val list = rememberLazyListState()
@@ -226,7 +223,10 @@ private fun WordList(
                 }
             }
         }
-        Text("${w.written.size} ✓", color = Palette.textFaint, fontSize = 12.sp, modifier = Modifier.padding(top = 6.dp))
+        // The gear at the foot of the list: the one way to the settings.
+        TextButton(onClick = onSettings, modifier = Modifier.padding(top = 4.dp).testTag("settings")) {
+            Text("⚙  " + stringResource(R.string.settings), color = Palette.textFaint, fontSize = 13.sp, maxLines = 1)
+        }
     }
 }
 

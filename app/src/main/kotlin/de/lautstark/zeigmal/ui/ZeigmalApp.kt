@@ -41,6 +41,7 @@ fun ZeigmalApp(model: ZeigmalViewModel) {
                         videoUrl = model.station::videoUrl,
                         cardImageUrl = model.station::cardImageUrl,
                         onFirstFrame = model.station::onFirstFrame,
+                        onLooped = model.station::onLooped,
                         onEnded = model.station::onPlaybackEnded,
                         onFailed = model.station::onPlaybackFailed,
                     )
