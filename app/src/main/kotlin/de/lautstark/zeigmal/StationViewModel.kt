@@ -1,11 +1,14 @@
 package de.lautstark.zeigmal
 
 import android.app.Application
+import android.os.Handler
+import android.os.Looper
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import de.lautstark.zeigmal.cardset.KartensatzDirectory
 import de.lautstark.zeigmal.cardset.Loaded
 import de.lautstark.zeigmal.cardset.TagId
+import de.lautstark.zeigmal.nfc.Presence
 import de.lautstark.zeigmal.nfc.TagEvent
 import de.lautstark.zeigmal.station.Station
 import de.lautstark.zeigmal.station.StationEvent
@@ -49,6 +52,18 @@ class StationViewModel(
 
     private var station = Station { null }
 
+    private val main = Handler(Looper.getMainLooper())
+    private val presence =
+        Presence(
+            holdMillis = HOLD_MILLIS,
+            schedule = { delay, action ->
+                val runnable = Runnable(action)
+                main.postDelayed(runnable, delay)
+                Presence.Cancel { main.removeCallbacks(runnable) }
+            },
+            onEvent = ::onCard,
+        )
+
     fun reload() {
         viewModelScope.launch {
             val loaded = withContext(Dispatchers.IO) { KartensatzDirectory.load(directory) }
@@ -73,15 +88,31 @@ class StationViewModel(
         }
     }
 
+    /** Raw from the reader: logged as it comes, then filtered by [Presence]. */
     fun onTag(event: TagEvent) {
         when (event) {
             is TagEvent.Seen -> {
-                log("seen ${event.tag} ${event.technologies.joinToString(",")}")
+                log("reader: seen ${event.tag} ${event.technologies.joinToString(",")}")
+                presence.seen(event)
+            }
+
+            is TagEvent.Gone -> {
+                log("reader: gone ${event.tag}")
+                presence.gone(event)
+            }
+        }
+    }
+
+    /** After the debounce: what the station acts on. */
+    private fun onCard(event: TagEvent) {
+        when (event) {
+            is TagEvent.Seen -> {
+                log("card in ${event.tag}")
                 apply(StationEvent.CardSeen(event.tag))
             }
 
             is TagEvent.Gone -> {
-                log("gone ${event.tag}")
+                log("card out ${event.tag}")
                 apply(StationEvent.CardGone(event.tag))
             }
         }
@@ -106,12 +137,17 @@ class StationViewModel(
         _state.update { it.copy(diagnostics = !it.diagnostics) }
     }
 
+    // Everything here runs on the main thread, so reading the state, deciding
+    // the next one and writing it back is one uninterrupted step. The log line
+    // is written outside the update on purpose: `update` retries until its
+    // compare-and-set wins, and a log written from inside it changes the state
+    // it is comparing against, so it never wins. That was an ANR on the first
+    // tag the Galaxy A51 ever saw (2026-09-13).
     private fun apply(event: StationEvent) {
-        _state.update { s ->
-            val next = station.next(s.station, event)
-            if (next != s.station) log("→ ${describe(next)}")
-            s.copy(station = next)
-        }
+        val current = _state.value.station
+        val next = station.next(current, event)
+        if (next != current) log("→ ${describe(next)}")
+        _state.update { it.copy(station = next) }
     }
 
     private fun describe(state: StationState): String =
@@ -137,6 +173,11 @@ class StationViewModel(
     private companion object {
         const val KARTENSATZ_DIR = "kartensatz"
         const val LOG_LINES = 200
+
+        // How long a card may be unseen before it counts as gone. The A51 loses a
+        // resting card for ~80 ms three times a second; a second is far above
+        // that and still feels immediate for "card out → ready".
+        const val HOLD_MILLIS = 1000L
     }
 }
 

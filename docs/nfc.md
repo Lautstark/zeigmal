@@ -27,6 +27,16 @@ Reader mode, owned by the foreground activity (`NfcReader.kt`):
 `CardSeen` is what the product is built on. `CardGone` is logged and, today,
 changes nothing about a running video (ADR 0003, `Station.kt`).
 
+**Measured on the Galaxy A51, 2026-09-13:** Android does not hold a resting
+sticker. It reports it seen, gone about 210 ms later, and seen again about 80
+ms after that, three times a second for as long as the card lies there; the
+presence check fails before the card has moved. So the reader's events go
+through `Presence.kt` first: a card is present from its first `seen` until it
+has been unseen for a full second, a `seen` inside that window is nothing, and
+another card ends the first at once. The station sees one `card in` and one
+`card out` about a second after the real removal, which is what the design
+wanted from the start.
+
 ## What is expected, and has to be checked
 
 | | expectation | to verify |

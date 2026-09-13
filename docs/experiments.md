@@ -12,10 +12,10 @@ instrument.
 
 ## NFC on the Galaxy A51
 
-| id | what has to be true | how you would know / why it matters | 2026-__-__ |
+| id | what has to be true | how you would know / why it matters | 2026-09-13 |
 |---|---|---|---|
-| E1 | A bare NTAG213 held to the back is seen once, with its 7-byte UID and `NfcA` in the technology list | one `seen` line per touch; UID matches the vendor's if printed; no duplicate UIDs across the batch of stickers | ⬜ not tested |
-| E2 | A card left in place produces no second `seen`; lifting it produces `gone` within about a second | the log after 60 s of resting shows one `seen`; the `gone` timestamp minus the lift moment; repeat 10× | ⬜ not tested |
+| E1 | A bare NTAG213 held to the back is seen once, with its 7-byte UID and `NfcA` in the technology list | one `seen` line per touch; UID matches the vendor's if printed; no duplicate UIDs across the batch of stickers | ✅ **yes.** UID `04:c5:d4:a8:8d:26:81`, technologies `NfcA, MifareUltralight`, on the SM-A515F, Android 13. Batch not yet checked for duplicates. |
+| E2 | A card left in place produces no second `seen`; lifting it produces `gone` within about a second | the log after 60 s of resting shows one `seen`; the `gone` timestamp minus the lift moment; repeat 10× | ⚠️ **not from Android, yes after the debounce.** The A51 reports a resting sticker `seen`, `gone` ~210 ms later, `seen` again ~80 ms after that, three times a second for as long as it lies there (`NfcService: TAG Result 10 … Tag lost, restarting polling loop`). `Presence.kt` holds a card for 1 s past the last reader `gone`; measured: one `card in`, `card out` 1.03 s after the last reader event. Not yet repeated 10×, not yet 60 s. |
 | E3 | Swapping A for B gives `seen B` within 500 ms of B arriving, with or without a `gone A` before it | timestamps; try fast (under 300 ms) and slow swaps; try B arriving while A is still half in | ⬜ not tested |
 | E4 | The reliable read area is found and drawn | a 10 mm grid on a paper taped to the back; mark every cell where 5 of 5 touches read; the centre and the radius go into docs/hardware.md as [M] | ⬜ not tested |
 | E5 | The sticker still reads through card + laminate + 1, 2, 3 mm PLA and PETG at the coil centre | 10 of 10 at each thickness; note the thickness at which it first fails and how far off centre each thickness still reads | ⬜ not tested |
@@ -27,7 +27,7 @@ instrument.
 
 | id | what has to be true | how you would know | 2026-__-__ |
 |---|---|---|---|
-| S1 | A known card starts its video within 300 ms of `seen` | the `→ playing` line follows `seen` at once and the first frame is visible; measure with a phone camera at 240 fps if it feels slow | ⬜ not tested |
+| S1 | A known card starts its video within 300 ms of `seen` | the `→ playing` line follows `seen` at once and the first frame is visible; measure with a phone camera at 240 fps if it feels slow | ✅ plays; the delay not yet measured. First tag ever also found an ANR: a log written inside the state update looped forever (fixed the same hour). |
 | S2 | `speech: external` plays the word with the video; `video` does not add one; `none` is silent | the three example entries, by ear | ⬜ not tested |
 | S3 | Ten swaps in a row never leave a black screen or a frozen last frame | the end of each video reaches `→ idle`; a swap mid-video shows the new video's first frame, no flash of the old one | ⬜ not tested |
 | S4 | The screen never sleeps with the app in front, over an hour on power | it is still lit | ⬜ not tested |
