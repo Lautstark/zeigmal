@@ -1,20 +1,19 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-  Two permissions' worth of manifest, and one of them is NFC.
+  NFC, and INTERNET.
 
-  There is no INTERNET permission, and there is no reason for one: the
-  Kartensatz arrives over a cable into this app's own external files directory,
-  nothing here fetches anything, and nothing here can send anything. That is the
-  structural half of the licensing rule the family calls SPEC.md 5.2 — a
-  non-redistributable set must have no path off the device — and it is cheaper
-  to keep than to argue back into place later, which is what vorlaut-app had to
-  do after adding a LAN receiver. Adding the permission is a decision, and
-  docs/media-import.md is where it would be taken.
+  INTERNET is for one purpose: a card names a provider and a ref on its own
+  sticker, and the clip is played from a link the provider hands out when the
+  card comes in. Nothing is written to disk. The only outbound requests are the
+  three the provider's own player makes (login, sign, link); core's
+  SignDigitalProvider is the one place a URL is built, and nothing here uploads
+  anything. See docs/architecture.md.
 -->
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
 
     <uses-permission android:name="android.permission.NFC" />
+    <uses-permission android:name="android.permission.INTERNET" />
     <!-- Required, and meant: a station without NFC is a black screen. -->
     <uses-feature
         android:name="android.hardware.nfc"

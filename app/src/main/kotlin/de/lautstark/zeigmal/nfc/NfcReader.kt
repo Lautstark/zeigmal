@@ -1,42 +1,64 @@
 package de.lautstark.zeigmal.nfc
 
 import android.app.Activity
+import android.nfc.NdefMessage
+import android.nfc.NdefRecord
 import android.nfc.NfcAdapter
 import android.nfc.Tag
+import android.nfc.tech.Ndef
+import android.nfc.tech.NdefFormatable
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
-import de.lautstark.zeigmal.cardset.TagId
+import de.lautstark.zeigmal.core.CardRecord
+import de.lautstark.zeigmal.core.TagEvent
+import de.lautstark.zeigmal.core.TagId
+import java.io.IOException
 
-sealed interface TagEvent {
-    data class Seen(
+/** What writing a sticker came to. */
+sealed interface WriteOutcome {
+    data class Written(
         val tag: TagId,
-        val technologies: List<String>,
-    ) : TagEvent
+        val record: CardRecord,
+    ) : WriteOutcome
 
-    data class Gone(
+    /** The sticker already carries a record; nothing was written. The adult decides. */
+    data class AlreadyWritten(
         val tag: TagId,
-    ) : TagEvent
+        val record: CardRecord,
+    ) : WriteOutcome
+
+    data class Failed(
+        val tag: TagId,
+        val reason: String,
+    ) : WriteOutcome
 }
 
 /**
  * Reader mode, and nothing else. The foreground activity owns the NFC hardware
- * while it is on screen: no intent dispatch, no NDEF, no system sound, no other
- * app getting the tag first — which is what an appliance needs, and what a phone
- * that also has Google Pay on it would otherwise argue about.
+ * while it is on screen: no intent dispatch, no system sound, no other app
+ * getting the tag first — which is what an appliance needs.
  *
- * Removal comes from [NfcAdapter.ignore]: once a tag has been seen it is ignored
- * for as long as it stays in the field, and the listener fires when the presence
- * check says it left. Whether that is prompt and reliable on the Galaxy A51 is
- * experiment E2 in docs/experiments.md — this class reports it, the docs decide
- * whether to trust it.
+ * Reading: every discovered tag is read for our NDEF record, and reported as
+ * seen with or without one. Removal comes from [NfcAdapter.ignore]: the tag is
+ * ignored while it stays in the field and the listener fires when the presence
+ * check says it left — which on the Galaxy A51 happens every 200 ms while the
+ * card lies still, so [de.lautstark.zeigmal.core.Presence] holds it.
+ *
+ * Writing: while [pendingWrite] is set, a discovered tag is written instead of
+ * reported, unless it already carries a record and [overwrite] is false.
  */
 class NfcReader(
     private val activity: Activity,
-    private val onEvent: (TagEvent) -> Unit,
+    private val onTag: (TagEvent) -> Unit,
+    private val onWrite: (WriteOutcome) -> Unit,
 ) {
     private val adapter: NfcAdapter? = NfcAdapter.getDefaultAdapter(activity)
     private val main = Handler(Looper.getMainLooper())
+
+    @Volatile var pendingWrite: CardRecord? = null
+
+    @Volatile var overwrite: Boolean = false
 
     val available: Boolean get() = adapter != null
     val enabled: Boolean get() = adapter?.isEnabled == true
@@ -56,26 +78,78 @@ class NfcReader(
         tag: Tag,
     ) {
         val id = TagId.of(tag.id)
+        val toWrite = pendingWrite
+        if (toWrite != null) {
+            val outcome = write(tag, id, toWrite)
+            main.post { onWrite(outcome) }
+            if (outcome is WriteOutcome.Written) pendingWrite = null
+            return
+        }
         val technologies = tag.techList.map { it.substringAfterLast('.') }
-        main.post { onEvent(TagEvent.Seen(id, technologies)) }
-        nfc.ignore(tag, DEBOUNCE_MS, { main.post { onEvent(TagEvent.Gone(id)) } }, main)
+        val record = read(tag)
+        main.post { onTag(TagEvent.Seen(id, record, technologies)) }
+        nfc.ignore(tag, DEBOUNCE_MS, { main.post { onTag(TagEvent.Gone(id)) } }, main)
+    }
+
+    /** Our record from the tag, or null: no NDEF, no record of ours, or a blink mid-read. */
+    private fun read(tag: Tag): CardRecord? {
+        val ndef = Ndef.get(tag) ?: return null
+        return try {
+            ndef.connect()
+            val message = ndef.cachedNdefMessage ?: ndef.ndefMessage ?: return null
+            message.records
+                .firstOrNull { it.tnf == NdefRecord.TNF_EXTERNAL_TYPE && String(it.type, Charsets.US_ASCII) == EXTERNAL_TYPE }
+                ?.payload
+                ?.let(CardRecord::decode)
+        } catch (e: IOException) {
+            null
+        } finally {
+            runCatching { ndef.close() }
+        }
+    }
+
+    private fun write(
+        tag: Tag,
+        id: TagId,
+        record: CardRecord,
+    ): WriteOutcome {
+        val message = NdefMessage(NdefRecord.createExternal(CardRecord.NDEF_DOMAIN, CardRecord.NDEF_TYPE, record.encode()))
+        val ndef = Ndef.get(tag)
+        try {
+            if (ndef != null) {
+                ndef.connect()
+                if (!overwrite) {
+                    val existing = read(tag)
+                    if (existing != null) return WriteOutcome.AlreadyWritten(id, existing)
+                    if (!ndef.isConnected) ndef.connect()
+                }
+                if (!ndef.isWritable) return WriteOutcome.Failed(id, "Aufkleber ist schreibgeschützt")
+                if (ndef.maxSize < message.byteArrayLength) return WriteOutcome.Failed(id, "Aufkleber zu klein (${ndef.maxSize} Bytes)")
+                ndef.writeNdefMessage(message)
+                return WriteOutcome.Written(id, record)
+            }
+            val formatable = NdefFormatable.get(tag) ?: return WriteOutcome.Failed(id, "Aufkleber kann kein NDEF")
+            formatable.connect()
+            formatable.format(message)
+            return WriteOutcome.Written(id, record)
+        } catch (e: Exception) {
+            return WriteOutcome.Failed(id, e.message ?: e.javaClass.simpleName)
+        } finally {
+            runCatching { ndef?.close() }
+        }
     }
 
     private companion object {
-        // Every tag technology, so the diagnostics screen can say what a sticker
-        // is; SKIP_NDEF_CHECK because the UID is the key and reading NDEF costs a
-        // round trip per card; NO_PLATFORM_SOUNDS because the video is the sound.
+        const val EXTERNAL_TYPE = "${CardRecord.NDEF_DOMAIN}:${CardRecord.NDEF_TYPE}"
+
+        // Every technology, so the log can say what a sticker is; no platform
+        // sounds because the video is the sound. NDEF is read by hand above, so
+        // the platform's own NDEF check is skipped.
         const val FLAGS =
             NfcAdapter.FLAG_READER_NFC_A or NfcAdapter.FLAG_READER_NFC_B or
                 NfcAdapter.FLAG_READER_NFC_F or NfcAdapter.FLAG_READER_NFC_V or
                 NfcAdapter.FLAG_READER_SKIP_NDEF_CHECK or NfcAdapter.FLAG_READER_NO_PLATFORM_SOUNDS
-
-        // How often Android checks whether an ignored tag is still there. Lower is
-        // a faster "gone" and more radio traffic; experiment E2 tunes it.
         const val PRESENCE_CHECK_MS = 250
-
-        // How long a tag must be absent before it counts as gone. A single missed
-        // poll must never arrive as a removal — wochenwerk's rule, kept here.
         const val DEBOUNCE_MS = 500
     }
 }

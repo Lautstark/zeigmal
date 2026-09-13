@@ -1,14 +1,29 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- A card standing in a slot. A placeholder until the product has a mark; see docs/mvp-plan.md. -->
+<!-- The mark, inset into the adaptive icon's safe zone (the middle 66 of 108 dp). -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="108dp"
     android:height="108dp"
-    android:viewportWidth="108"
-    android:viewportHeight="108">
-    <path
-        android:fillColor="#FFFFFF"
-        android:pathData="M40,22h28a4,4 0 0 1 4,4v40h-36v-40a4,4 0 0 1 4,-4z" />
-    <path
-        android:fillColor="#9E9E9E"
-        android:pathData="M24,66h60v14a4,4 0 0 1 -4,4h-52a4,4 0 0 1 -4,-4z" />
+    android:viewportWidth="512"
+    android:viewportHeight="512">
+    <group
+        android:scaleX="0.62"
+        android:scaleY="0.62"
+        android:pivotX="256"
+        android:pivotY="256"
+        android:translateY="-12">
+        <path
+            android:fillColor="#00A88E"
+            android:pathData="M128,76H384Q436,76 436,128V272Q436,324 384,324H314L256,408L198,324H128Q76,324 76,272V128Q76,76 128,76Z" />
+        <path
+            android:fillColor="#FFFFFF"
+            android:pathData="M200,178m-22,0a22,22 0,1 1,44 0a22,22 0,1 1,-44 0" />
+        <path
+            android:fillColor="#FFFFFF"
+            android:pathData="M312,178m-22,0a22,22 0,1 1,44 0a22,22 0,1 1,-44 0" />
+        <path
+            android:pathData="M190,226C190,288 322,288 322,226"
+            android:strokeColor="#FFFFFF"
+            android:strokeLineCap="round"
+            android:strokeWidth="26" />
+    </group>
 </vector>

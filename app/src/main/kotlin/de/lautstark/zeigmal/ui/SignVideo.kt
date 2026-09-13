@@ -1,6 +1,5 @@
 package de.lautstark.zeigmal.ui
 
-import android.net.Uri
 import android.view.LayoutInflater
 import android.widget.FrameLayout
 import androidx.compose.animation.core.animateFloatAsState
@@ -17,46 +16,36 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.viewinterop.AndroidView
+import androidx.core.net.toUri
 import androidx.media3.common.MediaItem
 import androidx.media3.common.Player
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.ui.PlayerView
 import de.lautstark.zeigmal.R
-import java.io.File
+import de.lautstark.zeigmal.core.Station
+import kotlinx.coroutines.delay
 
 /**
- * One sign video, and the spoken word beside it when the manifest says so.
- *
- * The view is on screen from the start but invisible until the first frame has
- * actually rendered — the card face underneath is what the child sees until
- * then — and it fades in over a few frames. The spoken word starts with the
- * first frame too, so the word and the sign begin together whatever the disk
- * or decoder needed.
+ * One round of one sign video, from a link [resolve] hands back. Invisible
+ * until the first frame has rendered — the ring is what shows until then —
+ * and faded in over a few frames.
  *
  * The order inside the effect is the part that matters, learnt the hard way in
- * knopfpost: build the player without preparing it, attach the listener, then
- * prepare and play. A two-second file off local storage can reach STATE_ENDED
- * before a listener attached afterwards ever hears about it, and a station that
- * misses that stays on the last frame forever.
+ * knopfpost: attach the listener, then prepare and play. A short clip can reach
+ * STATE_ENDED before a listener attached afterwards ever hears about it, and a
+ * station that misses that stays on the last frame forever.
  */
 @Composable
 fun SignVideo(
-    video: File,
-    audio: File?,
-    run: Int,
+    key: Any,
+    resolve: suspend () -> String,
     visible: Boolean,
     onFirstFrame: () -> Unit,
     onEnded: () -> Unit,
+    onFailed: (String) -> Unit,
 ) {
     val context = LocalContext.current
-    val player =
-        remember(video, run) {
-            ExoPlayer.Builder(context).build().apply { setMediaItem(MediaItem.fromUri(Uri.fromFile(video))) }
-        }
-    val speech =
-        remember(audio, run) {
-            audio?.let { ExoPlayer.Builder(context).build().apply { setMediaItem(MediaItem.fromUri(Uri.fromFile(it))) } }
-        }
+    val player = remember(key) { ExoPlayer.Builder(context).build() }
     var firstFrame by remember(player) { mutableStateOf(false) }
     var ended by remember(player) { mutableStateOf(false) }
 
@@ -65,27 +54,44 @@ fun SignVideo(
             object : Player.Listener {
                 override fun onRenderedFirstFrame() {
                     firstFrame = true
-                    speech?.playWhenReady = true
                 }
 
                 override fun onPlaybackStateChanged(playbackState: Int) {
                     if (playbackState == Player.STATE_ENDED) ended = true
                 }
+
+                override fun onPlayerError(error: androidx.media3.common.PlaybackException) {
+                    onFailed(error.errorCodeName)
+                }
             }
         player.addListener(listener)
-        speech?.prepare()
-        player.prepare()
-        player.playWhenReady = true
         onDispose {
             player.removeListener(listener)
             player.release()
-            speech?.release()
         }
     }
+    LaunchedEffect(player) {
+        val url =
+            try {
+                resolve()
+            } catch (e: Exception) {
+                onFailed(e.message ?: e.javaClass.simpleName)
+                return@LaunchedEffect
+            }
+        player.setMediaItem(MediaItem.fromUri(url.toUri()))
+        player.prepare()
+        player.playWhenReady = true
+    }
     LaunchedEffect(firstFrame) { if (firstFrame) onFirstFrame() }
-    LaunchedEffect(ended) { if (ended) onEnded() }
+    LaunchedEffect(ended) {
+        if (ended) {
+            // The ring between two rounds, so "again" reads as again.
+            delay(Station.PAUSE_BETWEEN_ROUNDS_MILLIS)
+            onEnded()
+        }
+    }
 
-    val alpha by animateFloatAsState(if (visible) 1f else 0f, tween(FADE_MILLIS), label = "video")
+    val alpha by animateFloatAsState(if (visible && !ended) 1f else 0f, tween(FADE_MILLIS), label = "video")
     AndroidView(
         modifier = Modifier.fillMaxSize().graphicsLayer { this.alpha = alpha },
         factory = { ctx -> LayoutInflater.from(ctx).inflate(R.layout.view_sign_video, FrameLayout(ctx), false) as PlayerView },

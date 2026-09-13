@@ -47,7 +47,7 @@ android {
 }
 
 dependencies {
-    implementation(project(":cardset"))
+    implementation(project(":core"))
 
     implementation(platform(libs.compose.bom))
     implementation(libs.activity.compose)
@@ -57,6 +57,9 @@ dependencies {
     implementation(libs.coroutines.android)
     implementation(libs.lifecycle.viewmodel.compose)
     implementation(libs.media3.exoplayer)
+    implementation(libs.coil.compose)
+    implementation(libs.coil.okhttp)
+    implementation(libs.okhttp)
     implementation(libs.media3.ui)
 
     testImplementation(libs.junit)

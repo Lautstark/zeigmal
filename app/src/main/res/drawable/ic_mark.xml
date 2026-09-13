@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  The family's speech bubble - the same path every Lautstark product draws -
+  filled with zeigmal's accent #00A88E. Eyes and smile are plain white so the
+  mark survives any ground. Geometry from Lautstark/design, docs/design.md 4.1.
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="512"
+    android:viewportHeight="512">
+    <path
+        android:fillColor="#00A88E"
+        android:pathData="M128,76H384Q436,76 436,128V272Q436,324 384,324H314L256,408L198,324H128Q76,324 76,272V128Q76,76 128,76Z" />
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M200,178m-22,0a22,22 0,1 1,44 0a22,22 0,1 1,-44 0" />
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M312,178m-22,0a22,22 0,1 1,44 0a22,22 0,1 1,-44 0" />
+    <path
+        android:pathData="M190,226C190,288 322,288 322,226"
+        android:strokeColor="#FFFFFF"
+        android:strokeLineCap="round"
+        android:strokeWidth="26" />
+</vector>

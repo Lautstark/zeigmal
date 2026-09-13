@@ -6,16 +6,26 @@
 -->
 <resources xmlns:tools="http://schemas.android.com/tools">
     <string name="app_name" translatable="false">Zeigmal</string>
-    <string name="idle_hint">Karte rein. Gebärde sehen.</string>
-    <string name="unknown_card">Diese Karte kenne ich noch nicht.</string>
-    <string name="nfc_missing">Dieses Gerät hat kein NFC.</string>
-    <string name="nfc_off">NFC ist ausgeschaltet.</string>
-    <string name="nfc_ready">NFC bereit.</string>
-    <string name="no_kartensatz">Noch kein Kartensatz auf dem Gerät.</string>
-    <string name="kartensatz_refused">Der Kartensatz wurde nicht gelesen: %1$s</string>
-    <string name="no_cards">Der Kartensatz kennt noch keine Karten.</string>
-    <!-- Diagnostics, read by an adult; two counts in one line is fine there. -->
-    <string name="kartensatz_summary" tools:ignore="PluralsCandidate">%1$s: %2$d Einträge, %3$d Karten</string>
-    <string name="diagnostics">Diagnose</string>
-    <string name="close">Schließen</string>
+    <string name="login_title" translatable="false">SIGNdigital</string>
+    <string name="login_lead">Die Videos kommen aus deinem Abo. Die Anmeldung bleibt auf diesem Handy.</string>
+    <string name="signdigital_email">E-Mail</string>
+    <string name="signdigital_password">Passwort</string>
+    <string name="login">Anmelden</string>
+    <string name="login_failed">Anmeldung fehlgeschlagen. Stimmen E-Mail und Passwort, und ist das Handy im WLAN?</string>
+    <string name="logout">Abmelden</string>
+    <string name="log">Protokoll</string>
+    <string name="back">Zurück</string>
+    <string name="skip">Überspringen</string>
+    <string name="next">Weiter</string>
+    <string name="now">jetzt</string>
+    <string name="then">dann</string>
+    <string name="step_1">1. Diese Karte aus der Box nehmen.</string>
+    <string name="step_2">2. Aufkleber hinten auf die Karte, an die markierte Stelle.</string>
+    <string name="step_3">3. Karte hinten ans Handy halten, bis der Haken kommt.</string>
+    <string name="waiting_for_sticker">Warte auf den Aufkleber …</string>
+    <string name="write_failed">Schreiben fehlgeschlagen: %1$s</string>
+    <string name="sticker_already">Dieser Aufkleber ist schon „%1$s“</string>
+    <string name="sticker_already_hint">Gehört er auf die Karte „%1$s“? Sonst weiter mit dem nächsten Aufkleber.</string>
+    <string name="overwrite_as">Als „%1$s“ überschreiben</string>
+    <string name="card_not_found">Keine Karte dazu bei SIGNdigital gefunden.</string>
 </resources>

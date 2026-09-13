@@ -9,8 +9,10 @@ import androidx.activity.viewModels
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
+import androidx.lifecycle.lifecycleScope
 import de.lautstark.zeigmal.nfc.NfcReader
 import de.lautstark.zeigmal.ui.ZeigmalApp
+import kotlinx.coroutines.launch
 
 /**
  * The one activity. Landscape comes from the manifest; the screen stays on for
@@ -25,7 +27,22 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
-        reader = NfcReader(this) { event -> model.onTag(event) }
+        reader =
+            NfcReader(
+                this,
+                onTag = model::onTag,
+                onWrite = { outcome ->
+                    model.overwriteDone()
+                    model.onWrite(outcome)
+                },
+            )
+        // The reader writes whatever the writing mode has up, and reads otherwise.
+        lifecycleScope.launch {
+            model.state.collect { s ->
+                reader.pendingWrite = model.pendingRecord
+                reader.overwrite = model.overwriteNext
+            }
+        }
         setContent { ZeigmalApp(model) }
     }
 
@@ -34,7 +51,6 @@ class MainActivity : ComponentActivity() {
         hideSystemBars()
         model.nfcStatus(reader.available, reader.enabled)
         reader.start()
-        model.reload()
     }
 
     override fun onPause() {
