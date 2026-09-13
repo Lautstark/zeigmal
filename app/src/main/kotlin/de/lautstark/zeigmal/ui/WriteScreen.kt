@@ -121,7 +121,7 @@ fun WriteScreen(
                     fontSize = 52.sp,
                     fontWeight = FontWeight.SemiBold,
                     lineHeight = 56.sp,
-                    modifier = Modifier.padding(top = 8.dp),
+                    modifier = Modifier.padding(top = 8.dp).testTag("word"),
                 )
                 Text("signdigital / ${w.word.ref}", color = Palette.textFaint, fontSize = 13.sp, fontFamily = FontFamily.Monospace)
                 Column(Modifier.padding(top = 18.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {

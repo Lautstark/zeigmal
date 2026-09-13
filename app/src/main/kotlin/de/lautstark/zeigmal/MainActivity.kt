@@ -1,5 +1,6 @@
 package de.lautstark.zeigmal
 
+import android.os.Build
 import android.os.Bundle
 import android.view.WindowManager
 import androidx.activity.ComponentActivity
@@ -29,6 +30,16 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+        // A station shows itself over the lock screen and turns the screen on:
+        // after a reboot or a dark screen, the app is what is there, not a
+        // swipe-to-unlock nobody in the kitchen will do.
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O_MR1) {
+            setShowWhenLocked(true)
+            setTurnScreenOn(true)
+        } else {
+            @Suppress("DEPRECATION")
+            window.addFlags(WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED or WindowManager.LayoutParams.FLAG_TURN_SCREEN_ON)
+        }
         tags = Deps.tagSource(this)
         model.attach(tags)
         setContent { ZeigmalApp(model) }
