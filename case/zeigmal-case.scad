@@ -141,17 +141,16 @@ back_t  = 2.4;   // the slot's rear wall, the one the card leans on
    ===================================================================== */
 
 tilt       = 20.0;  // degrees back from vertical
-base_depth = 160.0; // front edge to back edge, on the table. A card standing
-                    // 80 mm proud is a lever; verify.py says what push at
-                    // its top tips the holder, and this is the number that
-                    // buys margin cheaply — the rear apron is a 3 mm slab
+base_depth = 110.0; // front edge to back edge, on the table. verify.py says
+                    // what sideways push at the card's top tips the holder;
+                    // 110 accepts a light one (ADR 0007) — the children push
+                    // cards in, they do not shove them
 rear_u     = 46.0;  // where the rear slope leaves the plate's back, up the plane
 slope_deg  = 50.0;  // the rear slope from the horizontal. Printed base down
                     // its underside is a 40 degree overhang; 45 is the limit
 foot_h     =  8.0;  // the phone's bottom edge this far above the floor slab —
                     // this is the frame's foot, and the screws bite into it
-front_margin = 35.0; // floor slab in front of the frame's foot: the front
-                     // apron, where the front feet go
+front_margin = 4.0;  // floor slab in front of the frame's foot
 rib_x      = [52.0, 108.0];  // two ribs under the plate, x from the phone's left end
 rib_t      = 2.4;
 

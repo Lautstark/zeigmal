@@ -58,8 +58,8 @@ uniform 2.4 mm wall, or a 1 mm window in it.
 child's right, the whole end open (speaker, microphone, jack too). The cable
 is plugged in when needed and not routed; nothing in the holder touches it.
 
-**F. Stability and safety.** Tilt 20°, base 160 mm deep with a thin apron at
-each end; `verify.py` says the push at the card's top that tips it, and the real thing gets pushed before it
+**F. Stability and safety.** Tilt 20°, base 110 mm deep; `verify.py` says the sideways push at
+the card's top that tips it and that pushing a card in does not, and the real thing gets pushed before it
 is trusted. The phone is captive under a frame screwed from underneath. No
 exposed electronics; the speaker and the microphone free; no gap a finger fits.
 

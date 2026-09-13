@@ -13,7 +13,7 @@ with them.
 
 | Part | What it does | Outer size |
 |---|---|---|
-| **Body** | the block that leans 20° back: a front apron, the plate with the card slot in its top, a 50° rear slope, a rear apron; hollow under the slope with two ribs | 164.3 × 160 × 82.4 mm |
+| **Body** | the block that leans 20° back: a front apron, the plate with the card slot in its top, a 50° rear slope, a rear apron; hollow under the slope with two ribs | 164.3 × 110 × 82.4 mm |
 | **Frame** | the picture frame over the phone, open at the port end; lip 2 mm over the screen, rails round three edges, a foot the screws bite into | 164.3 × 79 × 9.8 mm |
 
 Plus M2 × 10, two pieces, from underneath.
@@ -67,7 +67,7 @@ symbol is the child's own cue.
 
 | Setting | Value | Why |
 |---|---|---|
-| Printer | Ender 3 V2, 220 × 220 × 250 | the body is 164 × 160, flat on the bed |
+| Printer | Ender 3 V2, 220 × 220 × 250 | the body is 164 × 110, flat on the bed |
 | Nozzle | 0.4 mm | every wall is a whole multiple of it |
 | Layer height | 0.2 mm | the floor slab and the frame's face are whole multiples |
 | Perimeters | 3 | 2.4 mm walls are then solid |
@@ -201,15 +201,15 @@ refuses less than 0.8 mm there.
 
 ### Stability
 
-`verify.py` estimates the horizontal push at the card's top that tips the
-holder backwards and forwards, from masses it works out of the geometry
-(the plate at half density, the walls solid, the phone at 172 g). The base
-is 160 mm deep because of this and nothing else: the card standing 80 mm
-proud is a lever, and PLA is light. Push the real thing. If it still tips
-too easily, the hollow under the slope is where ballast goes — a strip of
-steel taped in, coins in a bag — before the base grows again. Four
-self-adhesive rubber feet at the corners of the aprons; they stop sliding,
-not tipping.
+`verify.py` estimates the sideways push at the card's top that tips the
+holder, from masses it works out of the geometry (the plate at half density,
+the walls solid, the phone at 172 g). It is a light push — about 1.5 N
+backwards, under 1 N forwards — because PLA is light and a card standing
+80 mm proud is a lever. The base stays 110 mm deep anyway (ADR 0007): the
+children push cards in, which does not tip it, and do not shove them. If that
+turns out wrong, the hollow under the slope is where ballast goes — a strip
+of steel taped in, coins in a bag — and `base_depth` is one number. Four
+self-adhesive rubber feet at the corners; they stop sliding, not tipping.
 
 ## The fit test
 

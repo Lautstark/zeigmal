@@ -57,11 +57,13 @@ off and NFC with it (docs/hardware.md). The frame's rail over it is hollowed by
 A different card family later is a different body, not a different cartridge
 — an evening of printing, once. The read path through the plate is the slot's
 whole front wall (`win_t`), not a window in it, so E5's answer changes one
-number and the plate's thickness follows. The base is 160 mm deep — two
-thin aprons in front of and behind the leaning block — because a card standing
-80 mm proud is a lever and PLA is light; `verify.py` says what push at the
-card's top tips it. If the real thing tips, the hollow under the slope is where
-ballast goes before the base grows.
+number and the plate's thickness follows. The base is 110 mm deep, and
+that accepts something: a card standing 80 mm proud is a lever, PLA is light,
+and `verify.py` shows that a sideways push of about 1.5 N at the card's top
+tips the holder. Pushing a card *in* does not, and that is what the children
+do; a base deep enough to shrug off a shove was drawn, 160 mm, and it was a
+giant plate on a kids' table for a case that does not happen. If it turns out
+to happen, ballast in the hollow under the slope comes before a deeper base.
 
 ## Not to be "fixed" later
 

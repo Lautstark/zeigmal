@@ -340,16 +340,21 @@ def compute(p, bed, phone_mass, fill):
            % (total, m_body, m_frame, m_phone))
     b.info(g, 'centre of mass', 'y = %.0f mm, %.0f mm in front of the back edge'
            % (y_cg, G('y_back') - y_cg))
-    b.check(g, 'push at the card top, backwards, tips at', tip_back_card, '>=', 2.0, unit='N',
-            note='deeper base_depth, or ballast under the hollow')
-    b.check(g, 'push at the phone top, backwards, tips at', tip_back_phone, '>=', 4.0, unit='N')
-    b.check(g, 'pull at the card top, forwards, tips at', tip_front_card, '>=', 1.5, unit='N',
-            note='more front_margin')
+    # Numbers, not gates: the base is 110 mm by decision (ADR 0007), which
+    # accepts that a sideways shove at the card's top tips the holder. What
+    # must still hold is that pushing a card IN does not.
+    b.info(g, 'push at the card top, backwards, tips at', '%.1f N' % tip_back_card)
+    b.info(g, 'push at the phone top, backwards, tips at', '%.1f N' % tip_back_phone)
+    b.info(g, 'pull at the card top, forwards, tips at', '%.1f N' % tip_front_card)
     # a card pushed in: mostly down the plane, a fifth of it backwards
-    push = 5.0
-    b.info(g, 'pushing a card in with %.0f N' % push,
-           '%.1f N backwards at %.0f mm - %s' % (push * G('s'), h_card,
-           'fine' if push * G('s') < tip_back_card else 'TIPS'))
+    # A card is pushed in along its own plane: the backward part of that
+    # push tips, the downward part presses the base onto the table in front
+    # of the back edge and rights it. The push at which the two moments meet:
+    y_top = py(G('slot_u0') + G('card_h'), -G('win_t') - channel)
+    tip_arm = G('s') * h_card / 1000 - G('c') * (G('y_back') - y_top) / 1000
+    push_tip = weight * back_lever / tip_arm if tip_arm > 0 else float('inf')
+    b.check(g, 'pushing a card in tips only above', push_tip, '>=', 5.0, unit='N',
+            note='a firm push on the card tips the holder')
 
     return b
 
