@@ -78,6 +78,7 @@ fun ZeigmalApp(model: ZeigmalViewModel) {
                     onOverwrite = model.adult::overwriteNext,
                     onLogout = model.adult::logout,
                     onToggleLog = model::toggleLog,
+                    onDone = model::leaveAdult,
                     log = if (showLog) log else null,
                 )
             }

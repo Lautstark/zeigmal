@@ -12,13 +12,11 @@
     <string name="next">Next</string>
     <string name="now">now</string>
     <string name="then">then</string>
-    <string name="step_1">1. Take this card out of the box.</string>
-    <string name="step_2">2. Sticker on the back of the card, at the marked spot.</string>
-    <string name="step_3">3. Hold the card to the back of the phone until the tick appears.</string>
     <string name="waiting_for_sticker">Waiting for the sticker …</string>
     <string name="write_failed">Writing failed: %1$s</string>
     <string name="sticker_already">This sticker is already “%1$s”</string>
     <string name="sticker_already_hint">Does it belong on the card “%1$s”? Otherwise continue with the next sticker.</string>
     <string name="overwrite_as">Overwrite as “%1$s”</string>
     <string name="card_not_found">No card for this at SIGNdigital.</string>
+    <string name="done">Done</string>
 </resources>

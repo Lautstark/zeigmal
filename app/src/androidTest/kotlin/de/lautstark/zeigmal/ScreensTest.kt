@@ -76,7 +76,7 @@ class ScreensTest {
         var skipped = false
         compose.setContent {
             WriteScreen(Writing(index = 3), onGoTo = {
-            }, onSkip = { skipped = true }, onBack = {}, onOverwrite = {}, onLogout = {}, onToggleLog = {}, log = null)
+            }, onSkip = { skipped = true }, onBack = {}, onOverwrite = {}, onLogout = {}, onToggleLog = {}, onDone = {}, log = null)
         }
         compose.onNodeWithTag("word").assertTextEquals("allein")
         // Off-screen in a portrait host; the action is what is under test, not the position.
@@ -96,6 +96,7 @@ class ScreensTest {
                 onOverwrite = { overwrite = true },
                 onLogout = {},
                 onToggleLog = {},
+                onDone = {},
                 log = null,
             )
         }

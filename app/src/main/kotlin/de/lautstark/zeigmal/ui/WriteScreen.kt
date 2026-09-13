@@ -58,6 +58,7 @@ fun WriteScreen(
     onOverwrite: () -> Unit,
     onLogout: () -> Unit,
     onToggleLog: () -> Unit,
+    onDone: () -> Unit,
     log: List<LogLine>?,
 ) {
     val w = writing
@@ -68,10 +69,10 @@ fun WriteScreen(
             .systemBarsPadding()
             .padding(horizontal = 22.dp, vertical = 18.dp)
             .testTag("write"),
-        horizontalArrangement = Arrangement.spacedBy(24.dp),
+        horizontalArrangement = Arrangement.spacedBy(18.dp),
     ) {
-        WordList(w, onGoTo, Modifier.width(210.dp).fillMaxHeight())
-        CardImage(w.cardImageUrl, w.lookupFailed, Modifier.fillMaxHeight().aspectRatio(2f / 3f))
+        WordList(w, onGoTo, Modifier.width(170.dp).fillMaxHeight())
+        CardImage(w.cardImageUrl, w.lookupFailed, Modifier.fillMaxHeight(0.92f).aspectRatio(2f / 3f))
         Column(Modifier.weight(1f).fillMaxHeight()) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Mark(Modifier.size(22.dp))
@@ -83,8 +84,11 @@ fun WriteScreen(
                     fontWeight = FontWeight.SemiBold,
                 )
                 Spacer(Modifier.weight(1f))
-                TextButton(onClick = onToggleLog) { Text(stringResource(R.string.log), color = Palette.textFaint) }
-                TextButton(onClick = onLogout) { Text(stringResource(R.string.logout), color = Palette.textFaint) }
+                TextButton(onClick = onToggleLog) { Text(stringResource(R.string.log), color = Palette.textFaint, maxLines = 1) }
+                TextButton(onClick = onLogout) { Text(stringResource(R.string.logout), color = Palette.textFaint, maxLines = 1) }
+                TextButton(onClick = onDone, modifier = Modifier.testTag("done")) {
+                    Text(stringResource(R.string.done), color = Palette.accentStrong, fontWeight = FontWeight.SemiBold, maxLines = 1)
+                }
             }
             val outcome = w.lastOutcome
             if (outcome is WriteOutcome.AlreadyWritten) {
@@ -123,15 +127,13 @@ fun WriteScreen(
                     lineHeight = 56.sp,
                     modifier = Modifier.padding(top = 8.dp).testTag("word"),
                 )
-                Text("signdigital / ${w.word.ref}", color = Palette.textFaint, fontSize = 13.sp, fontFamily = FontFamily.Monospace)
-                Column(Modifier.padding(top = 18.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                    Text(stringResource(R.string.step_1), color = Palette.textDim, fontSize = 17.sp)
-                    Text(stringResource(R.string.step_2), color = Palette.textDim, fontSize = 17.sp)
-                    Text(stringResource(R.string.step_3), color = Palette.textDim, fontSize = 17.sp)
+                Text("signdigital / ${w.word.ref}", color = Palette.textFaint, fontSize = 12.sp, fontFamily = FontFamily.Monospace)
+                if (log != null) {
+                    Box(Modifier.weight(1f).padding(top = 8.dp)) { LogPanel(log) }
+                } else {
+                    Spacer(Modifier.weight(1f))
                 }
-                Spacer(Modifier.weight(1f))
-                if (log != null) LogPanel(log)
-                Row(verticalAlignment = Alignment.CenterVertically) {
+                Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
                     when (outcome) {
                         is WriteOutcome.Written -> {
                             Text(
@@ -152,9 +154,10 @@ fun WriteScreen(
                             Text(stringResource(R.string.waiting_for_sticker), color = Palette.textDim, fontSize = 17.sp)
                         }
                     }
-                    Spacer(Modifier.weight(1f))
-                    TextButton(onClick = onBack) { Text(stringResource(R.string.back)) }
-                    TextButton(onClick = onSkip, modifier = Modifier.testTag("skip")) { Text(stringResource(R.string.skip)) }
+                }
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
+                    TextButton(onClick = onBack) { Text(stringResource(R.string.back), maxLines = 1) }
+                    TextButton(onClick = onSkip, modifier = Modifier.testTag("skip")) { Text(stringResource(R.string.skip), maxLines = 1) }
                 }
             }
             LinearProgressIndicator(

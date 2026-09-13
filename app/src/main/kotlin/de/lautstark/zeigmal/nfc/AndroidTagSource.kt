@@ -129,11 +129,15 @@ class AndroidTagSource(
         const val EXTERNAL_TYPE = "${CardRecord.NDEF_DOMAIN}:${CardRecord.NDEF_TYPE}"
 
         // Every technology, so the log can say what a sticker is; no platform
-        // sounds because the video is the sound; NDEF is read by hand.
+        // sounds because the video is the sound. The platform's NDEF check is
+        // NOT skipped: with FLAG_READER_SKIP_NDEF_CHECK a tag arrives without
+        // the Ndef technology at all, and neither reading our record nor
+        // writing one is possible through it (seen 2026-09-13, "Aufkleber
+        // kann kein NDEF").
         const val FLAGS =
             NfcAdapter.FLAG_READER_NFC_A or NfcAdapter.FLAG_READER_NFC_B or
                 NfcAdapter.FLAG_READER_NFC_F or NfcAdapter.FLAG_READER_NFC_V or
-                NfcAdapter.FLAG_READER_SKIP_NDEF_CHECK or NfcAdapter.FLAG_READER_NO_PLATFORM_SOUNDS
+                NfcAdapter.FLAG_READER_NO_PLATFORM_SOUNDS
         const val PRESENCE_CHECK_MS = 250
         const val DEBOUNCE_MS = 500
     }
