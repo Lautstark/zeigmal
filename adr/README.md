@@ -14,3 +14,4 @@ repository's own.
 | [0004](0004-a-native-android-app-in-kotlin-with-compose-and-media3.md) | A native Android app, in Kotlin with Compose and Media3 |
 | [0005](0005-who-speaks-is-written-in-the-manifest-never-read-off-the-video.md) | Who speaks is written in the manifest, never read off the video |
 | [0006](0006-content-arrives-in-a-directory-over-a-cable-and-nothing-leaves.md) | Content arrives in a directory over a cable, and nothing leaves |
+| [0007](0007-the-holder-is-a-leaning-body-with-the-slot-in-it-and-a-frame-screwed-on-from-underneath.md) | The holder is a leaning body with the slot in it, and a frame screwed on from underneath |

@@ -1,8 +1,10 @@
 # Enclosure
 
-Nothing here is a drawing. This is the list that has to be ticked before any
-CAD, in the order the measurements depend on each other, plus what the family's
-two existing printed cases already settle.
+The drawing exists: `case/zeigmal-case.scad`, with `case/verify.py` to
+recompute it and `case/building.md` to print it. ADR 0007 says what shape it
+is and why. This file is still the list that has to be ticked before the body
+is printed, in the order the measurements depend on each other — the model is
+parametric, and every row below is a number in it that is still `[A]`.
 
 ## The shape, in words
 
@@ -30,7 +32,7 @@ diagnostics screen open and mark the area where `seen` appears every time. The
 centre of that area is the one coordinate the slot is designed around. Record
 it as an offset from the phone's top edge and from its long centre line.
 
-**C. Material (E5).** Print three flat coupons, 1 / 2 / 3 mm, PLA and PETG.
+**C. Material (E5).** Print three flat coupons, 1 / 2 / 3 mm, PLA (`part="coupons"`).
 Card + sticker + coupon between the phone and the sticker; note the largest
 thickness that still reads every time at the coil centre, and how far off
 centre it still reads through each. That decides the wall at the coil: a
@@ -52,18 +54,18 @@ uniform 2.4 mm wall, or a 1 mm window in it.
 - the sticker's position on the card follows from this and is then
   standardised for all cards
 
-**E. Charging.** Which long side the port ends up on; cable bend radius; a
-right-angle USB-C cable is likely; the exit is at the back or the side, never
-where a child pulls. Whether the holder can charge with the cable never
-unplugged.
+**E. Charging.** The port is on a *short* side in landscape and faces the
+child's right, the whole end open (speaker, microphone, jack too). The cable
+is plugged in when needed and not routed; nothing in the holder touches it.
 
-**F. Stability and safety.** Tilt angle, base depth, rubber feet, tip
-resistance when a card is pushed in from the front; no exposed electronics; the
-speaker and the microphone free; no gap a finger fits.
+**F. Stability and safety.** Tilt 20°, base 160 mm deep with a thin apron at
+each end; `verify.py` says the push at the card's top that tips it, and the real thing gets pushed before it
+is trusted. The phone is captive under a frame screwed from underneath. No
+exposed electronics; the speaker and the microphone free; no gap a finger fits.
 
-**G. Printing.** FDM, 0.4 mm nozzle, 0.2 mm layers, 3 perimeters, walls a
-multiple of 0.4 mm (2.4 mm outer, as both existing cases), PLA or PETG, no
-ABS near a small child, no supports if the slot prints upright.
+**G. Printing.** Ender 3 V2, 0.4 mm nozzle, 0.2 mm layers, 3 perimeters,
+walls a multiple of 0.4 mm (2.4 mm, as both existing cases), PLA — the only
+filament there is — no supports: the body on its base, the frame on its face.
 
 ## What the existing cases already settle
 
@@ -78,5 +80,7 @@ ABS near a small child, no supports if the slot prints upright.
 
 ## Print a fit test before a holder
 
-One slot and one phone cradle, nothing else. `card-case` and the talker case
-both did this; it is the cheapest print in the project.
+`part="fit-test"`: the slot and one end of the body, standing at the real
+tilt, about an hour. `part="frame-corner"`: the frame's bottom-left corner
+with its screw hole. `card-case` and the talker case both did this; it is the
+cheapest print in the project. `case/building.md` says what to try on it.

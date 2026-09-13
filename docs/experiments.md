@@ -18,7 +18,7 @@ instrument.
 | E2 | A card left in place produces no second `seen`; lifting it produces `gone` within about a second | the log after 60 s of resting shows one `seen`; the `gone` timestamp minus the lift moment; repeat 10× | ⚠️ **not from Android, yes after the debounce.** The A51 reports a resting sticker `seen`, `gone` ~210 ms later, `seen` again ~80 ms after that, three times a second for as long as it lies there (`NfcService: TAG Result 10 … Tag lost, restarting polling loop`). `Presence.kt` holds a card for 1 s past the last reader `gone`; measured: one `card in`, `card out` 1.03 s after the last reader event. Not yet repeated 10×, not yet 60 s. |
 | E3 | Swapping A for B gives `seen B` within 500 ms of B arriving, with or without a `gone A` before it | timestamps; try fast (under 300 ms) and slow swaps; try B arriving while A is still half in | ⬜ not tested |
 | E4 | The reliable read area is found and drawn | a 10 mm grid on a paper taped to the back; mark every cell where 5 of 5 touches read; the centre and the radius go into docs/hardware.md as [M] | ⬜ not tested |
-| E5 | The sticker still reads through card + laminate + 1, 2, 3 mm PLA and PETG at the coil centre | 10 of 10 at each thickness; note the thickness at which it first fails and how far off centre each thickness still reads | ⬜ not tested |
+| E5 | The sticker still reads through card + laminate + 1, 2, 3 mm PLA at the coil centre | 10 of 10 at each thickness; note the thickness at which it first fails and how far off centre each thickness still reads | ⬜ not tested |
 | E6 | (optional) an NDEF-formatted sticker and a blank one behave the same with `SKIP_NDEF_CHECK` | same log for both; this row exists so ADR 0003 is a measured decision | ⬜ not tested |
 | E7 | NFC is dead while the screen is off or locked, and alive again when the app comes back | expected and documented, not a bug; confirms the "no lock screen" setup rule | ⬜ not tested |
 | E8 | 100 insert/remove cycles of one card in a mock slot give 100 `seen` | wochenwerk's physical gate before enclosure work; count the misses and where the card sat when they happened | ⬜ not tested |
@@ -40,11 +40,20 @@ instrument.
 
 ## Material coupons
 
-Three flat pieces, 40 × 40 mm, at 1.0 / 2.0 / 3.0 mm, PLA and PETG — six
-prints, no supports, no fit involved. Print these before anything shaped.
+Three flat pieces, 40 × 40 mm, at 1.0 / 2.0 / 3.0 mm, PLA — the printer has
+no other filament. No supports, no fit involved. Print these before anything
+shaped:
+
+```bash
+openscad -o coupons.stl -D 'part="coupons"' case/zeigmal-case.scad
+```
+
+The answer goes into `win_t` in the case file; `python3 case/verify.py
+--window 1.0` shows what a thinner wall does to the rest before it is edited.
 
 ## What is deliberately not measured yet
 
-Video source quality, voice quality, the enclosure's tilt. None of them
-changes a decision until E4 and E5 have answered whether the phone's own coil
-reaches a card in a slot at all.
+Video source quality, voice quality. The enclosure's tilt is a number in the
+case file and the fit test prints at it; none of these changes a decision
+until E4 and E5 have answered whether the phone's own coil reaches a card in a
+slot at all.
