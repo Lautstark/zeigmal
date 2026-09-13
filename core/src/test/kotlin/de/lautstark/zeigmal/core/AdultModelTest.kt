@@ -50,6 +50,19 @@ class AdultModelTest {
         }
 
     @Test
+    fun `where the writing stopped, and which cards are done, survive a restart`() =
+        runTest {
+            store.put(SignDigitalProvider.KEY_TOKEN, "tok")
+            val m = AdultModel(this, provider(), store, logger)
+            m.goTo(5)
+            m.onWrite(WriteOutcome.Written(TagId("04AABBCCDDEEFF"), m.writing.value.record))
+            advanceUntilIdle()
+            val again = AdultModel(this, provider(), store, logger)
+            assertEquals(6, again.writing.value.index)
+            assertEquals(setOf(SignBox.box1[5].ref), again.writing.value.written)
+        }
+
+    @Test
     fun `the reader writes the current card only while logged in and writing`() =
         runTest {
             val m = AdultModel(this, provider(), store, logger)
