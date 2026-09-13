@@ -44,6 +44,7 @@ fun ZeigmalApp(model: ZeigmalViewModel) {
                     KidScreen(
                         station = station,
                         videoUrl = model.station::videoUrl,
+                        cardImageUrl = model.station::cardImageUrl,
                         onFirstFrame = model.station::onFirstFrame,
                         onEnded = model.station::onPlaybackEnded,
                         onFailed = model.station::onPlaybackFailed,

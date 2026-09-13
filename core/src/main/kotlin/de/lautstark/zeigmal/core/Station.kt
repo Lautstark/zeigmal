@@ -9,8 +9,9 @@ package de.lautstark.zeigmal.core
  * The ring around the mark is on screen the instant the tag is seen; the video
  * takes over when its first frame has rendered; when it ends the card is
  * still there, so it plays again — up to [Station.MAX_ROUNDS] — with the ring
- * between rounds; and when the card is gone the station is idle once the
- * current round has finished.
+ * between rounds; after that the card's own picture stays on screen until the
+ * card goes; and when the card is gone the station is idle once the current
+ * round has finished.
  *
  * Presence arrives already debounced (see [Presence]); the station trusts it.
  */
@@ -40,7 +41,7 @@ enum class Phase {
     /** The video's first frame has rendered; it is in front. */
     PLAYING,
 
-    /** The rounds are used up; the ring stays until the card goes. */
+    /** The rounds are used up, or nothing could be fetched; the card's picture stays until the card goes. */
     DONE,
 }
 
@@ -117,7 +118,7 @@ class Station(
 
     companion object {
         /** How often a card that stays in the slot plays. A card left in overnight is not a loop. */
-        const val MAX_ROUNDS = 10
+        const val MAX_ROUNDS = 20
 
         /** The ring between two rounds, so "again" reads as again and not as a stutter. */
         const val PAUSE_BETWEEN_ROUNDS_MILLIS = 1000L

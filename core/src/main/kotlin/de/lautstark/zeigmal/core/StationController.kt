@@ -86,12 +86,18 @@ class StationController(
     }
 
     /** The clip for a card, from whichever provider the card names. Throws with a reason. */
-    suspend fun videoUrl(record: CardRecord): String {
+    suspend fun videoUrl(record: CardRecord): String =
+        media(record).videoUrl ?: throw IllegalStateException("${record.provider}/${record.ref} hat kein Video")
+
+    /** The card's own picture, for after the last round. Null when the provider has none. */
+    suspend fun cardImageUrl(record: CardRecord): String? = media(record).cardImageUrl
+
+    private suspend fun media(record: CardRecord): Media {
         val provider = providers[record.provider] ?: throw IllegalArgumentException("unbekannte Quelle ${record.provider}")
         val t0 = System.nanoTime()
         val media = provider.resolve(record.ref)
         logger.log("${record.provider}/${record.ref}: link after ${(System.nanoTime() - t0) / 1_000_000} ms")
-        return media.videoUrl ?: throw IllegalStateException("${record.provider}/${record.ref} hat kein Video")
+        return media
     }
 
     private fun apply(event: StationEvent) {
