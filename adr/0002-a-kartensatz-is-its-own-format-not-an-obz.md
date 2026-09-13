@@ -1,6 +1,8 @@
 # ADR 0002 — A Kartensatz is its own format, not an .obz
 
-**Status:** accepted · **Date:** 2026-09-09 · **Applies to:** `:cardset`, docs/media-model.md
+**Status:** superseded by ADR 0007 · **Date:** 2026-09-09 · **Applies to:** `:cardset`, docs/media-model.md
+
+> **Superseded 2026-09-13.** There is no Kartensatz any more: the card carries its own record and the video is streamed. What this ADR argued against the `.obz` still holds; what it argued for is gone with the directory.
 
 ## Context
 

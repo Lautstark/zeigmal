@@ -1,53 +1,33 @@
 # MVP plan
 
-Five to ten cards, one phone, one printed fit test. The order is the order the
-answers depend on each other; the hardware rows come first because a "no" at E4
-or E5 changes everything after them, and nothing before.
+Ten cards from SIGNbox 1, one phone on a wall charger, one printed fit test.
 
-## Done in this skeleton
+## Done
 
-- Repository, build, CI, commit gate, formatting; ADRs 0001–0006; these docs.
-- `:cardset`: manifest and card-map readers with tests; directory loader that
-  drops entries whose video is missing and downgrades entries whose audio is.
-- `:app`: reader mode with removal listener, the state machine with tests,
-  Media3 playback of video + external word, idle and unknown screens, the
-  diagnostics screen with a tag log.
-- `example/`: a hand-written Kartensatz with generated placeholder media and
-  two scripts (`make-example-media.sh`, `push-example.sh`).
+- The core: card record, station with repeat rounds, presence filter, provider
+  seam, SIGNdigital behind it, the box's word list; 23 tests.
+- The app: reader mode with NDEF read and write, the child screen with the
+  mark and the ring, the login, the writing mode.
+- Measured on the A51: E1, E2, S1 (docs/experiments.md).
 
 ## Order
 
 | step | what | done when |
 |---|---|---|
-| 1 | **Install and see a tag.** Build, `adb install`, push the example, open diagnostics, hold a sticker to the back | E1 has a result |
-| 2 | **Map three cards.** Copy three UIDs from the log into `example/kartensatz/cards.json`, push again | S2, S8 pass with the colour-bar videos |
-| 3 | **Presence.** Rest, lift, swap | E2, E3, E7 have results; `Station.next` gets whatever E2 justifies (probably nothing) |
-| 4 | **Find the coil.** Grid on the back, mark the area | E4 recorded as [M] in docs/hardware.md |
-| 5 | **Coupons.** Six flat prints, read-through table | E5 recorded; the wall at the coil decided |
-| 6 | **Measure the cards and the phone.** Calipers, with the case decision made | docs/hardware.md has no [A] left in the phone and card tables |
-| 7 | **Fit test.** One slot and one cradle, printed; 100 cycles | E8 has a result; slot width, depth and sticker position are fixed and written down |
-| 8 | **Real media for five to ten cards.** Sign videos from the chosen source under its terms, spoken words from stimmquelle's chain (mitreden today, a script beside stimmquelle later), a manifest by hand | S1–S3 pass with real files; the attribution is visible on the diagnostics screen |
-| 9 | **Appliance behaviour.** The phone set up per docs/hardware.md; pinning; an hour on power; a reboot | S4–S7 pass |
-| 10 | **Backup and migration.** `cards.json` off the phone, onto a clean install | S10 passes; the backup rule in docs/media-import.md is confirmed by doing it |
-| 11 | **A release build.** Copy vorlaut-app's signing arrangement (keystore in secrets, certificate fingerprint in `gradle.properties`, tag-driven version, `snapshot` and `release` jobs, a bare `zeigmal.apk` link) | a signed APK on a GitHub release installs over the debug one's replacement |
+| 1 | Log in on the phone, write two stickers in the writing mode, play them | the first real SIGN video plays from a sticker |
+| 2 | Latency: card in → first frame, five cards, five times | S1 has a number; if over 700 ms, one warm player instead of one per card |
+| 3 | E3 swap, E8 hundred cycles in a mock slot | rows filled |
+| 4 | E4 the antenna map, E5 read-through coupons | the sticker's spot on the card is decided and written into step 2 of the writing mode |
+| 5 | Write the ten MVP cards; a day on the kitchen table | what the children do with it, written down |
+| 6 | Fit test print, then the holder | docs/enclosure.md |
+| 7 | Release build: vorlaut-app's signing arrangement, a signed APK on a GitHub release | the phone gets updates without a cable |
 
-That is the MVP. Success criteria 1–12 from the handover map onto rows E1, E4,
-E5, S1–S4, S7, S10 and step 8.
+## After the MVP
 
-## After the MVP, in this order
-
-1. The browser preparation tool on GitHub Pages, and the phone-side mapping
-   mode — the shape docs/lautstark-integration.md describes.
-2. The full library: ~300 stickers, ~300 scans, one `cards.json`.
-3. Enclosure CAD in `case/`, in the talker case's style (tagged dimensions,
-   `verify.py`, a "measure first" table), only after step 7.
-4. Adult mode beyond diagnostics, if anything is actually missing: a PIN in
-   front of the diagnostics screen, a "reload" button. Not a content editor.
-5. `products/zeigmal.json` in Lautstark/design and a token port, if a screen
-   ever needs the shared look.
-6. A mark for the idle screen and the launcher icon.
+The rest of the box (224 stickers, one afternoon). Screen pinning and the
+battery protection setting. A second provider. The browser tool.
 
 ## Not on the plan
 
-OCR, camera recognition, symbol search, audio generation, TTS settings, PDF,
-video acquisition, bulk authoring, accounts, cloud, a second device.
+Storing clips, a manifest, a card map, a file import, OCR, camera, symbol
+search, audio generation, PDF, accounts, cloud, a second device.

@@ -7,7 +7,7 @@ until it is.
 
 The instrument for every NFC row is the app's diagnostics screen (long-press
 the black screen): every `seen` and `gone` with a millisecond timestamp, the
-tag's technologies, and the loaded Kartensatz. `adb logcat` is the second
+tag's technologies, and what the sticker said. `adb logcat` is the second
 instrument.
 
 ## NFC on the Galaxy A51
@@ -19,7 +19,7 @@ instrument.
 | E3 | Swapping A for B gives `seen B` within 500 ms of B arriving, with or without a `gone A` before it | timestamps; try fast (under 300 ms) and slow swaps; try B arriving while A is still half in | ⬜ not tested |
 | E4 | The reliable read area is found and drawn | a 10 mm grid on a paper taped to the back; mark every cell where 5 of 5 touches read; the centre and the radius go into docs/hardware.md as [M] | ⬜ not tested |
 | E5 | The sticker still reads through card + laminate + 1, 2, 3 mm PLA at the coil centre | 10 of 10 at each thickness; note the thickness at which it first fails and how far off centre each thickness still reads | ⬜ not tested |
-| E6 | (optional) an NDEF-formatted sticker and a blank one behave the same with `SKIP_NDEF_CHECK` | same log for both; this row exists so ADR 0003 is a measured decision | ⬜ not tested |
+| E6 | The record on the sticker is read on the first blink, or on the next; writing succeeds while the card lies still | the log shows `seen … signdigital/trinken` per card in; ten writes in the writing mode, count the retries | ⬜ not tested |
 | E7 | NFC is dead while the screen is off or locked, and alive again when the app comes back | expected and documented, not a bug; confirms the "no lock screen" setup rule | ⬜ not tested |
 | E8 | 100 insert/remove cycles of one card in a mock slot give 100 `seen` | wochenwerk's physical gate before enclosure work; count the misses and where the card sat when they happened | ⬜ not tested |
 
@@ -35,8 +35,8 @@ instrument.
 | S6 | With screen pinning on, Home and Recents do nothing; Back+Overview held still leaves | by hand; write down the exact One UI wording of the pin step | ⬜ not tested |
 | S7 | After a reboot one tap brings the station back and NFC works | by hand | ⬜ not tested |
 | S8 | An unknown card shows the neutral line and the next known card plays | by hand | ⬜ not tested |
-| S9 | A replaced `kartensatz/` directory is in use after leaving and reopening the app | diagnostics shows the new name and counts | ⬜ not tested |
-| S10 | `cards.json` copied off the phone and onto a second install maps the same cards | the second install plays them without a rescan | ⬜ not tested |
+| S9 | A sticker written on one phone plays on a fresh install of the app on another, after its login | no map, no file, just the login | ⬜ not tested |
+| S10 | The ten MVP cards written in the writing mode all play; a written sticker held in the writing mode shows what it is | count the retries and the misreads | ⬜ not tested |
 
 ## Material coupons
 

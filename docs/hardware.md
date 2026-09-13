@@ -75,6 +75,16 @@ wording is One UI 5's and may differ by a word.
 9. After a reboot: one tap on the icon. There is no boot receiver, on purpose
    (docs/architecture.md).
 
+## Power
+
+The station is on a wall charger, never on a laptop port. Measured 2026-09-13:
+with the screen forced on and NFC polling, the phone drew more than a MacBook
+port through a hub supplied, discharged from full to empty in a morning while
+showing "charging", and shut down. A wall charger gives ten to fifteen watts
+against the one or two the station uses. Two settings for a phone that lives
+plugged in: Samsung's **Akkuschutz** (charge limit 85 %) under battery, and
+screen brightness at half.
+
 ## What the station must never rely on
 
 The card being reported removed; the screen waking itself; a network. Each is

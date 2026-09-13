@@ -1,98 +1,84 @@
 # Architecture
 
-The smallest thing that turns a sticker into a video.
+The smallest thing that turns a sticker into a sign video.
 
 ```text
-                 :app                                   :cardset (plain JVM)
- ┌──────────────────────────────────────┐    ┌──────────────────────────────────┐
- │ MainActivity                         │    │ KartensatzDirectory.load(dir)    │
- │   reader mode on/off with resume     │    │   Manifest.parse → CardSet       │
- │   keep screen on, hide bars          │    │   Cards.parse    → [CardMapping] │
- │                                      │    │   Loaded.Ready.resolve(TagId)    │
- │ NfcReader ── TagEvent.Seen/Gone ──►  │    └──────────────────────────────────┘
- │ StationViewModel                     │
- │   Station.next(state, event)  ◄──────┼── pure state machine, tested on the JVM
- │   UiState (station, log, loaded)     │
- │                                      │
- │ ZeigmalApp (Compose)                 │
- │   Idle · Unknown · SignVideo         │
- │   DiagnosticsScreen behind long press│
- └──────────────────────────────────────┘
+ sticker ──NDEF──► CardRecord ──► Provider.resolve(ref) ──► link ──► Media3 ──► screen
+                                   (SIGNdigital today)
 ```
 
 ## Two modules
 
-**`:cardset`** reads the Kartensatz. It is Kotlin with no Android in it, and a
-Gradle task fails the build on any `android.*` import, so the part that decides
-which video a card starts is tested in milliseconds with no emulator. Nothing in
-it throws at the caller: a file is `Accepted` with warnings or `Rejected` with a
-code, because the caller is a screen. Strict about the set (a wrong header
-refuses the file), lenient about entries (a bad entry costs one card).
+**`:core`** is plain Kotlin with no Android in it, and a Gradle task fails the
+build on any `android.*` import. It holds everything that has to be exactly
+right: the card record and its encoding, the station's state machine with its
+repeat rounds, the presence filter that turns the reader's blinking into one
+card in and one card out, the `Provider` interface and the SIGNdigital
+implementation over OkHttp, and the SIGNbox 1 word list. Tested with JUnit,
+coroutines-test and MockWebServer, in milliseconds.
 
-**`:app`** is one activity and one ViewModel. `NfcReader` owns reader mode;
-`Station` is the state machine; `SignVideo` is a Media3 `PlayerView` and, when
-the entry says `external`, a second ExoPlayer for the word; `DiagnosticsScreen`
-is the instrument for the hardware experiments.
+**`:app`** is one activity, one ViewModel and three screens. `NfcReader`
+owns reader mode and does the NDEF read and write. `KidScreen` draws the mark,
+the ring and the video. `LoginScreen` and `WriteScreen` are the adult mode. It
+is thin on purpose; nothing in it decides anything a core test could decide.
 
 ## The state machine
 
 ```text
-Idle ──CardSeen(known)──► Card(entry, tag, run, LOADING)   the card face is on screen
-Card(LOADING) ──FirstFrame──► Card(PLAYING)                  the video fades in over it
-Card(PLAYING) ──PlaybackEnded──► Card(ENDED)                 the card face again
-Card(ENDED) ──CardGone──► Idle
-Card(any) ──CardGone──► Card(present = false) … ──PlaybackEnded──► Idle
-Card ──CardSeen(other)──► Card(other, tag, 1, LOADING)   at once
-Card ──CardSeen(same)──► Card(same, tag, run+1, LOADING)  the video restarts
-Idle ──CardSeen(unknown)──► Unknown(tag) ──CardGone(tag)──► Idle
+Idle ──CardSeen(record)──► Card(LOADING)          the ring
+Card(LOADING) ──FirstFrame──► Card(PLAYING)       the video
+Card(PLAYING) ──PlaybackEnded──► Card(LOADING, round+1)   again, up to MAX_ROUNDS
+Card(PLAYING) ──PlaybackEnded──► Card(DONE)       rounds used up: the ring stays
+Card(any) ──CardGone──► present=false … ──PlaybackEnded──► Idle
+Card ──CardSeen(other)──► Card(other, LOADING)    at once
+Idle ──CardSeen(no record)──► Unknown             the grey ring ──CardGone──► Idle
+Card ──PlaybackFailed──► Card(DONE)               no network, no link: the ring stays
 ```
 
-The card is on screen the instant the tag is seen; the video is invisible
-until Media3 reports its first rendered frame, then fades in over 150 ms, and
-the spoken word starts on that same frame. A removed card never stops a running
-video (removal reporting is what docs/experiments.md E2 measures); it only
-decides whether the card face or the idle screen follows the video.
+`MAX_ROUNDS` is 10 and the pause between rounds is one second, both named
+constants in `Station`, to be tuned after watching a child with it.
+
+## The provider seam
+
+```kotlin
+interface Provider {
+    val id: String
+    suspend fun resolve(ref: String): Media   // Media(videoUrl, cardImageUrl)
+}
+```
+
+A card names a provider and a ref; the station never knows what is behind
+them. `SignDigitalProvider` logs in with the local strategy, keeps the token in
+the `CredentialStore` the app hands it, fetches the sign by slug and asks for
+signed links, and logs in again once when a token has run out. Nothing is
+written to disk: their terms allow watching through a subscription and do not
+allow keeping the file. SignDict is a second class without a login; a provider
+that returns only a sound is one more.
 
 ## Playback
 
-Media3 ExoPlayer, one instance per video, built in `remember(file, run)`,
-prepared and started inside the `DisposableEffect` *after* the listener is
-attached, released on dispose. That order is the difference between reliable
-end detection for a two-second local file and a station stuck on its last
-frame. The `PlayerView` is inflated from the one XML layout because
-`surface_type="texture_view"` and `use_controller="false"` exist only as XML
-attributes; the texture view is what removed black-frame flicker in knopfpost.
-
-The spoken word is a second ExoPlayer started with the video. No audio focus
-handling yet: the station is the only thing making a sound. A fade on
-interrupt (vorlaut-app's `Speech.kt` does 42 ms) is worth adding once a swap
-audibly clicks.
-
-## Where the content lives
-
-`getExternalFilesDir(null)/kartensatz/` — reachable by cable without a
-permission, deleted with the app, excluded from every backup domain. ADR 0006.
+Media3 ExoPlayer plays from the signed link. The view is on screen from the
+start at alpha 0 and fades in when Media3 reports the first rendered frame;
+the ring is what shows until then. Listener first, then prepare, then play:
+a short clip can end before a listener attached afterwards hears about it.
 
 ## Kiosk behaviour
 
-Landscape from the manifest (the A51 is a phone; Android honours it). The
-screen stays on through `FLAG_KEEP_SCREEN_ON` while the activity is in front,
-which makes the device's own timeout irrelevant. System bars are hidden with
-swipe-to-reveal; screen pinning is a setting the adult turns on
-(docs/hardware.md). No boot receiver: knopfpost's release build was flagged by
-Play Protect for a boot receiver combined with pinning, and a single tap after a
-reboot is the price of not finding out whether the A51 does the same.
+Landscape from the manifest. The screen stays on through `FLAG_KEEP_SCREEN_ON`
+while the activity is in front. System bars are hidden with swipe-to-reveal;
+screen pinning is a setting the adult turns on. No boot receiver, on purpose:
+a boot receiver combined with pinning got knopfpost's build flagged by Play
+Protect, and a single tap after a reboot is cheaper than finding out.
 
-## What is deliberately absent
+## Permissions
 
-A dependency-injection framework, a navigation graph, a database, a repository
-layer, a settings store, network code, TTS. Each would be an answer to a
-question ADR 0001 says this repository does not ask.
+NFC, and INTERNET for the provider. The only outbound requests are the three
+the provider's own player makes; nothing here uploads anything, and
+`SignDigitalProvider` is the one place a URL is built.
 
 ## Build
 
 vorlaut-app's toolchain, taken whole: Gradle 9.7, AGP 9.3, Kotlin 2.4, Compose
-BOM 2026.08, Media3 1.11, minSdk 26, Spotless/ktlint, lint warnings as errors,
-CI actions pinned by SHA, conventional commits gated by one script. Release
-signing with a certificate-fingerprint check is a later step and will be a copy
-of vorlaut-app's, not a new design.
+BOM 2026.08, Media3 1.11, OkHttp 5, Coil 3 for the one picture the adult mode
+shows, minSdk 26, Spotless/ktlint, lint warnings as errors, SHA-pinned actions,
+conventional commits gated by one script.

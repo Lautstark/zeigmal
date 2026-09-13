@@ -1,6 +1,8 @@
 # ADR 0003 — The tag UID is the key, and the card map is a file of its own
 
-**Status:** accepted · **Date:** 2026-09-09 · **Applies to:** `Cards.kt`, `TagId`, docs/nfc.md
+**Status:** superseded by ADR 0007 · **Date:** 2026-09-09 · **Applies to:** `Cards.kt`, `TagId`, docs/nfc.md
+
+> **Superseded 2026-09-13.** The sticker holds the record, so there is no key and no map. The UID is still logged, and it is what an adult reads back in the writing mode.
 
 ## Context
 

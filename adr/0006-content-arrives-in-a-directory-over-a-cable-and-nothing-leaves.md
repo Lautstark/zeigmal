@@ -1,6 +1,8 @@
 # ADR 0006 — Content arrives in a directory over a cable, and nothing leaves
 
-**Status:** accepted · **Date:** 2026-09-09 · **Applies to:** `AndroidManifest.xml`, `StationViewModel.directory`, docs/media-import.md
+**Status:** superseded by ADR 0007 · **Date:** 2026-09-09 · **Applies to:** `AndroidManifest.xml`, `StationViewModel.directory`, docs/media-import.md
+
+> **Superseded 2026-09-13.** Nothing arrives by cable and the app has an INTERNET permission for the provider. What remains true: nothing is stored, and nothing is uploaded.
 
 ## Context
 

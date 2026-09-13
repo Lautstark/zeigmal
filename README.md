@@ -5,8 +5,7 @@
 A small station on the table: a Samsung Galaxy A51 lying in a printed holder,
 a slot behind it, and a box of picture cards with NFC stickers on them. A child
 pushes a card into the slot and the phone plays the sign video for the word on
-it. Where the video does not say the word, the phone says it, in the same voice
-the family's other Lautstark tools use.
+it, again and again while the card lies there.
 
 I am building it for my children, who have around three hundred picture cards
 with a symbol, a word and a sign on each. The cards exist; the station is what
@@ -23,39 +22,29 @@ child-facing part has no menu, no button and no keyboard.
 
 | | |
 |---|---|
-| **does** | reads the NFC sticker on a card, looks the tag up, plays the sign video, plays a prepared spoken word when the manifest says so, and waits for the next card |
-| **does not** | make cards, search symbols, generate audio, fetch videos, edit anything, talk to a network, or show a child any user interface |
+| **does** | reads the record on a card's NFC sticker, asks the provider named there for the sign video, plays it while the card lies in the slot, and lets an adult write the stickers on the phone itself |
+| **does not** | store a video, keep a map or a manifest, need a computer, show a child any text or button, or talk to anything but the one provider the sticker names |
 
-Card preparation happens in a browser, like everything else in the family,
-and arrives here as a **Kartensatz**: a directory holding a manifest, a card
-map and the media. The one thing the phone itself does with content is the
-step only the phone can do: learning which sticker is which card, by holding
-it to the back. What the directory looks like is
-[docs/media-model.md](docs/media-model.md); how it gets onto the phone is
-[docs/media-import.md](docs/media-import.md); which sibling makes which part
-of it, and what the preparation tool will be, is
-[docs/lautstark-integration.md](docs/lautstark-integration.md).
+Everything the phone needs is on the card: [docs/card-record.md](docs/card-record.md).
 
 ## Status
 
-**Skeleton, before the first hardware run.** The app builds, its reader is
-tested on the JVM, and the phone side is wired: reader mode, one video player,
-one diagnostics screen behind a long press. Nothing has been held against the
-Galaxy A51 yet, and the whole design rests on two things only a real card can
-answer: where the phone's antenna is, and what Android says when a card stays,
-goes, or is swapped. [docs/experiments.md](docs/experiments.md) is the list;
-[docs/mvp-plan.md](docs/mvp-plan.md) is the order.
+**Working end to end on the phone with the first stickers, before the first
+real card is written.** The app reads and writes stickers, streams from
+SIGNdigital with a login kept on the phone, and the child's screen is the
+family's mark with a ring around it. The first measurements on the Galaxy A51
+are in [docs/experiments.md](docs/experiments.md); the order of what comes
+next is [docs/mvp-plan.md](docs/mvp-plan.md).
 
 ## Architecture at a glance
 
 ```text
-NFC tag UID  →  cards.json  →  manifest.json entry  →  video (+ audio when speech = external)
+sticker ──NDEF──► card record ──► provider (SIGNdigital) ──► signed link ──► video
 ```
 
-Two Gradle modules. `:cardset` reads the Kartensatz and is plain Kotlin with no
-Android in it, so the part that decides which video a card starts is tested in
-milliseconds. `:app` is one activity: reader mode in, Media3 out, a pure state
-machine in between. [docs/architecture.md](docs/architecture.md) has the rest.
+Two Gradle modules. `:core` is plain Kotlin with no Android in it: the card
+record, the station's rules, the presence filter, the provider seam. `:app` is
+one activity: reader mode in, Media3 out, three screens. [docs/architecture.md](docs/architecture.md) has the rest.
 
 ## Hardware
 
@@ -70,26 +59,22 @@ the checklist that has to be ticked before any CAD.
 
 ```sh
 export JAVA_HOME="/Applications/Android Studio.app/Contents/jbr/Contents/Home"
-./gradlew :cardset:check :app:assembleDebug
+./gradlew :core:check :app:assembleDebug
 adb install -r app/build/outputs/apk/debug/app-debug.apk
-tools/make-example-media.sh && tools/push-example.sh
 ```
 
-The example Kartensatz under `example/` is colour bars and a tone, not signs;
-it exists so the mechanics can be tried before any licensed video is in hand.
-Open the app, long-press the black screen, hold a sticker to the back of the
-phone, and the diagnostics screen shows the UID to write into `cards.json`.
+Long-press the black screen for the adult mode: log in to SIGNdigital once,
+then write stickers card by card through the box.
 
 ## Documentation
 
 | | |
 |---|---|
 | [docs/product-requirements.md](docs/product-requirements.md) | what the station must do, for whom, and what it must never do |
-| [docs/architecture.md](docs/architecture.md) | the two modules, the state machine, the players |
+| [docs/architecture.md](docs/architecture.md) | the two modules, the state machine, the provider seam |
 | [docs/lautstark-integration.md](docs/lautstark-integration.md) | what was inspected in the sibling repositories, what is reused, what stays apart |
-| [docs/media-model.md](docs/media-model.md) | the Kartensatz: manifest, card map, identifiers |
-| [docs/media-import.md](docs/media-import.md) | getting a Kartensatz onto the phone, backing the card map up |
-| [docs/nfc.md](docs/nfc.md) | Android reader mode, NTAG213, presence, what is known and what is not |
+| [docs/card-record.md](docs/card-record.md) | what is on a sticker, how it is read and written |
+| [docs/nfc.md](docs/nfc.md) | Android reader mode, NTAG213, presence as measured on the A51 |
 | [docs/hardware.md](docs/hardware.md) | the Galaxy A51, the cards, the stickers, the measurements owed |
 | [docs/enclosure.md](docs/enclosure.md) | the pre-CAD checklist |
 | [docs/experiments.md](docs/experiments.md) | the hardware experiments, as an acceptance table with a date column |
@@ -98,6 +83,5 @@ phone, and the diagnostics screen shows the UID to write into `cards.json`.
 
 ## Licence
 
-MIT. The sign videos, the METACOM symbols and the voice models a Kartensatz
-holds keep their own terms; none of them is in this repository and none is
-shipped with the app.
+MIT. The sign videos and the card images a provider serves keep their own
+terms; none of them is in this repository, and the app keeps none of them.

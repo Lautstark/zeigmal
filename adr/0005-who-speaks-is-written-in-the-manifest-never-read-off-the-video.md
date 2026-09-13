@@ -1,6 +1,8 @@
 # ADR 0005 — Who speaks is written in the manifest, never read off the video
 
-**Status:** accepted · **Date:** 2026-09-09 · **Applies to:** `MediaEntry.speech`, `SignVideo.kt`
+**Status:** accepted, narrowed 2026-09-13 · **Date:** 2026-09-09 · **Applies to:** `MediaEntry.speech`, `SignVideo.kt`
+
+> **Narrowed 2026-09-13.** There is no manifest; the sticker will carry the field when a spoken word beside the video exists. Until then the video plays with its own sound. What stands: the player never inspects a clip to decide who speaks.
 
 ## Context
 

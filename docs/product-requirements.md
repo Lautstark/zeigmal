@@ -1,78 +1,53 @@
 # Product requirements
 
-What the station has to do, for whom, and what it must never do. The handover
-of 2026-09-09 is the source; this is the part of it that binds the code.
+What the station has to do, for whom, and what it must never do.
 
 ## Who
 
-Two children who use around three hundred physical cards, today a bought set
-with a METACOM symbol, a German word and a sign drawing on each. The station
-must not care which set: any card that can carry a sticker is a card. The
-adults in the house prepare content in a browser; the children only ever touch
-cards.
+Two children, two and three years old, who cannot read yet and use a box of
+picture cards, today HHO's SIGNbox 1, with a symbol, a word and a sign drawing
+on each. An adult sets the station up once and writes the stickers once.
 
 ## The interaction
 
 ```text
-idle  →  card in  →  the card on screen at once (symbol and word)
-                  →  the sign video fades in over it on its first frame
-                  →  spoken word with the first frame, when the entry says so
-                  →  the card again when the video has ended, while it stays in the slot
-                     another card in  →  the new card, then its video, at once
-                     unknown card in  →  a quiet "I do not know this card yet"  →  ready
+idle: black, the mark
+card in  →  a ring around the mark, at once
+         →  the sign video, full screen, with its sound, when its first frame is there
+         →  again while the card stays, up to ten times, a second of ring between
+card out →  the video finishes, then the mark
+blank sticker  →  a grey ring, once
 ```
 
-Nothing is ever black. Whatever the player needs to start — a decoder, the
-disk, one day perhaps a network — happens behind the card.
-
-Nothing else is visible to a child: no menu, no button, no navigation bar, no
-notification, no keyboard, no settings, no "add card" flow. The idle screen is
-the name and one line of text; it may become a mark later.
+Nothing else is visible to a child: no word, no button, no menu, no bar, no
+notification. Everything that happens, happens around the mark; the mark
+itself never changes.
 
 ## Must
 
-1. Run on the Samsung Galaxy A51, landscape, on power, screen never sleeping
-   while the app is in front.
-2. Identify a card by its NFC sticker within a moment of insertion, with the
-   phone's own antenna, through the card and the holder wall.
-3. Start the right video immediately; replace it immediately when another card
-   arrives; play the same card again when it is presented again.
-4. Play a prepared spoken word beside the video when, and only when, the
-   manifest says the video does not carry one.
-5. Work fully offline. No backend, no account, no synchronisation, no network
-   permission.
-6. Take its whole content from one directory copied onto the phone, and let
-   that directory be replaced.
-7. Keep the card map as a file a person can copy off the phone and onto the
-   next one, so three hundred cards are scanned once.
-8. Fail quietly on an unknown card, a missing file or a broken manifest: a
-   child sees a calm screen, an adult sees the reason on the diagnostics
-   screen.
-9. Stay in fullscreen; survive rotation; come back to the same screen after a
-   reboot with one tap.
-
-## Should
-
-- Hide a diagnostics screen behind a gesture a child does not make by
-  accident, showing NFC state, the loaded Kartensatz, its warnings, the app
-  version and a log of tag events with timestamps.
-- Show the video's attribution somewhere an adult can see it, because sign
-  video sources are licensed at least as tightly as METACOM.
-- Be pinnable with Android's screen pinning, and say honestly that pinning is
-  not a lock.
+1. Run on the Samsung Galaxy A51, landscape, on a wall charger, screen never
+   sleeping while the app is in front.
+2. Read the card's sticker with the phone's own antenna, through the card and
+   the holder wall, and play the right video within about a second.
+3. Play the video from the provider the sticker names, with the login kept on
+   the phone; store no clip.
+4. Treat a resting card as one card, and a removed card as gone about a second
+   after it left.
+5. Let an adult write the stickers on the phone itself, card by card through
+   the box, with the card shown so the right one comes out of the stack.
+6. Fail quietly: no network, no link, an unknown sticker, all end in the ring,
+   never in a message a child has to dismiss.
+7. Stay in fullscreen; come back after a reboot with one tap.
 
 ## Must not
 
-- Create, edit, search, generate or fetch content of any kind (ADR 0001).
-- Inspect a video to decide whether to speak (ADR 0005).
-- Offer any path that moves a Kartensatz off the phone (ADR 0006).
-- Depend on the card being reported as removed. Removal is measured first
-  (docs/experiments.md) and designed around second.
-- Introduce a second device. No Raspberry Pi, ESP32 or external reader unless
-  E1 in docs/experiments.md fails on the phone's own antenna.
+- Store a provider's clip on the phone.
+- Show a child text, a button, or a menu.
+- Need a computer, a file, or a map to play a written card.
+- Keep a login anywhere but the app's private storage on the phone.
 
-## Open until measured
+## Later, not now
 
-Whether a card resting in the slot causes repeated reads, how fast a swapped
-card is seen, and whether removal is reported at all. The state machine treats
-removal as informational for exactly this reason.
+A second provider (SignDict, or a sound without a sign); the family's own
+spoken word through stimmquelle for silent clips; a proper enclosure; a browser
+tool for anything that is not NFC.
