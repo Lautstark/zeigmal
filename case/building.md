@@ -220,7 +220,8 @@ openscad -o frame-corner.stl -D 'part="frame-corner"' case/zeigmal-case.scad
 
 The fit test is the slot and the left end of the body, cut 6 mm behind the
 plate and standing at the real tilt; about an hour. The frame corner is the
-bottom-left 40 mm of the frame with its screw hole; twenty minutes. Together
+bottom-left 40 mm of the frame with its screw hole, already lying face
+down; twenty minutes. Together
 they try every clearance in the design:
 
 1. A card into the slot, twenty times. It slides to the stop and out again

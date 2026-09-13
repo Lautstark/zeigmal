@@ -451,11 +451,12 @@ module fit_test() {
     }
 }
 
-// The frame's bottom-left corner, 40 x 40: the play round the phone and the
-// lip over the screen, with the screw hole.
+// The frame's bottom-left corner, 40 mm of it: the play round the phone and
+// the lip over the screen, with the screw hole. Laid face down, as the whole
+// frame prints.
 module frame_corner() {
     intersection() {
-        frame();
+        frame_flat();
         translate([x_left - 1, -100, -1]) cube([40, 200, 60]);
     }
 }
