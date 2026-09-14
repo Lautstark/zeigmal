@@ -162,6 +162,8 @@ rib_t      = 2.4;
    ===================================================================== */
 
 frame_face  = 1.6;   // the lip over the screen, 8 layers
+frame_r     = 3.0;   // the frame's outer corners
+lip_r       = phone_corner_r - 2.0;  // [G] the lip's inner corners follow the phone's
 frame_wall  = 2.4;   // the rails round the phone's edges
 frame_over  = 2.0;   // how far the lip reaches over the screen
 return_w    = 5.0;   // the two corner returns at the open right end
@@ -381,7 +383,7 @@ module frame_raw() {
     u_bot = -play;                 // the phone's bottom edge, with play
     u_topr = phone_h + play;       // the phone's top edge, with play
     difference() {
-        union() {
+        intersection() { union() {
             // the face: a plate over the whole front, the window is cut below
             pbox(x_left, x_right, u_bot - frame_wall, u_topr + frame_wall, face_n0, face_n1);
             // left rail
@@ -394,8 +396,14 @@ module frame_raw() {
             for (uu = [[u_bot - frame_wall, return_w], [phone_h - return_w, u_topr + frame_wall]])
                 pbox(phone_l + play, x_right, uu[0], uu[1], 0, face_n1);
         }
-        // the window in the face: the screen minus the overlap, open to the right
-        pbox(frame_over, x_right + 1, frame_over, phone_h - frame_over, face_n0 - 1, face_n1 + 1);
+        // ... all of it inside rounded outer corners
+        translate([x_left, u_bot - frame_wall, -1]) linear_extrude(face_n1 + 2)
+            rounded_rect(x_right - x_left, u_topr + frame_wall - (u_bot - frame_wall), frame_r);
+        }
+        // the window in the face: the screen minus the overlap, open to the
+        // right, its corners rounded like the phone's
+        translate([frame_over, frame_over, face_n0 - 1]) linear_extrude(face_n1 - face_n0 + 2)
+            rounded_rect(x_right + 20 - frame_over, phone_h - 2 * frame_over, lip_r);
         // ... but the corner returns keep their lip
         // (they are inside the window cut above, so put them back below)
         // key windows: through the top rail and the face above the key
@@ -508,8 +516,10 @@ else if (part == "assembly") {
 else if (part != "none") echo(str("unknown part \"", part, "\""));
 
 // The frame as it lies on the bed: face down, foot pointing up. Undo the
-// tilt, then flip it over.
+// tilt, then TURN it over — a rotation, never mirror(): the first frame
+// corner was printed as a reflection and only fitted the wrong end of the
+// phone, foot up.
 module frame_flat() {
-    translate([0, 0, foot_n]) mirror([0, 0, 1])
+    translate([0, 0, foot_n]) rotate([180, 0, 0])
         rotate([-(90 - tilt), 0, 0]) translate([0, -y0, -z0]) frame();
 }
