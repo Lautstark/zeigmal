@@ -207,8 +207,18 @@ def compute(p, bed, phone_mass, fill):
             note='the coil is too near the end for a centred sticker')
     b.check(g, 'stop sits above the floor slab, one wall clear',
             G('slot_u0') - (G('plate_u_at_floor') + G('wall')), '>=', 0.0)
-    b.check(g, 'mouth opens above the frame\'s top rail',
-            G('u_top') - (G('phone_h') + G('play') + G('frame_wall')), '>=', 1.0)
+    b.check(g, 'funnel starts at the frame\'s top rail, not below it',
+            G('mouth_u0') - (G('phone_h') + G('play') + G('frame_wall')), '>=', 0.0,
+            note='the funnel would open into the frame')
+    b.check(g, 'funnel front reaches the plate face (a ramp to slide down)',
+            G('mouth_n_front'), '==', 0.0, unit='',
+            note='raise mouth_flare_n to at least win_t')
+    b.check(g, 'ramp is not a step (rise over run)', G('win_t') / G('mouth_ramp_h'), '<=', 0.6, unit='',
+            note='a steep ramp is a step, not a funnel')
+    b.check(g, 'plate edge above the ramp is not a knife',
+            2.0 * G('win_t') / G('mouth_ramp_h'), '>=', 0.6,
+            note='2 mm below the top the wall is thinner than 0.6 mm')
+    b.check(g, 'rear wall kept behind the funnel', G('back_t'), '>=', 0.8)
     # the camera island's relief pocket is cut into the same plate the slot
     # is in. Where the two overlap, what is left between them is the
     # thinnest wall in the part.
@@ -287,7 +297,7 @@ def compute(p, bed, phone_mass, fill):
     b.check(g, 'body fits the bed (length)', body_l, '<=', bed[0])
     b.check(g, 'body fits the bed (depth)', G('base_depth'), '<=', bed[1])
     b.check(g, 'body fits the bed (height)', body_h, '<=', bed[2])
-    frame_d = G('u_top') - G('mouth') + G('play') + G('frame_wall')
+    frame_d = G('u_top') - G('mouth_h') + G('play') + G('frame_wall')
     frame_l = G('x_right') - G('x_left')
     b.check(g, 'frame fits the bed', max(frame_l, frame_d), '<=', max(bed[0], bed[1]))
     for n in ('wall', 'win_t', 'back_t', 'frame_wall', 'rib_t'):
@@ -319,7 +329,7 @@ def compute(p, bed, phone_mass, fill):
     cavity_a = 0.5 * (G('slope_y') - py(u_lo, -G('plate_t'))) * (fz - G('floor_t'))
     ribs_m = cavity_a * G('wall') * (2 + len(G('rib_x'))) * rho * 0.8
     Lf = G('x_right') - G('x_left')
-    frame_m = (Lf * (G('u_top') - G('mouth') + G('play') + G('frame_wall')) * G('frame_face')
+    frame_m = (Lf * (G('u_top') - G('mouth_h') + G('play') + G('frame_wall')) * G('frame_face')
                + 2 * Lf * G('frame_wall') * G('foot_n') + 10 * Lf * G('frame_wall')) * rho
     u_mid = (u_lo + G('u_top')) / 2
     parts = [

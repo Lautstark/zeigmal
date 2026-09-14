@@ -53,11 +53,16 @@ channel leans back) and reads through the window wall, the clearance and its
 own sticker — 2.9 mm from the back glass to the sticker face with the numbers
 as they stand.
 
-The stop is not chosen. It is where a sticker 20 mm above the card's bottom
+The stop is not chosen. It is where a sticker 30 mm above the card's bottom
 edge lands on the coil: `insert = coil_from_top + sticker_y`. With the coil
-assumed 20 mm below the phone's top edge that is 40 mm in and 80 mm standing
-proud. A deeper coil takes more of the card in; `python3 case/verify.py --coil
+15 mm below the phone's top edge that is 45 mm in and 75 mm standing proud. A deeper coil takes more of the card in; `python3 case/verify.py --coil
 38` shows what.
+
+The mouth is a funnel: the plate rises 15 mm above the frame's top rail, and
+over that height the slot opens to 93 mm wide and 9 mm front to back. At the
+front the last 6 mm fall away to the plate's face, so a child can put the
+card flat against the wall above the phone, slide it down, and the funnel
+finds the slot. That is the gesture; the funnel is what makes it work.
 
 The sticker goes on the width centre line of every card, so a card pushed in
 back to front still reads. Upside down it does not, and the upside-down

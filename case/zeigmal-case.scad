@@ -112,7 +112,9 @@ sticker_t =   0.2;  // [A] paper-face sticker
 // card pushed in back to front still reads, and this far above the bottom
 // edge. The slot's stop puts it over the coil — that is what `insert` (G)
 // below is for.
-sticker_y = 20.0;   // [K] sticker centre above the card's bottom edge
+sticker_y = 30.0;   // [K] sticker centre above the card's bottom edge. 20 on
+                    // the first fit test let the card lean a degree in the
+                    // slot; 10 mm deeper is what Stefanie asked for
 
 // A child must be able to take the card back without a fingernail.
 card_proud_min = 45.0;  // [K] docs/enclosure.md
@@ -128,7 +130,16 @@ wall     = 2.4;   // every printed wall — 6 x 0.4, 3 perimeters
 floor_t  = 3.0;   // the body's floor slab, the screws go through it; the
                   // head sinks into it from below, see cb_depth
 chamfer  = 0.8;   // lead-in at the slot mouth
-mouth    = 2.0;   // how far the plate rises above the frame, where the slot opens
+// The mouth: the plate rises `mouth_h` above the frame's top rail, and over
+// that height the slot opens out like a funnel — `mouth_flare_x` wider on
+// each side, `mouth_flare_n` deeper front and back. At the front the flare
+// reaches the plate's face, so a child can put the card flat against the
+// wall above the phone and slide it down; the funnel finds the slot.
+mouth_h       = 15.0;
+mouth_flare_x =  6.0;
+mouth_flare_n =  5.0;
+mouth_ramp_h  =  6.0;   // the front ramp only over the top part, so the
+                        // plate's top edge stays thick and not a knife
 
 // The wall between the phone's back and the card. E5 says whether 2.4 reads
 // or whether this has to come down to 1.0. It is the whole slot's front
@@ -202,13 +213,15 @@ slot_u0  = phone_h - insert;                  // the stop, up the plane
 x_left   = -play - frame_wall;
 x_right  = phone_l + play + frame_wall;
 
-// The plate: as wide as the frame, or wider where the slot needs it — a coil
-// in the corner puts the card past the phone's end, and the plate follows
-// the card, the frame does not. It rises `mouth` above the frame's top rail
-// so the slot has a lip to open in.
-plate_x_left  = min(x_left, slot_x0 - wall);
-plate_x_right = max(x_right, slot_x0 + slot_w + wall);
-u_top    = phone_h + play + frame_wall + mouth;
+// The plate: as wide as the frame, or wider where the slot and its funnel
+// need it — a coil in the corner puts the card past the phone's end, and the
+// plate follows the card, the frame does not. It rises `mouth_h` above the
+// frame's top rail so the funnel has its height.
+plate_x_left  = min(x_left, slot_x0 - mouth_flare_x - wall);
+plate_x_right = max(x_right, slot_x0 + slot_w + mouth_flare_x + wall);
+u_top    = phone_h + play + frame_wall + mouth_h;
+mouth_u0 = u_top - mouth_h;                        // where the funnel starts
+mouth_n_front = min(-win_t + mouth_flare_n, 0);    // the flare, clamped at the plate's face
 
 // Where the plane frame sits in the world. The phone's bottom edge is
 // foot_h above the floor slab; the plane's origin is that edge.
@@ -246,7 +259,8 @@ echo(str("read path ", win_t + clr + sticker_t, " mm from back glass to sticker 
 echo(str("body      ", plate_x_right - plate_x_left, " x ", base_depth, " x ", pz(u_top, -plate_t) , " mm (l x d x h)"));
 echo(str("base      front apron ", py(plate_u_at_floor, 0) - y_front, ", slope foot at y ", slope_y, ", rear apron ", y_back - slope_y));
 echo(str("with card ", pz(slot_u0 + card_h, -win_t - channel), " mm high"));
-echo(str("frame     ", x_right - x_left, " x ", u_top - mouth + play + frame_wall, " x ", foot_n, " mm"));
+echo(str("frame     ", x_right - x_left, " x ", u_top - mouth_h + play + frame_wall, " x ", foot_n, " mm"));
+echo(str("mouth     ", slot_w + 2 * mouth_flare_x, " wide, ", channel + mouth_flare_n + (mouth_n_front + win_t), " front to back at the top, ", mouth_h, " tall"));
 floor_left   = floor_t - cb_depth;            // [G] floor under the screw head
 screw_engage = screw_l - floor_left;          // [G] thread in the foot
 echo(str("screw     M2 x ", screw_l, ": ", floor_left, " of floor under the head, ", screw_engage, " into the foot"));
@@ -327,13 +341,34 @@ module plate() {
 module slot_cut() {
     plane() {
         // the channel
-        pbox(slot_x0, slot_x0 + slot_w, slot_u0, u_top + 1, -win_t - channel, -win_t);
-        // the mouth: a lead-in chamfer on all four sides
+        pbox(slot_x0, slot_x0 + slot_w, slot_u0, mouth_u0 + 0.01, -win_t - channel, -win_t);
+        // the funnel: from the channel's section at mouth_u0 to the flared
+        // opening at the top, sides and back
         hull() {
-            pbox(slot_x0, slot_x0 + slot_w, u_top - 0.01, u_top, -win_t - channel, -win_t);
-            pbox(slot_x0 - chamfer, slot_x0 + slot_w + chamfer, u_top, u_top + 0.01,
-                 -win_t - channel - chamfer, -win_t + chamfer);
+            pbox(slot_x0, slot_x0 + slot_w, mouth_u0, mouth_u0 + 0.01, -win_t - channel, -win_t);
+            pbox(slot_x0 - mouth_flare_x, slot_x0 + slot_w + mouth_flare_x, u_top, u_top + 1,
+                 -win_t - channel - mouth_flare_n, -win_t + 0.01);
         }
+        // the front ramp: over the top mouth_ramp_h the front wall falls
+        // away to the plate's face, so a card slid down the face drops in
+        hull() {
+            pbox(slot_x0, slot_x0 + slot_w, u_top - mouth_ramp_h, u_top - mouth_ramp_h + 0.01,
+                 -win_t - channel, -win_t);
+            pbox(slot_x0 - mouth_flare_x, slot_x0 + slot_w + mouth_flare_x, u_top, u_top + 1,
+                 -win_t - channel - mouth_flare_n, mouth_n_front + 0.01);
+        }
+    }
+}
+
+// The funnel's rear flare would run out of the plate's back; a block behind
+// the plate at the mouth carries it, with a 45 degree underside so it
+// prints without support.
+module mouth_block() {
+    plane() hull() {
+        pbox(slot_x0 - mouth_flare_x - wall, slot_x0 + slot_w + mouth_flare_x + wall,
+             mouth_u0, u_top, -plate_t - mouth_flare_n, -plate_t + 0.01);
+        pbox(slot_x0 - mouth_flare_x - wall, slot_x0 + slot_w + mouth_flare_x + wall,
+             mouth_u0 - mouth_flare_n, mouth_u0, -plate_t, -plate_t + 0.01);
     }
 }
 
@@ -358,6 +393,7 @@ module body() {
     difference() {
         union() {
             base_solid();
+            mouth_block();
             intersection() {
                 plate();
                 // nothing below the table, nothing behind the base
