@@ -92,8 +92,8 @@ first layers. The hollow under the slope is open, so there is nothing to
 bridge. The two aprons are 3 mm slabs and print in minutes; they are there
 for stability, not strength.
 
-**Frame: face down**, which is `part="printbed"`'s orientation and the
-mirror of how it sits on the body. The face is then the first 8 layers and
+**Frame: face down**, which is how `part="frame"` comes out of the file
+(`part="frame-placed"` is where it sits on the body). The face is then the first 8 layers and
 gets the bed's finish; the rails and the foot stand up from it. The tap holes
 run at 70° through the foot and print as slanted holes, which is fine at
 1.6 mm.

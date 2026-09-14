@@ -38,7 +38,9 @@
 /* ---------- 0.  What to render ---------- */
 
 // "body" | "frame" | "assembly" | "exploded" | "fit-test" | "frame-corner"
-// | "coupons" | "printbed"
+// | "coupons" | "printbed" | "frame-placed"
+// "frame" comes out face down, ready to print; "frame-placed" is where it
+// sits on the body.
 part = "assembly";
 
 // Draw the phone and a card in the assembly views
@@ -532,7 +534,8 @@ module coupons() {
    ===================================================================== */
 
 if (part == "body") body();
-else if (part == "frame") frame();
+else if (part == "frame") frame_flat();          // face down, as it prints
+else if (part == "frame-placed") frame();     // where it sits on the body
 else if (part == "fit-test") fit_test();
 else if (part == "frame-corner") frame_corner();
 else if (part == "coupons") coupons();
