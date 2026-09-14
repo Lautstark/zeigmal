@@ -76,7 +76,10 @@ cam_play = 0.3;  // [K] air around it in its relief pocket — what is left of
 // camera end. The frame's top rail gets a window over each volume key and a
 // shallow relief over the power key so that it is neither pressed nor
 // reachable.
-key_vol_up = [30.0, 38.0];   // [A]
+// The first frame corner's rail reached 2 mm over the volume key, so the
+// window starts 2 mm earlier than the first guess (Stefanie, 2026-09-14).
+// Both volume keys share one window; the exact positions are still [A].
+key_vol_up = [28.0, 38.0];   // [A]
 key_vol_dn = [40.0, 48.0];   // [A]
 key_power  = [56.0, 66.0];   // [A]
 key_proud  =  0.5;           // [A] how far a key stands out of the edge
@@ -178,7 +181,8 @@ lip_r       = phone_corner_r - 2.0;  // [G] the lip's inner corners follow the p
 frame_wall  = 2.4;   // the rails round the phone's edges
 frame_over  = 2.0;   // how far the lip reaches over the screen
 return_w    = 5.0;   // the two corner returns at the open right end
-key_win_margin = 1.0;   // a window is the key plus this each side
+key_win_margin = 2.0;   // the volume window is both keys plus this each side
+power_margin   = 3.0;   // the power relief is the key plus this each side
 power_relief   = 1.0;   // the rail is hollowed this deep over the power key
 
 // M2 screws — the ones on the shelf. From underneath, through the floor
@@ -442,12 +446,12 @@ module frame_raw() {
             rounded_rect(x_right + 20 - frame_over, phone_h - 2 * frame_over, lip_r);
         // ... but the corner returns keep their lip
         // (they are inside the window cut above, so put them back below)
-        // key windows: through the top rail and the face above the key
-        for (k = [key_vol_up, key_vol_dn])
-            pbox(k[0] - key_win_margin, k[1] + key_win_margin, u_topr - 0.01, u_topr + frame_wall + 1,
-                 -1, face_n1 + 1);
+        // one window for both volume keys: through the top rail and the
+        // face above the phone's edge, never into the lip over the screen
+        pbox(key_vol_up[0] - key_win_margin, key_vol_dn[1] + key_win_margin,
+             u_topr - 0.01, u_topr + frame_wall + 1, -1, face_n1 + 1);
         // power key: a relief in the rail's inner face, not a window
-        pbox(key_power[0] - key_win_margin, key_power[1] + key_win_margin,
+        pbox(key_power[0] - power_margin, key_power[1] + power_margin,
              u_topr - 0.01, u_topr + power_relief, -1, face_n0);
         // tap holes for the screws, up into the foot
         // world-vertical holes: the inverse of plane(), applied to a cylinder

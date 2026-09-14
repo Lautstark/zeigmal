@@ -243,12 +243,12 @@ def compute(p, bed, phone_mass, fill):
     b.check(g, 'play round the phone (no rattle)', G('play'), '<=', 0.6)
     b.check(g, 'face is whole layers', 1.0 if multiple_of(G('frame_face'), 0.2) else 0.0,
             '==', 1.0, unit='')
-    for k in ('key_vol_up', 'key_vol_dn'):
-        x0, x1 = G(k)
-        b.check(g, '%s window inside the top rail (left)' % k,
-                x0 - G('key_win_margin') - G('x_left'), '>=', G('frame_wall'))
-        b.check(g, '%s window clear of the right returns' % k,
-                G('phone_l') - (x1 + G('key_win_margin')), '>=', G('return_w'))
+    w0, w1 = G('key_vol_up')[0] - G('key_win_margin'), G('key_vol_dn')[1] + G('key_win_margin')
+    b.check(g, 'volume window inside the top rail (left)', w0 - G('x_left'), '>=', G('frame_wall'))
+    b.check(g, 'volume window clear of the right returns', G('phone_l') - w1, '>=', G('return_w'))
+    b.check(g, 'rail left between volume window and power relief',
+            (G('key_power')[0] - G('power_margin')) - w1, '>=', 2.0,
+            note='the window and the relief run into each other')
     b.check(g, 'power key not pressed by the rail',
             G('power_relief') - G('key_proud'), '>=', 0.3,
             note='the rail holds the power key down')

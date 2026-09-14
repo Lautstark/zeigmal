@@ -120,7 +120,7 @@ All clearances are named variables in section 3 of the `.scad`.
 | The phone in the frame | `play` | 0.30 mm per side | never jams, no rattle |
 | The camera island in its pocket | `cam_play` | 0.30 mm | what is left of the wall under the pocket is the thinnest place in the part |
 | Frame lip over the screen | `frame_over` | 2.00 mm | inside the phone's own black border |
-| Key windows | `key_win_margin` | 1.00 mm each side | a fingertip finds the key |
+| Volume window | `key_win_margin` | 2.00 mm each side | a fingertip finds the keys, and a guessed position still fits |
 
 If the printer generally prints fat, do **not** fiddle here but calibrate the
 extrusion multiplier. These numbers are design dimensions, not printer
@@ -196,7 +196,7 @@ refuses less than 0.8 mm there.
 | `phone_l`, `phone_h`, `phone_t` | 158.9 × 73.6 × 7.9 | calipers, bare phone; the frame's pocket is these plus 0.3 |
 | `screen_inset` | 2.5 mm | the black border round the picture; the lip covers 2.0 of it |
 | `cam_x0..cam_u1`, `cam_h` | 8–30 × 45.6–67.6, 1.2 proud | the camera island in landscape; its pocket in the plate |
-| `key_vol_up`, `key_vol_dn`, `key_power` | 30–38, 40–48, 56–66 from the left end | where the windows and the relief go in the top rail |
+| `key_vol_up`, `key_vol_dn`, `key_power` | 28–38, 40–48, 56–66 from the left end | one window over both volume keys (26–50), a relief over the power key (53–69); the first corner's rail reached 2 mm over the volume key, hence 28 |
 | `key_proud` | 0.5 mm | the power relief must be deeper than this |
 | `jack_u`, `usb_u`, `speaker_u` | 8–14, 30–40, 55–68 from the bottom | the corner returns must not cover the jack or the speaker |
 
