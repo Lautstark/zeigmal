@@ -243,25 +243,34 @@ def compute(p, bed, phone_mass, fill):
     b.check(g, 'play round the phone (no rattle)', G('play'), '<=', 0.6)
     b.check(g, 'face is whole layers', 1.0 if multiple_of(G('frame_face'), 0.2) else 0.0,
             '==', 1.0, unit='')
-    w0, w1 = G('key_vol_up')[0] - G('key_win_margin'), G('key_vol_dn')[1] + G('key_win_margin')
-    b.check(g, 'volume window inside the top rail (left)', w0 - G('x_left'), '>=', G('frame_wall'))
-    b.check(g, 'volume window clear of the right returns', G('phone_l') - w1, '>=', G('return_w'))
-    b.check(g, 'rail left between volume window and power relief',
-            (G('key_power')[0] - G('power_margin')) - w1, '>=', 2.0,
-            note='the window and the relief run into each other')
-    b.check(g, 'power key not pressed by the rail',
-            G('power_relief') - G('key_proud'), '>=', 0.3,
-            note='the rail holds the power key down')
-    b.check(g, 'rail left over the power key', G('frame_wall') - G('power_relief'),
-            '>=', 0.8, note='the relief breaks through the rail')
-    # the open right end: the returns must not reach the jack or the speaker
-    b.check(g, 'lower return clear of the jack', G('jack_u')[0] - G('return_w'), '>=', 0.0,
-            note='the return covers the jack')
-    b.check(g, 'upper return clear of the speaker',
-            (G('phone_h') - G('return_w')) - G('speaker_u')[1], '>=', 0.0,
-            note='the return covers the speaker')
-    b.info(g, 'USB-C', 'u %.0f..%.0f on the open end, nothing in front of it'
-           % tuple(G('usb_u')))
+    w0, w1 = G('key_vol_up')[0] - G('key_win_margin'), G('key_power')[1] + G('key_win_margin')
+    b.check(g, 'key window inside the top rail (left)', w0 - G('x_left'), '>=', G('frame_wall'))
+    b.check(g, 'key window clear of the right rail', G('phone_l') - w1, '>=', G('frame_wall'))
+    b.info(g, 'key window', 'x %.0f..%.0f: volume keys and power key both reachable' % (w0, w1))
+    # the closed right end: two openings, three posts between and around them
+    u_lo, u_hi = -G('play') - G('frame_wall'), G('phone_h') + G('play') + G('top_wall')
+    usb = (G('usb_u')[0] - G('port_margin'), G('usb_u')[1] + G('port_margin'))
+    spk = (G('speaker_u')[0] - G('port_margin'), G('speaker_u')[1] + G('port_margin'))
+    b.check(g, 'right end: post below the USB-C opening', usb[0] - u_lo, '>=', G('frame_wall'))
+    b.check(g, 'right end: post between USB-C and speaker', spk[0] - usb[1], '>=', G('frame_wall'))
+    b.check(g, 'right end: post above the speaker opening', u_hi - spk[1], '>=', G('frame_wall'))
+    b.check(g, 'USB-C opening takes a plug (12 mm)', usb[1] - usb[0], '>=', 12.0)
+    b.info(g, 'openings', 'USB-C u %.0f..%.0f, speaker u %.0f..%.0f' % (usb + spk))
+    # two screws from the front through the top rail into the plate
+    solid_from = G('slot_x0') + G('slot_w') + G('mouth_flare_x') + G('wall')
+    for x in G('top_screw_x'):
+        b.check(g, 'top screw at x=%.0f hits solid plate, past the funnel' % x, x - solid_from, '>=', 3.0,
+                note='the screw would go into the slot')
+        b.check(g, 'top screw at x=%.0f clear of the key window' % x, x - w1, '>=', G('top_cb_d'))
+        b.check(g, 'top screw at x=%.0f inside the frame' % x, G('phone_l') - x, '>=', G('top_cb_d'))
+    b.check(g, 'top rail takes the counterbore', G('top_wall') - G('top_cb_d'), '>=', 1.6,
+            note='less than two perimeters beside the head')
+    bite = G('screw_l') - (G('face_n1') - G('top_cb_depth'))
+    b.check(g, 'top screw bites the plate (2.5 x d)', bite, '>=', 2.5 * G('screw_d'))
+    b.check(g, 'top screw stays inside the plate', G('plate_t') - bite, '>=', 0.3,
+            note='the tip comes out of the back')
+    b.check(g, 'foot front is the printed body\'s', G('foot_n'), '==', 9.8,
+            note='the frame would no longer land on the printed holes')
 
     # --- 5. Screws --------------------------------------------------------
     g = '5. Two M2 screws from underneath'
@@ -287,8 +296,10 @@ def compute(p, bed, phone_mass, fill):
     b.check(g, 'counterbore takes the head', G('screw_head_d') + 0.4, '>=',
             G('screw_head_d'))
     b.check(g, 'clearance hole > screw', G('screw_clear_d') - G('screw_d'), '>=', 0.2)
-    b.check(g, 'tap hole < screw', G('screw_d') - G('screw_tap_d'), '>=', 0.3)
-    b.info(g, 'shopping', 'M2 x %.0f, %d pieces' % (G('screw_l'), len(G('screw_x'))))
+    b.check(g, 'tap hole < screw', G('screw_d') - G('screw_tap_d'), '>=', 0.15,
+            note='1.8 for M2 in PLA is the usual pilot; the thread still bites')
+    b.info(g, 'shopping', 'M2 x %.0f, %d pieces: %d from below, %d from the front'
+           % (G('screw_l'), len(G('screw_x')) + len(G('top_screw_x')), len(G('screw_x')), len(G('top_screw_x'))))
 
     # --- 6. Printing ------------------------------------------------------
     g = '6. Printing - Ender 3 V2, 0.4 mm nozzle, 0.2 mm layers, PLA'
@@ -297,7 +308,7 @@ def compute(p, bed, phone_mass, fill):
     b.check(g, 'body fits the bed (length)', body_l, '<=', bed[0])
     b.check(g, 'body fits the bed (depth)', G('base_depth'), '<=', bed[1])
     b.check(g, 'body fits the bed (height)', body_h, '<=', bed[2])
-    frame_d = G('u_top') - G('mouth_h') + G('play') + G('frame_wall')
+    frame_d = G('u_top') - G('mouth_h') + G('play') + G('top_wall')
     frame_l = G('x_right') - G('x_left')
     b.check(g, 'frame fits the bed', max(frame_l, frame_d), '<=', max(bed[0], bed[1]))
     for n in ('wall', 'win_t', 'back_t', 'frame_wall', 'rib_t'):
@@ -310,7 +321,7 @@ def compute(p, bed, phone_mass, fill):
             unit='deg', note='steeper slope_deg')
     b.check(g, 'slope foot in front of the back edge', G('y_back') - G('slope_y'), '>=', G('wall'))
     b.info(g, 'body', '%.1f x %.1f x %.1f mm, base down' % (body_l, G('base_depth'), body_h))
-    b.info(g, 'frame', '%.1f x %.1f x %.1f mm, face down' % (frame_l, frame_d, G('foot_n')))
+    b.info(g, 'frame', '%.1f x %.1f x %.1f mm, face down' % (frame_l, frame_d, G('face_n1')))
     b.info(g, 'with a card', '%.1f mm tall' % pz(G('slot_u0') + G('card_h'), -G('win_t') - channel))
 
     # --- 7. Stability -------------------------------------------------------
@@ -329,8 +340,8 @@ def compute(p, bed, phone_mass, fill):
     cavity_a = 0.5 * (G('slope_y') - py(u_lo, -G('plate_t'))) * (fz - G('floor_t'))
     ribs_m = cavity_a * G('wall') * (2 + len(G('rib_x'))) * rho * 0.8
     Lf = G('x_right') - G('x_left')
-    frame_m = (Lf * (G('u_top') - G('mouth_h') + G('play') + G('frame_wall')) * G('frame_face')
-               + 2 * Lf * G('frame_wall') * G('foot_n') + 10 * Lf * G('frame_wall')) * rho
+    frame_m = (Lf * (G('u_top') - G('mouth_h') + G('play') + G('top_wall')) * G('frame_face')
+               + 2 * Lf * G('frame_wall') * G('face_n1') + 10 * Lf * G('frame_wall')) * rho
     u_mid = (u_lo + G('u_top')) / 2
     parts = [
         (plate_m, py(u_mid, -G('plate_t') / 2)),

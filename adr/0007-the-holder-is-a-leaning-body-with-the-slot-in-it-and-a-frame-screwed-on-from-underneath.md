@@ -1,6 +1,6 @@
 # ADR 0007 — The holder is a leaning body with the slot in it, and a frame screwed on from underneath
 
-**Status:** accepted · **Date:** 2026-09-13 · **Applies to:** `case/`, docs/enclosure.md
+**Status:** accepted, amended 2026-09-16 · **Date:** 2026-09-13 · **Applies to:** `case/`, docs/enclosure.md
 
 ## Context
 
@@ -64,6 +64,27 @@ tips the holder. Pushing a card *in* does not, and that is what the children
 do; a base deep enough to shrug off a shove was drawn, 160 mm, and it was a
 giant plate on a kids' table for a case that does not happen. If it turns out
 to happen, ballast in the hollow under the slope comes before a deeper base.
+
+## Amended, 2026-09-16, after the first body and frame were printed
+
+Three things the first print settled differently from the text above.
+
+**The frame is screwed at the top as well as the bottom, and is a closed
+ring.** A 1.6 mm face held by two screws at the foot flexed; a 2.4 mm face,
+a fourth rail at the port end with openings for USB-C and the speaker, and two
+more M2 screws from the front through the top rail into the plate make it
+rigid. The plate has no holes for those; the frame's counterbores are the jig
+and the pilot holes are drilled by hand, once.
+
+**The power key is exposed.** Covering it was the engineer's caution; the
+person running the station wants to reach it. One window over all three keys.
+
+**The sticker sits in the card's corner, not on its centre line.** The
+centre line existed so that a card pushed in back to front reads too; that
+requirement was never asked for, and it is what made the slot start 20 mm
+past the phone's end and the plate 20 mm wider than the phone. The printed
+body keeps that slot. A future body puts the sticker's corner over the coil
+and the slot inside the phone's length.
 
 ## Not to be "fixed" later
 

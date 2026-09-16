@@ -14,9 +14,9 @@ with them.
 | Part | What it does | Outer size |
 |---|---|---|
 | **Body** | the block that leans 20° back: a front apron, the plate with the card slot in its top, a 50° rear slope, a rear apron; hollow under the slope with two ribs | 164.3 × 110 × 82.4 mm |
-| **Frame** | the picture frame over the phone, open at the port end; lip 2 mm over the screen, rails round three edges, a foot the screws bite into | 164.3 × 79 × 9.8 mm |
+| **Frame** | the picture frame over the phone: a 2.4 mm face with a 2 mm lip over the screen, rails round all four edges, openings for USB-C and speaker, a window over the keys, a foot the lower screws bite into, seats for the upper screws | 164.3 × 83 × 10.6 mm |
 
-Plus M2 × 10, two pieces, from underneath.
+Plus M2 × 10, four pieces: two from underneath, two from the front.
 
 ```bash
 openscad -o body.stl  -D 'part="body"'  case/zeigmal-case.scad
@@ -30,20 +30,28 @@ lays both parts out as they print.
 ## How it holds the phone
 
 The body's plate is flat; nothing on it locates the phone. The frame does all
-of that: its left rail, top rail and foot are the pocket's three walls, the two
-corner returns at the port end are the fourth, and the 2 mm lip over the screen
-keeps the phone from lifting out. The frame is pulled onto the body by two
-screws from below, so from the front there is nothing to find. To take the
-phone out: turn the holder over, two screws, lift the frame, lift the phone.
+of that: a closed ring of rails round the phone's four edges, and a 2.4 mm
+face that overlaps the screen's black border by 2 mm and keeps the phone from
+lifting out. The right end is closed too, with two openings straight through
+rail and face: one for the USB-C plug, one for the speaker.
 
-The top rail has a window over each volume key, so an adult can still change
-the volume, and over the power key it is only hollowed by 1 mm: the key is
-neither pressed by the rail nor reachable through it. A pressed power key
-would switch NFC off with the screen (`docs/hardware.md`).
+The frame is screwed to the body at both ends, four M2 × 10 in all:
 
-The port end is open. USB-C, speaker, microphone and jack all sit on that edge
-and nothing of the holder is in front of them; the returns cover the 5 mm at
-each corner only.
+- **Two from below**, through the holes already in the body's floor slab,
+  up into the frame's foot. The foot has 1.8 mm holes for them; the screws
+  cut their own thread.
+- **Two from the front**, through the top rail into the plate, at 95 and
+  150 mm from the camera end where the plate is solid behind. The body has
+  no holes there. Put the frame on, mark the plate through the frame's two
+  counterbored holes, take the frame off, drill 1.6 mm about 6 mm deep, put
+  the frame back, screws in. The heads sit 6.5 mm deep in the rail.
+
+The top rail has one window over the volume keys and the power key, 25 to
+69 mm from the camera end, cut through the rail and the face above the
+phone's edge but not into the lip over the screen. All three keys are
+reachable; a child pressing the power key was accepted on 2026-09-16.
+
+To take the phone out: four screws, lift the frame, lift the phone.
 
 ## How it holds the card
 
@@ -120,7 +128,8 @@ All clearances are named variables in section 3 of the `.scad`.
 | The phone in the frame | `play` | 0.30 mm per side | never jams, no rattle |
 | The camera island in its pocket | `cam_play` | 0.30 mm | what is left of the wall under the pocket is the thinnest place in the part |
 | Frame lip over the screen | `frame_over` | 2.00 mm | inside the phone's own black border |
-| Volume window | `key_win_margin` | 2.00 mm each side | a fingertip finds the keys, and a guessed position still fits |
+| Key window | `key_win_margin` | 3.00 mm each side | a fingertip finds the keys, and a guessed position still fits |
+| USB-C and speaker openings | `port_margin` | 4.00 mm each side | a plug goes in without aiming |
 
 If the printer generally prints fat, do **not** fiddle here but calibrate the
 extrusion multiplier. These numbers are design dimensions, not printer
@@ -145,11 +154,13 @@ phone in it — to reach them, which nobody does by accident.
    (below), not the body's.
 2. Lay the phone on the plate, port to the right, camera island into its
    pocket. Volume keys up.
-3. Put the frame over it: left rail against the phone's left end, foot under
-   its bottom edge. The corner returns go round the right corners.
+3. Put the frame over it: the ring goes round all four edges, the USB-C
+   opening at the port.
 4. Turn the whole thing over, holding the frame on. Two M2 × 10 into the
    holes in the floor slab, by hand, until they seat.
-5. Turn it back. Plug the cable in when needed; it is not routed.
+5. Turn it back. Two M2 × 10 from the front through the top rail into the
+   pilot holes in the plate (drilled once, see above).
+6. Plug the cable in through the opening on the right when needed.
 
 ## Measure first
 
@@ -189,6 +200,16 @@ the answer; 2.4 is assumed. `--window 1.0` previews a thinner wall. Under
 the camera pocket the wall is `win_t - cam_h - cam_play` and `verify.py`
 refuses less than 0.8 mm there.
 
+### The body as printed
+
+The body was printed on 2026-09-15. Its slot is centred 20 mm from the
+phone's left end, so the card stands 20 mm past the phone and the plate is
+that much wider than the frame. That was the centre-line sticker's doing;
+the sticker sits in the card's lower-left corner (seen from the front) and
+reads there, so a future body can put the slot inside the phone's length —
+`sticker_x` in the file. The printed body is what the frame has to fit, and
+`foot_n` is pinned to it.
+
 ### The phone
 
 | Variable | Assumed | Check |
@@ -196,9 +217,9 @@ refuses less than 0.8 mm there.
 | `phone_l`, `phone_h`, `phone_t` | 158.9 × 73.6 × 7.9 | calipers, bare phone; the frame's pocket is these plus 0.3 |
 | `screen_inset` | 2.5 mm | the black border round the picture; the lip covers 2.0 of it |
 | `cam_x0..cam_u1`, `cam_h` | 8–30 × 45.6–67.6, 1.2 proud | the camera island in landscape; its pocket in the plate |
-| `key_vol_up`, `key_vol_dn`, `key_power` | 28–38, 40–48, 56–66 from the left end | one window over both volume keys (26–50), a relief over the power key (53–69); the first corner's rail reached 2 mm over the volume key, hence 28 |
+| `key_vol_up`, `key_vol_dn`, `key_power` | 28–38, 40–48, 56–66 from the left end | one window over all three keys (25–69); the first corner's rail reached 2 mm over the volume key, hence 28 |
 | `key_proud` | 0.5 mm | the power relief must be deeper than this |
-| `jack_u`, `usb_u`, `speaker_u` | 8–14, 30–40, 55–68 from the bottom | the corner returns must not cover the jack or the speaker |
+| `jack_u`, `usb_u`, `speaker_u` | 8–14, 30–40, 55–68 from the bottom | the two openings in the right rail are these plus 4 mm each side; the jack stays covered |
 
 ### The card
 

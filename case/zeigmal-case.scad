@@ -120,6 +120,14 @@ sticker_t =   0.2;  // [A] paper-face sticker
 sticker_y = 30.0;   // [K] sticker centre above the card's bottom edge. 20 on
                     // the first fit test let the card lean a degree in the
                     // slot; 10 mm deeper is what Stefanie asked for
+// Sticker centre from the card's LEFT edge, seen from the front. The body
+// printed on 2026-09-15 was designed with the sticker on the centre line,
+// card_w / 2, which is why its slot is centred 20 mm from the phone's end
+// and the plate is 20 mm wider than the phone. The stickers actually go in
+// the lower-left corner, 12.5, and read there. Keep card_w / 2 while the
+// printed body is the body; set 12.5 before a new body is printed and the
+// slot moves inside the phone's length.
+sticker_x = card_w / 2;   // [K]
 
 // A child must be able to take the card back without a fingernail.
 card_proud_min = 45.0;  // [K] docs/enclosure.md
@@ -177,20 +185,32 @@ rib_t      = 2.4;
    5.  THE FRAME  [K]
    ===================================================================== */
 
-frame_face  = 1.6;   // the lip over the screen, 8 layers
+// The body was printed on 2026-09-15 from the numbers above this section.
+// The frame is the part that gets reprinted; what it touches on the body —
+// the plate's face, the floor slab in front of it, the two holes in that
+// slab — must not move. foot_n is pinned to the printed body for that
+// reason and does not follow frame_face.
+frame_face  = 2.4;   // the face over the screen's border. 1.6 was flimsy
 frame_r     = 3.0;   // the frame's outer corners
 lip_r       = phone_corner_r - 2.0;  // [G] the lip's inner corners follow the phone's
 frame_wall  = 2.4;   // the rails round the phone's edges
+top_wall    = 6.4;   // the top rail is wider: two screws go through it into the plate
 frame_over  = 2.0;   // how far the lip reaches over the screen
-return_w    = 5.0;   // the two corner returns at the open right end
-key_win_margin = 2.0;   // the volume window is both keys plus this each side
-power_margin   = 3.0;   // the power relief is the key plus this each side
-power_relief   = 1.0;   // the rail is hollowed this deep over the power key
+key_win_margin = 3.0;   // one window over volume AND power keys, plus this each side
+port_margin    = 4.0;   // the USB-C and speaker openings, plus this each side
+
+// The top rail is screwed to the plate from the front, outside the slot's
+// reach where the plate is solid. The body has no holes there: the frame's
+// holes are the jig, the pilot holes are drilled by hand through them.
+top_screw_x   = [95.0, 150.0];   // [K] from the phone's left end
+top_cb_d      = 4.2;             // counterbore for the head, in the rail
+top_cb_depth  = 6.5;             // deep enough for M2 x 10 to bite the plate
 
 // M2 screws — the ones on the shelf. From underneath, through the floor
 // slab, into the frame's foot.
 screw_d       = 2.0;   // [R] M2
-screw_tap_d   = 1.6;   // [K] hole the screw cuts its own thread into, PLA
+screw_tap_d   = 1.8;   // [K] hole the screw cuts its own thread into, PLA;
+                       //     1.6 came out of the printer too small to find
 screw_clear_d = 2.3;   // [K] through-hole in the floor slab
 screw_head_d  = 3.8;   // [R] pan head — measure yours
 screw_head_h  = 1.4;   // [R]
@@ -212,7 +232,7 @@ insert     = coil_from_top + sticker_y;       // 40   how far the card goes in
 card_proud = card_h - insert;                 // 80   what stands above the phone
 
 slot_w   = card_w + 2 * clr;                  // 80.6
-slot_x0  = coil_x - slot_w / 2;               // the slot's left wall, inside
+slot_x0  = coil_x - sticker_x - clr;          // the slot's left wall, inside: the sticker lands on the coil
 slot_u0  = phone_h - insert;                  // the stop, up the plane
 
 // The frame's ends, round the phone with play.
@@ -242,8 +262,9 @@ function py(u, n) = y0 + u * s - n * c;
 function pz(u, n) = z0 + u * c + n * s;
 
 // The frame's foot reaches this far forward; the floor slab starts a little
-// in front of that.
-foot_n   = phone_t + play + frame_face;
+// in front of that. Pinned to the printed body (frame_face was 1.6 then).
+foot_n   = phone_t + play + 1.6;   // [M] as printed, 9.8
+face_n1  = phone_t + play + frame_face;   // the face's front
 foot_u_at_floor = (floor_t - z0 - foot_n * s) / c;   // u where the foot's front meets the floor
 y_front  = py(foot_u_at_floor, foot_n) - front_margin;
 y_back   = y_front + base_depth;
@@ -265,7 +286,8 @@ echo(str("read path ", win_t + clr + sticker_t, " mm from back glass to sticker 
 echo(str("body      ", plate_x_right - plate_x_left, " x ", base_depth, " x ", pz(u_top, -plate_t) , " mm (l x d x h)"));
 echo(str("base      front apron ", py(plate_u_at_floor, 0) - y_front, ", slope foot at y ", slope_y, ", rear apron ", y_back - slope_y));
 echo(str("with card ", pz(slot_u0 + card_h, -win_t - channel), " mm high"));
-echo(str("frame     ", x_right - x_left, " x ", u_top - mouth_h + play + frame_wall, " x ", foot_n, " mm"));
+echo(str("frame     ", x_right - x_left, " x ", u_top - mouth_h + play + top_wall, " x ", face_n1, " mm"));
+echo(str("top screw ", top_cb_depth - (face_n1 - 0) + 0, " -> M2 x ", screw_l, " bites ", screw_l - (face_n1 - top_cb_depth), " mm of plate (", plate_t, " thick)"));
 echo(str("mouth     ", slot_w + 2 * mouth_flare_x, " wide, ", channel + mouth_flare_n + (mouth_n_front + win_t), " front to back at the top, ", mouth_h, " tall"));
 floor_left   = floor_t - cb_depth;            // [G] floor under the screw head
 screw_engage = screw_l - floor_left;          // [G] thread in the foot
@@ -421,50 +443,51 @@ module body() {
 // Built in the plane frame; the foot is then cut flat by the floor slab.
 module frame_raw() {
     face_n0 = phone_t + play;
-    face_n1 = foot_n;
     u_bot = -play;                 // the phone's bottom edge, with play
     u_topr = phone_h + play;       // the phone's top edge, with play
+    u_hi = u_topr + top_wall;      // the frame's top edge
     difference() {
         intersection() { union() {
             // the face: a plate over the whole front, the window is cut below
-            pbox(x_left, x_right, u_bot - frame_wall, u_topr + frame_wall, face_n0, face_n1);
+            pbox(x_left, x_right, u_bot - frame_wall, u_hi, face_n0, face_n1);
             // left rail
-            pbox(x_left, -play, u_bot - frame_wall, u_topr + frame_wall, 0, face_n1);
-            // top rail
-            pbox(x_left, x_right, u_topr, u_topr + frame_wall, 0, face_n1);
-            // the foot: bottom rail, reaching down to be cut by the floor
-            pbox(x_left, x_right, u_bot - 40, u_bot, 0, face_n1);
-            // corner returns at the open right end
-            for (uu = [[u_bot - frame_wall, return_w], [phone_h - return_w, u_topr + frame_wall]])
-                pbox(phone_l + play, x_right, uu[0], uu[1], 0, face_n1);
+            pbox(x_left, -play, u_bot - frame_wall, u_hi, 0, face_n1);
+            // right rail — closed; the USB-C and speaker openings are cut below
+            pbox(phone_l + play, x_right, u_bot - frame_wall, u_hi, 0, face_n1);
+            // top rail, wide enough for the two screw seats
+            pbox(x_left, x_right, u_topr, u_hi, 0, face_n1);
+            // the foot: bottom rail, reaching down to be cut by the floor.
+            // Its front is the printed body's foot_n, not the new face.
+            pbox(x_left, x_right, u_bot - 40, u_bot, 0, foot_n);
+            pbox(x_left, x_right, u_bot - frame_wall, u_bot, 0, face_n1);
         }
         // ... all of it inside rounded outer corners
         translate([x_left, u_bot - frame_wall, -1]) linear_extrude(face_n1 + 2)
-            rounded_rect(x_right - x_left, u_topr + frame_wall - (u_bot - frame_wall), frame_r);
+            rounded_rect(x_right - x_left, u_hi - (u_bot - frame_wall), frame_r);
         }
-        // the window in the face: the screen minus the overlap, open to the
-        // right, its corners rounded like the phone's
+        // the window in the face: the screen minus the overlap, its corners
+        // rounded like the phone's
         translate([frame_over, frame_over, face_n0 - 1]) linear_extrude(face_n1 - face_n0 + 2)
-            rounded_rect(x_right + 20 - frame_over, phone_h - 2 * frame_over, lip_r);
-        // ... but the corner returns keep their lip
-        // (they are inside the window cut above, so put them back below)
-        // one window for both volume keys: through the top rail and the
-        // face above the phone's edge, never into the lip over the screen
-        pbox(key_vol_up[0] - key_win_margin, key_vol_dn[1] + key_win_margin,
-             u_topr - 0.01, u_topr + frame_wall + 1, -1, face_n1 + 1);
-        // power key: a relief in the rail's inner face, not a window
-        pbox(key_power[0] - power_margin, key_power[1] + power_margin,
-             u_topr - 0.01, u_topr + power_relief, -1, face_n0);
-        // tap holes for the screws, up into the foot
-        // world-vertical holes: the inverse of plane(), applied to a cylinder
-        // standing at the screw's world position
+            rounded_rect(phone_l - 2 * frame_over, phone_h - 2 * frame_over, lip_r);
+        // one window over the volume keys and the power key: through the top
+        // rail and the face above the phone's edge, never into the lip
+        pbox(key_vol_up[0] - key_win_margin, key_power[1] + key_win_margin,
+             u_topr - 0.01, u_hi + 1, -1, face_n1 + 1);
+        // the right end: USB-C plug and speaker, straight through rail and face
+        for (uu = [usb_u, speaker_u])
+            pbox(phone_l - 1, x_right + 1, uu[0] - port_margin, uu[1] + port_margin, -1, face_n1 + 1);
+        // two screws from the front through the top rail into the plate:
+        // clearance hole, and a counterbore so M2 x 10 reaches the plate
+        for (x = top_screw_x) translate([x, u_topr + top_wall / 2, 0]) {
+            translate([0, 0, -1]) cylinder(d = screw_clear_d, h = face_n1 + 2);
+            translate([0, 0, face_n1 - top_cb_depth]) cylinder(d = top_cb_d, h = top_cb_depth + 1);
+        }
+        // world-vertical holes for the two screws from below: the inverse of
+        // plane(), applied to a cylinder standing at the screw's world position
         for (x = screw_x)
             rotate([-(90 - tilt), 0, 0]) translate([x, screw_y() - y0, -1 - z0])
                 cylinder(d = screw_tap_d, h = screw_l + 1);
     }
-    // corner returns' lips, put back after the window cut
-    for (uu = [[u_bot - frame_wall, return_w], [phone_h - return_w, u_topr + frame_wall]])
-        pbox(phone_l - frame_over, x_right, uu[0], uu[1], face_n0, face_n1);
 }
 
 module frame() {
@@ -563,6 +586,6 @@ else if (part != "none") echo(str("unknown part \"", part, "\""));
 // corner was printed as a reflection and only fitted the wrong end of the
 // phone, foot up.
 module frame_flat() {
-    translate([0, 0, foot_n]) rotate([180, 0, 0])
+    translate([0, 0, face_n1]) rotate([180, 0, 0])
         rotate([-(90 - tilt), 0, 0]) translate([0, -y0, -z0]) frame();
 }

@@ -19,7 +19,7 @@ the style of the talker's case file:
 | NFC | yes on the European model; Android reader mode from API 19 | [R] |
 | Android | shipped with 10, last update 13 (One UI 5.1) | [R] check *Settings → About phone* |
 | USB | USB-C, on the bottom edge in portrait — a **short** side in landscape, together with the speaker, the microphone and the jack | [R] that end faces the child's right and stays open [K], ADR 0007 |
-| keys | volume up, volume down and power on the portrait right edge — the **top** long edge in landscape | [R] positions along the edge are [A], `key_*` in `case/zeigmal-case.scad` |
+| keys | volume up, volume down and power on the portrait right edge — the **top** long edge in landscape; all three reachable through one window in the frame | [R] positions along the edge are [A], `key_*` in `case/zeigmal-case.scad` |
 | screen border | about 2.5 mm of black round the AMOLED; the frame covers 2 mm of it | [A] `screen_inset` — measure before the frame is printed |
 | headphone jack | 3.5 mm, bottom edge | [R] a speaker option if the built-in one is too quiet in the holder |
 | speaker | single bottom-firing | [R] the holder must not cover it |
@@ -37,7 +37,7 @@ the style of the talker's case file:
 | the 25 × 25 mm cards in `~/Code/card-case` | 25 × 25 mm, 1.5 mm thick with a 10 mm velcro coin (designed at 1.6 mm pitch) | [M] Stefanie, 2026-08 — a different card family; only the wall and clearance numbers carry over |
 | wochenwerk's NFC cards | 85 × 120 mm laminated, sticker at a fixed marked position | [K] from `wochenwerk/docs/hardware.md`; a different card, the same slot idea |
 | sticker | NTAG213, 25 mm round | [K] docs/nfc.md |
-| sticker position on the card | on the width centre line (a card pushed in back to front still reads), 20 mm above the bottom edge | [K] `sticker_y`; the slot's stop puts it over the coil |
+| sticker position on the card | in the lower-left corner seen from the front (lower-right on the back), 30 mm up | [K] Stefanie, 2026-09-14; it reads there through the printed slot. `sticker_x`, `sticker_y` |
 | insertion depth | `coil_from_top + sticker_y` — 40 mm while the coil is assumed 20 mm below the top edge; 80 mm stand proud | [G] computed, never chosen; a deeper coil takes more of the card in |
 
 ## The stand
