@@ -5,8 +5,11 @@
 //  from underneath so that a child cannot take the phone out.
 //  Two printed parts, two M2 screws. PLA, 0.4 mm nozzle, no supports.
 //
-//  IMPORTANT: the phone has not been measured yet and the coil has not been
-//  found. Every number carries a tag saying where it comes from:
+//  This is the second holder. The first (git tag holder-v1, printed on
+//  2026-09-15) had a plate 20 mm wider than the phone, a floor apron behind,
+//  a block for the funnel bolted onto its back and a frame that flexed. What
+//  it got right — the funnel a card slides down into — is kept unchanged.
+//  Every number carries a tag saying where it comes from:
 //
 //    [M]  measured (nobody, yet — see docs/hardware.md)
 //    [R]  researched (manufacturer figure)
@@ -127,7 +130,7 @@ sticker_y = 30.0;   // [K] sticker centre above the card's bottom edge. 20 on
 // the lower-left corner, 12.5, and read there. Keep card_w / 2 while the
 // printed body is the body; set 12.5 before a new body is printed and the
 // slot moves inside the phone's length.
-sticker_x = card_w / 2;   // [K]
+sticker_x = 12.5;   // [K] the lower-left corner; holder-v1 used card_w / 2
 
 // A child must be able to take the card back without a fingernail.
 card_proud_min = 45.0;  // [K] docs/enclosure.md
@@ -166,17 +169,15 @@ back_t  = 2.4;   // the slot's rear wall, the one the card leans on
    4.  THE STAND  [K]
    ===================================================================== */
 
+// A wedge: the plate leans `tilt` back, the top is a ridge as thick as the
+// funnel needs, and the back slopes down to the table at `slope_deg`. Hollow
+// underneath, two ribs. Nothing sticks out of it.
 tilt       = 20.0;  // degrees back from vertical
-base_depth = 110.0; // front edge to back edge, on the table. verify.py says
-                    // what sideways push at the card's top tips the holder;
-                    // 110 accepts a light one (ADR 0007) — the children push
-                    // cards in, they do not shove them
-rear_u     = 46.0;  // where the rear slope leaves the plate's back, up the plane
-slope_deg  = 50.0;  // the rear slope from the horizontal. Printed base down
-                    // its underside is a 40 degree overhang; 45 is the limit
+slope_deg  = 60.0;  // the back, from the horizontal; its underside is then a
+                    // 30 degree overhang when printed base down, 45 is the limit
 foot_h     =  8.0;  // the phone's bottom edge this far above the floor slab —
                     // this is the frame's foot, and the screws bite into it
-front_margin = 4.0;  // floor slab in front of the frame's foot
+corner_r   =  8.0;  // the body's and the frame's top corners, seen from the front
 rib_x      = [52.0, 108.0];  // two ribs under the plate, x from the phone's left end
 rib_t      = 2.4;
 
@@ -185,11 +186,6 @@ rib_t      = 2.4;
    5.  THE FRAME  [K]
    ===================================================================== */
 
-// The body was printed on 2026-09-15 from the numbers above this section.
-// The frame is the part that gets reprinted; what it touches on the body —
-// the plate's face, the floor slab in front of it, the two holes in that
-// slab — must not move. foot_n is pinned to the printed body for that
-// reason and does not follow frame_face.
 frame_face  = 2.4;   // the face over the screen's border. 1.6 was flimsy
 frame_r     = 3.0;   // the frame's outer corners
 lip_r       = phone_corner_r - 2.0;  // [G] the lip's inner corners follow the phone's
@@ -200,9 +196,8 @@ key_win_margin = 3.0;   // one window over volume AND power keys, plus this each
 port_margin    = 4.0;   // the USB-C and speaker openings, plus this each side
 
 // The top rail is screwed to the plate from the front, outside the slot's
-// reach where the plate is solid. The body has no holes there: the frame's
-// holes are the jig, the pilot holes are drilled by hand through them.
-top_screw_x   = [95.0, 150.0];   // [K] from the phone's left end
+// reach where the plate is solid. The body has the tap holes.
+top_screw_x   = [100.0, 150.0];  // [K] from the phone's left end
 top_cb_d      = 4.2;             // counterbore for the head, in the rail
 top_cb_depth  = 6.5;             // deep enough for M2 x 10 to bite the plate
 
@@ -245,7 +240,7 @@ x_right  = phone_l + play + frame_wall;
 // frame's top rail so the funnel has its height.
 plate_x_left  = min(x_left, slot_x0 - mouth_flare_x - wall);
 plate_x_right = max(x_right, slot_x0 + slot_w + mouth_flare_x + wall);
-u_top    = phone_h + play + frame_wall + mouth_h;
+u_top    = phone_h + play + top_wall + mouth_h;   // the funnel starts at the frame's top edge
 mouth_u0 = u_top - mouth_h;                        // where the funnel starts
 mouth_n_front = min(-win_t + mouth_flare_n, 0);    // the flare, clamped at the plate's face
 
@@ -261,21 +256,39 @@ c = cos(tilt);
 function py(u, n) = y0 + u * s - n * c;
 function pz(u, n) = z0 + u * c + n * s;
 
-// The frame's foot reaches this far forward; the floor slab starts a little
-// in front of that. Pinned to the printed body (frame_face was 1.6 then).
-foot_n   = phone_t + play + 1.6;   // [M] as printed, 9.8
-face_n1  = phone_t + play + frame_face;   // the face's front
-foot_u_at_floor = (floor_t - z0 - foot_n * s) / c;   // u where the foot's front meets the floor
-y_front  = py(foot_u_at_floor, foot_n) - front_margin;
-y_back   = y_front + base_depth;
+// The frame in depth: the face sits in front of the phone, the foot under it.
+face_n0  = phone_t + play;
+face_n1  = phone_t + play + frame_face;
+foot_n   = face_n1;
+
+// The floor slab's front edge sits behind the frame's face, with play: the
+// face reaches down to the table in front of it, so from the front nothing
+// of the slab shows. u_at(z, n): where the plane frame's u is at world z.
+function u_at(z, n) = (z - z0 - n * s) / c;
+y_front  = py(u_at(floor_t, face_n0), face_n0) + play;
 
 // The stop must be inside the plate (above the floor), the slot must fit
 // between the plate's ends.
 plate_u_at_floor = (floor_t - z0) / c;
 
-// The rear slope leaves the plate's back at rear_u and reaches the floor
-// slab at slope_y; behind that the floor continues as the rear apron.
-slope_y = py(rear_u, -plate_t) + (pz(rear_u, -plate_t) - floor_t) / tan(slope_deg);
+// The frame's edges up the plane.
+u_bot  = -play;                  // the phone's bottom edge, with play
+u_topr = phone_h + play;         // the phone's top edge, with play
+u_hi   = u_topr + top_wall;      // the frame's top edge
+
+// The ridge: at the top the wedge is as thick as the plate plus the funnel's
+// rear flare plus a wall. The back slopes from the ridge's back edge down to
+// the table; where it lands is the base's back edge.
+ridge_t  = plate_t + mouth_flare_n + wall;
+ridge_y  = py(u_top, -ridge_t);
+ridge_z  = pz(u_top, -ridge_t);
+slope_y  = ridge_y + ridge_z / tan(slope_deg);
+y_back   = slope_y;
+base_depth = y_back - y_front;                // [G]
+
+// The cavity underneath stops one wall below where the funnel starts, so the
+// ridge with the funnel in it is solid (infill, in practice).
+cavity_u_top = mouth_u0 - wall;
 
 echo(str("channel   ", channel, " mm front to back, card ", card_t, " + sticker ", sticker_t, " + 2 x ", clr));
 echo(str("plate     ", plate_t, " mm thick = window ", win_t, " + channel + rear wall ", back_t));
@@ -284,10 +297,11 @@ echo(str("slot      x ", slot_x0 - wall, " .. ", slot_x0 + slot_w + wall, " of p
 echo(str("card      stands ", max(0, -(slot_x0 + clr)), " mm past the phone's left end"));
 echo(str("read path ", win_t + clr + sticker_t, " mm from back glass to sticker face"));
 echo(str("body      ", plate_x_right - plate_x_left, " x ", base_depth, " x ", pz(u_top, -plate_t) , " mm (l x d x h)"));
-echo(str("base      front apron ", py(plate_u_at_floor, 0) - y_front, ", slope foot at y ", slope_y, ", rear apron ", y_back - slope_y));
+echo(str("base      ", base_depth, " deep: slab front at y ", y_front, ", back edge at ", y_back, ", ridge ", ridge_t, " thick"));
 echo(str("with card ", pz(slot_u0 + card_h, -win_t - channel), " mm high"));
 echo(str("frame     ", x_right - x_left, " x ", u_top - mouth_h + play + top_wall, " x ", face_n1, " mm"));
-echo(str("top screw ", top_cb_depth - (face_n1 - 0) + 0, " -> M2 x ", screw_l, " bites ", screw_l - (face_n1 - top_cb_depth), " mm of plate (", plate_t, " thick)"));
+top_bite = screw_l - (face_n1 - top_cb_depth);   // [G] thread in the plate
+echo(str("top screw M2 x ", screw_l, " bites ", top_bite, " mm of the ", plate_t, " mm plate"));
 echo(str("mouth     ", slot_w + 2 * mouth_flare_x, " wide, ", channel + mouth_flare_n + (mouth_n_front + win_t), " front to back at the top, ", mouth_h, " tall"));
 floor_left   = floor_t - cb_depth;            // [G] floor under the screw head
 screw_engage = screw_l - floor_left;          // [G] thread in the foot
@@ -317,53 +331,48 @@ module rounded_rect(w, h, r) {
    8.  THE BODY
    ===================================================================== */
 
-// The base's side profile in world (y, z): front apron, the plate's back,
-// the rear slope, the rear apron. The plate itself is a separate solid in
-// the plane frame.
+// The wedge's side profile in world (y, z): floor slab, up the plate's
+// back, along the ridge, down the slope. The plate itself is a separate
+// solid in the plane frame and overlaps this.
 function base_profile() = [
     [y_front, 0],
     [y_front, floor_t],
     [py(plate_u_at_floor, -plate_t), floor_t],
-    [py(rear_u, -plate_t), pz(rear_u, -plate_t)],
-    [slope_y, floor_t],
-    [y_back, floor_t],
+    [py(u_top, -plate_t), pz(u_top, -plate_t)],
+    [ridge_y, ridge_z],
     [y_back, 0]
 ];
 
-// The cavity under the slope, before the walls are taken off it: plate back,
-// slope, and the floor — pushed below the table so that shrinking it by one
-// wall leaves the bottom open.
+// The cavity under the slope, before the walls are taken off it: up the
+// plate's back to cavity_u_top, across to the slope, down the slope, and
+// below the table so that shrinking it by one wall leaves the bottom open.
+function slope_y_at(z) = ridge_y + (ridge_z - z) / tan(slope_deg);
 function cavity_profile() = [
-    [py((-5 - z0 + plate_t * s) / c, -plate_t), -5],
-    [py(rear_u, -plate_t), pz(rear_u, -plate_t)],
-    [slope_y, floor_t],
-    [slope_y, -5]
+    [py(u_at(-5, -plate_t), -plate_t), -5],
+    [py(cavity_u_top, -plate_t), pz(cavity_u_top, -plate_t)],
+    [slope_y_at(pz(cavity_u_top, -plate_t)), pz(cavity_u_top, -plate_t)],
+    [slope_y_at(-5), -5]
 ];
 
-// rotate([90, 0, 90]) turns the (y, z) profile so that it extrudes along
-// +x; the extrusion starts at x = 0, hence the translate to the plate's end.
 module base_solid() {
-    translate([plate_x_left, 0, 0]) rotate([90, 0, 90]) linear_extrude(plate_x_right - plate_x_left)
+    translate([x_left, 0, 0]) rotate([90, 0, 90]) linear_extrude(x_right - x_left)
         polygon(base_profile());
 }
 
-// Hollow underneath: the cavity shrunk by one wall, which leaves a wall
-// behind the plate, the slope wall, a small solid foot where the slope
-// meets the floor, and an open bottom. Subtracted bay by bay between the
-// ribs, so the ribs and the two ends stay.
 module base_hollow_2d() {
     offset(delta = -wall) polygon(cavity_profile());
 }
 
+// Subtracted bay by bay between the ribs, so the ribs and the two ends stay.
 module base_hollow() {
-    bays = concat([plate_x_left + wall], [for (r = rib_x) each [r - rib_t / 2, r + rib_t / 2]], [plate_x_right - wall]);
+    bays = concat([x_left + wall], [for (r = rib_x) each [r - rib_t / 2, r + rib_t / 2]], [x_right - wall]);
     for (i = [0 : 2 : len(bays) - 2])
         translate([bays[i], 0, 0]) rotate([90, 0, 90]) linear_extrude(bays[i + 1] - bays[i])
             base_hollow_2d();
 }
 
 module plate() {
-    plane() pbox(plate_x_left, plate_x_right, plate_u_at_floor - 5, u_top, -plate_t, 0);
+    plane() pbox(x_left, x_right, plate_u_at_floor - 5, u_top, -plate_t, 0);
 }
 
 module slot_cut() {
@@ -388,45 +397,49 @@ module slot_cut() {
     }
 }
 
-// The funnel's rear flare would run out of the plate's back; a block behind
-// the plate at the mouth carries it, with a 45 degree underside so it
-// prints without support.
-module mouth_block() {
-    plane() hull() {
-        pbox(slot_x0 - mouth_flare_x - wall, slot_x0 + slot_w + mouth_flare_x + wall,
-             mouth_u0, u_top, -plate_t - mouth_flare_n, -plate_t + 0.01);
-        pbox(slot_x0 - mouth_flare_x - wall, slot_x0 + slot_w + mouth_flare_x + wall,
-             mouth_u0 - mouth_flare_n, mouth_u0, -plate_t, -plate_t + 0.01);
-    }
-}
-
 module camera_relief() {
     plane() pbox(cam_x0 - cam_play, cam_x1 + cam_play, cam_u0 - cam_play, cam_u1 + cam_play,
                  -cam_h - cam_play, 0.01);
 }
 
-// The screws come up through the floor slab. Head in a counterbore
-// underneath, clearance through the slab; the tap hole is in the frame.
+// The screw from below stands in the middle of where the foot meets the slab.
+function screw_y() = (y_front + py(plate_u_at_floor, 0)) / 2;
+
+// Screws from below: head in a counterbore under the slab, clearance through
+// it; the tap hole is in the frame's foot. Screws from the front: tap holes
+// in the plate where the top rail's screws land.
 module screw_holes_body() {
     for (x = screw_x) translate([x, screw_y(), 0]) {
         translate([0, 0, -1]) cylinder(d = screw_clear_d, h = floor_t + 2);
         translate([0, 0, -1]) cylinder(d = screw_head_d + 0.4, h = 1 + cb_depth);
     }
+    for (x = top_screw_x)
+        plane() translate([x, phone_h + play + top_wall / 2, -top_bite - 1])
+            cylinder(d = screw_tap_d, h = top_bite + 2);
 }
 
-// The screw stands in the middle of the foot, where the foot meets the floor.
-function screw_y() = py(foot_u_at_floor, foot_n / 2) + 0.4;
+// Seen from the front, the top corners are rounded; the bottom stands on
+// the table and stays square. In the plane frame, extruded through the
+// whole depth.
+module top_rounded(w, h, r) {
+    hull() {
+        translate([0, 0]) square([w, h - r]);
+        for (x = [r, w - r]) translate([x, h - r]) circle(r);
+    }
+}
 
 module body() {
     difference() {
-        union() {
-            base_solid();
-            mouth_block();
-            intersection() {
-                plate();
-                // nothing below the table, nothing behind the base
-                translate([plate_x_left, y_front, 0]) cube([plate_x_right - plate_x_left, base_depth, 200]);
+        intersection() {
+            union() {
+                base_solid();
+                intersection() {
+                    plate();
+                    translate([x_left, y_front, 0]) cube([x_right - x_left, base_depth, 200]);
+                }
             }
+            plane() translate([x_left, -80, -80]) linear_extrude(100)
+                top_rounded(x_right - x_left, u_top + 80, corner_r);
         }
         base_hollow();
         slot_cut();
@@ -440,64 +453,66 @@ module body() {
    9.  THE FRAME
    ===================================================================== */
 
-// Built in the plane frame; the foot is then cut flat by the floor slab.
-module frame_raw() {
-    face_n0 = phone_t + play;
-    u_bot = -play;                 // the phone's bottom edge, with play
-    u_topr = phone_h + play;       // the phone's top edge, with play
-    u_hi = u_topr + top_wall;      // the frame's top edge
-    difference() {
-        intersection() { union() {
-            // the face: a plate over the whole front, the window is cut below
-            pbox(x_left, x_right, u_bot - frame_wall, u_hi, face_n0, face_n1);
-            // left rail
-            pbox(x_left, -play, u_bot - frame_wall, u_hi, 0, face_n1);
-            // right rail — closed; the USB-C and speaker openings are cut below
-            pbox(phone_l + play, x_right, u_bot - frame_wall, u_hi, 0, face_n1);
-            // top rail, wide enough for the two screw seats
-            pbox(x_left, x_right, u_topr, u_hi, 0, face_n1);
-            // the foot: bottom rail, reaching down to be cut by the floor.
-            // Its front is the printed body's foot_n, not the new face.
-            pbox(x_left, x_right, u_bot - 40, u_bot, 0, foot_n);
-            pbox(x_left, x_right, u_bot - frame_wall, u_bot, 0, face_n1);
-        }
-        // ... all of it inside rounded outer corners. The rectangle reaches
-        // down past the foot: the version that started at the face's bottom
-        // edge clipped the foot to 2.4 mm, and the frame printed on
-        // 2026-09-15 had nothing to screw into.
-        translate([x_left, u_bot - 40, -1]) linear_extrude(face_n1 + 2)
-            rounded_rect(x_right - x_left, u_hi - (u_bot - 40), frame_r);
-        }
-        // the window in the face: the screen minus the overlap, its corners
-        // rounded like the phone's
-        translate([frame_over, frame_over, face_n0 - 1]) linear_extrude(face_n1 - face_n0 + 2)
-            rounded_rect(phone_l - 2 * frame_over, phone_h - 2 * frame_over, lip_r);
-        // one window over the volume keys and the power key: through the top
-        // rail and the face above the phone's edge, never into the lip
-        pbox(key_vol_up[0] - key_win_margin, key_power[1] + key_win_margin,
-             u_topr - 0.01, u_hi + 1, -1, face_n1 + 1);
-        // the right end: USB-C plug and speaker, straight through rail and face
-        for (uu = [usb_u, speaker_u])
-            pbox(phone_l - 1, x_right + 1, uu[0] - port_margin, uu[1] + port_margin, -1, face_n1 + 1);
-        // two screws from the front through the top rail into the plate:
-        // clearance hole, and a counterbore so M2 x 10 reaches the plate
-        for (x = top_screw_x) translate([x, u_topr + top_wall / 2, 0]) {
-            translate([0, 0, -1]) cylinder(d = screw_clear_d, h = face_n1 + 2);
-            translate([0, 0, face_n1 - top_cb_depth]) cylinder(d = top_cb_d, h = top_cb_depth + 1);
-        }
-        // world-vertical holes for the two screws from below: the inverse of
-        // plane(), applied to a cylinder standing at the screw's world position
-        for (x = screw_x)
-            rotate([-(90 - tilt), 0, 0]) translate([x, screw_y() - y0, -1 - z0])
-                cylinder(d = screw_tap_d, h = screw_l + 1);
+// Built in the plane frame. The face reaches down to the table in front of
+// the floor slab; the foot sits on the slab. Two cuts by world planes do
+// that, so the solids and the cuts are separate modules.
+module frame_face_solids() {
+    // the face: over the whole front, down past the table, the window is cut later
+    pbox(x_left, x_right, u_bot - 40, u_hi, face_n0, face_n1);
+    // left and right rails
+    pbox(x_left, -play, u_bot - frame_wall, u_hi, 0, face_n1);
+    pbox(phone_l + play, x_right, u_bot - frame_wall, u_hi, 0, face_n1);
+    // top rail, wide enough for the two screw seats
+    pbox(x_left, x_right, u_topr, u_hi, 0, face_n1);
+    // the bottom rail, in front of the phone's bottom edge
+    pbox(x_left, x_right, u_bot - frame_wall, u_bot, 0, face_n1);
+}
+
+module frame_foot_solid() {
+    pbox(x_left, x_right, u_bot - 40, u_bot, 0, face_n0);
+}
+
+module frame_cuts() {
+    // the window in the face: the screen minus the overlap, its corners
+    // rounded like the phone's
+    translate([frame_over, frame_over, face_n0 - 1]) linear_extrude(face_n1 - face_n0 + 2)
+        rounded_rect(phone_l - 2 * frame_over, phone_h - 2 * frame_over, lip_r);
+    // one window over the volume keys and the power key: through the top
+    // rail and the face above the phone's edge, never into the lip
+    pbox(key_vol_up[0] - key_win_margin, key_power[1] + key_win_margin,
+         u_topr - 0.01, u_hi + 1, -1, face_n1 + 1);
+    // the right end: USB-C plug and speaker, straight through rail and face
+    for (uu = [usb_u, speaker_u])
+        pbox(phone_l - 1, x_right + 1, uu[0] - port_margin, uu[1] + port_margin, -1, face_n1 + 1);
+    // two screws from the front through the top rail into the plate:
+    // clearance hole, and a counterbore so M2 x 10 reaches the plate
+    for (x = top_screw_x) translate([x, u_topr + top_wall / 2, 0]) {
+        translate([0, 0, -1]) cylinder(d = screw_clear_d, h = face_n1 + 2);
+        translate([0, 0, face_n1 - top_cb_depth]) cylinder(d = top_cb_d, h = top_cb_depth + 1);
     }
+    // world-vertical holes for the two screws from below: the inverse of
+    // plane(), applied to a cylinder standing at the screw's world position
+    for (x = screw_x)
+        rotate([-(90 - tilt), 0, 0]) translate([x, screw_y() - y0, -1 - z0])
+            cylinder(d = screw_tap_d, h = screw_l + 1);
+}
+
+module above(z) {
+    translate([x_left - 1, -100, z]) cube([x_right - x_left + 2, 300, 300]);
 }
 
 module frame() {
-    intersection() {
-        plane() frame_raw();
-        // cut the foot flat where it sits on the floor slab
-        translate([x_left - 1, -100, floor_t]) cube([x_right - x_left + 2, 300, 300]);
+    difference() {
+        intersection() {
+            union() {
+                intersection() { plane() frame_face_solids(); above(0); }
+                intersection() { plane() frame_foot_solid(); above(floor_t); }
+            }
+            // rounded top corners, the same radius as the body's
+            plane() translate([x_left, -80, -1]) linear_extrude(face_n1 + 2)
+                top_rounded(x_right - x_left, u_hi + 80, corner_r);
+        }
+        plane() frame_cuts();
     }
 }
 
@@ -535,7 +550,7 @@ module fit_test() {
     translate([0, 0, -fit_cut_z]) intersection() {
         body();
         translate([slot_x0 - wall - 3, y_front - 1, fit_cut_z])
-            cube([slot_w + 2 * wall + 6, py(rear_u, -plate_t) - y_front + 12, 300]);
+            cube([slot_w + 2 * wall + 6, ridge_y - y_front + 12, 300]);
     }
 }
 

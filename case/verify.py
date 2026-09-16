@@ -63,6 +63,7 @@ def load_parameters(path):
     # mirrored from the .scad: a point (u, n) in the plane frame, in world (y, z)
     ns['py'] = lambda u, n: ns['y0'] + u * ns['s'] - n * ns['c']
     ns['pz'] = lambda u, n: ns['z0'] + u * ns['c'] + n * ns['s']
+    ns['u_at'] = lambda z, n: (z - ns['z0'] - n * ns['s']) / ns['c']
 
     raw = {}
     for m in re.finditer(r'^\s*([a-zA-Z_$]\w*)\s*=\s*([^;]+);', txt, re.M):
@@ -175,7 +176,7 @@ def compute(p, bed, phone_mass, fill):
                 - (G('phone_h') - G('coil_from_top'))), '<=', 0.001,
             note='sticker_y and coil_from_top disagree with insert')
     b.check(g, 'sticker centre lands on the coil centre (x)',
-            abs((G('slot_x0') + G('slot_w') / 2) - G('coil_x')), '<=', 0.001)
+            abs((G('slot_x0') + G('clr') + G('sticker_x')) - G('coil_x')), '<=', 0.001)
     b.check(g, 'whole sticker inside the slot at the stop',
             insert - (G('sticker_y') + G('sticker_d') / 2), '>=', 2.0,
             note='the sticker\'s top edge is above the phone\'s edge')
@@ -265,12 +266,12 @@ def compute(p, bed, phone_mass, fill):
         b.check(g, 'top screw at x=%.0f inside the frame' % x, G('phone_l') - x, '>=', G('top_cb_d'))
     b.check(g, 'top rail takes the counterbore', G('top_wall') - G('top_cb_d'), '>=', 1.6,
             note='less than two perimeters beside the head')
-    bite = G('screw_l') - (G('face_n1') - G('top_cb_depth'))
+    bite = G('top_bite')
     b.check(g, 'top screw bites the plate (2.5 x d)', bite, '>=', 2.5 * G('screw_d'))
     b.check(g, 'top screw stays inside the plate', G('plate_t') - bite, '>=', 0.3,
             note='the tip comes out of the back')
-    b.check(g, 'foot front is the printed body\'s', G('foot_n'), '==', 9.8,
-            note='the frame would no longer land on the printed holes')
+    b.check(g, 'top screw hole clear of the funnel\'s reach (u)',
+            G('mouth_u0') - (G('phone_h') + G('play') + G('top_wall') / 2 + G('screw_tap_d') / 2), '>=', 0.0)
 
     # --- 5. Screws --------------------------------------------------------
     g = '5. Two M2 screws from underneath'
@@ -281,13 +282,13 @@ def compute(p, bed, phone_mass, fill):
     b.check(g, 'thread in the foot (2.5 x d for PLA)', engage, '>=', 2.5 * G('screw_d'),
             note='a longer screw, or a thinner floor')
     # the foot's top at the screw: on the plane u = -play, at y = screw_y
-    screw_y = py(G('foot_u_at_floor'), G('foot_n') / 2) + 0.4
+    screw_y = (G('y_front') + py(G('plate_u_at_floor'), 0)) / 2
     n_at = (-G('play') * G('s') - screw_y) / G('c')
     foot_top = pz(-G('play'), n_at)
     b.check(g, 'screw stays inside the foot', foot_top - (floor_left + engage), '>=', 1.0,
             note='the screw tip comes out under the phone')
-    b.check(g, 'screw stands under the foot (front)',
-            screw_y - py(G('foot_u_at_floor'), G('foot_n')), '>=', G('screw_tap_d'))
+    b.check(g, 'screw stands on the slab (front)',
+            screw_y - G('y_front'), '>=', G('screw_tap_d'))
     b.check(g, 'screw stands under the foot (back)',
             py(G('plate_u_at_floor'), 0) - screw_y, '>=', G('screw_tap_d'))
     for x in G('screw_x'):
@@ -308,7 +309,7 @@ def compute(p, bed, phone_mass, fill):
     b.check(g, 'body fits the bed (length)', body_l, '<=', bed[0])
     b.check(g, 'body fits the bed (depth)', G('base_depth'), '<=', bed[1])
     b.check(g, 'body fits the bed (height)', body_h, '<=', bed[2])
-    frame_d = G('u_top') - G('mouth_h') + G('play') + G('top_wall')
+    frame_d = G('u_hi') + G('play') + G('frame_wall') + (G('z0') / G('c'))
     frame_l = G('x_right') - G('x_left')
     b.check(g, 'frame fits the bed', max(frame_l, frame_d), '<=', max(bed[0], bed[1]))
     for n in ('wall', 'win_t', 'back_t', 'frame_wall', 'rib_t'):
@@ -319,7 +320,8 @@ def compute(p, bed, phone_mass, fill):
     b.check(g, 'plate underside overhang (no supports)', G('tilt'), '<=', 45.0, unit='deg')
     b.check(g, 'rear slope underside overhang (no supports)', 90.0 - G('slope_deg'), '<=', 45.0,
             unit='deg', note='steeper slope_deg')
-    b.check(g, 'slope foot in front of the back edge', G('y_back') - G('slope_y'), '>=', G('wall'))
+    b.check(g, 'ridge holds the funnel and a wall', G('ridge_t') - (G('plate_t') + G('mouth_flare_n')), '>=', G('wall'))
+    b.check(g, 'cavity stops below the funnel', G('mouth_u0') - G('cavity_u_top'), '>=', G('wall'))
     b.info(g, 'body', '%.1f x %.1f x %.1f mm, base down' % (body_l, G('base_depth'), body_h))
     b.info(g, 'frame', '%.1f x %.1f x %.1f mm, face down' % (frame_l, frame_d, G('face_n1')))
     b.info(g, 'with a card', '%.1f mm tall' % pz(G('slot_u0') + G('card_h'), -G('win_t') - channel))
@@ -327,32 +329,33 @@ def compute(p, bed, phone_mass, fill):
     # --- 7. Stability -------------------------------------------------------
     g = '7. Stability - what tips it'
     # masses from the geometry: PLA at 1.24 g/cm3, thin walls solid, the
-    # plate at `fill` of solid (perimeters, top/bottom and infill) [A]
+    # plate and the ridge at `fill` of solid (perimeters, top/bottom, infill) [A]
     rho = 1.24e-3  # g/mm3
-    L = G('plate_x_right') - G('plate_x_left')
+    L = G('x_right') - G('x_left')
     u_lo = G('plate_u_at_floor')
     plate_m = (G('u_top') - u_lo) * G('plate_t') * L * rho * fill
-    fy, fz = py(G('rear_u'), -G('plate_t')), pz(G('rear_u'), -G('plate_t'))
-    slope_len = math.hypot(G('slope_y') - fy, fz - G('floor_t'))
+    ridge_m = (G('u_top') - G('cavity_u_top')) * (G('ridge_t') - G('plate_t')) * L * rho * fill
+    fy, fz = G('ridge_y'), G('ridge_z')
+    slope_len = math.hypot(G('slope_y') - fy, fz)
     slope_m = slope_len * G('wall') * L * rho
     front_m = (py(u_lo, 0) - G('y_front')) * G('floor_t') * L * rho
-    apron_m = (G('y_back') - G('slope_y')) * G('floor_t') * L * rho
-    cavity_a = 0.5 * (G('slope_y') - py(u_lo, -G('plate_t'))) * (fz - G('floor_t'))
+    apron_m = 0.0
+    cavity_a = 0.5 * (G('slope_y') - py(u_lo, -G('plate_t'))) * pz(G('cavity_u_top'), -G('plate_t'))
     ribs_m = cavity_a * G('wall') * (2 + len(G('rib_x'))) * rho * 0.8
     Lf = G('x_right') - G('x_left')
-    frame_m = (Lf * (G('u_top') - G('mouth_h') + G('play') + G('top_wall')) * G('frame_face')
+    frame_m = (Lf * (G('u_hi') + G('play') + G('frame_wall') + 8) * G('frame_face')
                + 2 * Lf * G('frame_wall') * G('face_n1') + 10 * Lf * G('frame_wall')) * rho
     u_mid = (u_lo + G('u_top')) / 2
     parts = [
         (plate_m, py(u_mid, -G('plate_t') / 2)),
+        (ridge_m, py((G('u_top') + G('cavity_u_top')) / 2, -(G('plate_t') + G('ridge_t')) / 2)),
         (slope_m, (fy + G('slope_y')) / 2),
         (front_m, (G('y_front') + py(u_lo, 0)) / 2),
-        (apron_m, (G('slope_y') + G('y_back')) / 2),
         (ribs_m, (py(u_lo, -G('plate_t')) + G('slope_y')) / 2),
         (frame_m, py(G('phone_h') / 2, G('phone_t') + G('play'))),
         (phone_mass, py(G('phone_h') / 2, G('phone_t') / 2)),
     ]
-    m_body = plate_m + slope_m + front_m + apron_m + ribs_m
+    m_body = plate_m + ridge_m + slope_m + front_m + ribs_m
     m_frame, m_phone = frame_m, phone_mass
     total = sum(m for m, _ in parts)
     y_cg = sum(m * y for m, y in parts) / total
