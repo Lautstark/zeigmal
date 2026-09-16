@@ -237,8 +237,9 @@ def compute(p, bed, phone_mass, fill):
 
     # --- 4. The frame holds the phone -------------------------------------
     g = '4. The frame - the phone stays in, the screen stays visible'
-    b.check(g, 'lip covers border only, no pixels', G('frame_over'), '<=',
-            G('screen_inset'), note='the frame hides picture')
+    over = G('frame_over') - G('screen_inset')
+    b.info(g, 'lip over the screen', '%.1f mm; %s' % (G('frame_over'),
+           'covers %.1f mm of picture per side, by decision' % over if over > 0 else 'border only'))
     b.check(g, 'lip wide enough to hold', G('frame_over'), '>=', 1.5)
     b.check(g, 'play round the phone (never jams)', G('play'), '>=', 0.2)
     b.check(g, 'play round the phone (no rattle)', G('play'), '<=', 0.6)

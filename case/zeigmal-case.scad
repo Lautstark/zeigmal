@@ -188,10 +188,12 @@ rib_t      = 2.4;
 
 frame_face  = 2.4;   // the face over the screen's border. 1.6 was flimsy
 frame_r     = 3.0;   // the frame's outer corners
-lip_r       = phone_corner_r - 2.0;  // [G] the lip's inner corners follow the phone's
 frame_wall  = 2.4;   // the rails round the phone's edges
 top_wall    = 6.4;   // the top rail is wider: two screws go through it into the plate
-frame_over  = 2.0;   // how far the lip reaches over the screen
+frame_over  = 3.0;   // how far the lip reaches over the screen. 2 covered the
+                     // black border only; 3 holds better and is Stefanie's call,
+                     // 2026-09-16, even where it takes half a millimetre of picture
+lip_r       = phone_corner_r - frame_over;  // [G] the lip's inner corners follow the phone's
 key_win_margin = 3.0;   // one window over volume AND power keys, plus this each side
 port_margin    = 4.0;   // the USB-C and speaker openings, plus this each side
 
