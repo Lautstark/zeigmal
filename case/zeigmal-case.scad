@@ -346,13 +346,30 @@ function base_profile() = [
 // The cavity under the slope, before the walls are taken off it: up the
 // plate's back to cavity_u_top, across to the slope, down the slope, and
 // below the table so that shrinking it by one wall leaves the bottom open.
+// The plate is a 6.3 mm wall already, so the plate-side edge starts one
+// wall INSIDE the plate and the shrink brings it back to the plate's back.
 function slope_y_at(z) = ridge_y + (ridge_z - z) / tan(slope_deg);
 function cavity_profile() = [
-    [py(u_at(-5, -plate_t), -plate_t), -5],
-    [py(cavity_u_top, -plate_t), pz(cavity_u_top, -plate_t)],
-    [slope_y_at(pz(cavity_u_top, -plate_t)), pz(cavity_u_top, -plate_t)],
+    [py(u_at(-5, -plate_t + wall), -plate_t + wall), -5],
+    [py(cavity_u_top, -plate_t + wall), pz(cavity_u_top, -plate_t + wall)],
+    [slope_y_at(pz(cavity_u_top, -plate_t + wall)), pz(cavity_u_top, -plate_t + wall)],
     [slope_y_at(-5), -5]
 ];
+
+// The ridge is hollow too, between the plate's back and the back wall,
+// except where the funnel's rear wall needs the material: the funnel plus
+// one wall around it is kept.
+module ridge_hollow() {
+    plane() difference() {
+        pbox(x_left + wall, x_right - wall, cavity_u_top - 1, u_top - wall, -ridge_t + wall, -plate_t);
+        hull() {
+            pbox(slot_x0 - wall, slot_x0 + slot_w + wall, mouth_u0 - wall, mouth_u0 + 0.01,
+                 -win_t - channel - wall, -win_t);
+            pbox(slot_x0 - mouth_flare_x - wall, slot_x0 + slot_w + mouth_flare_x + wall, u_top, u_top + 1,
+                 -win_t - channel - mouth_flare_n - wall, -win_t);
+        }
+    }
+}
 
 module base_solid() {
     translate([x_left, 0, 0]) rotate([90, 0, 90]) linear_extrude(x_right - x_left)
@@ -442,6 +459,7 @@ module body() {
                 top_rounded(x_right - x_left, u_top + 80, corner_r);
         }
         base_hollow();
+        ridge_hollow();
         slot_cut();
         camera_relief();
         screw_holes_body();

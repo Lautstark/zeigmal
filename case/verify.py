@@ -334,7 +334,7 @@ def compute(p, bed, phone_mass, fill):
     L = G('x_right') - G('x_left')
     u_lo = G('plate_u_at_floor')
     plate_m = (G('u_top') - u_lo) * G('plate_t') * L * rho * fill
-    ridge_m = (G('u_top') - G('cavity_u_top')) * (G('ridge_t') - G('plate_t')) * L * rho * fill
+    ridge_m = (G('u_top') - G('cavity_u_top')) * (2 * G('wall')) * L * rho   # hollow: back and top wall
     fy, fz = G('ridge_y'), G('ridge_z')
     slope_len = math.hypot(G('slope_y') - fy, fz)
     slope_m = slope_len * G('wall') * L * rho
