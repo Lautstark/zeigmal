@@ -257,13 +257,34 @@ def compute(p, bed, phone_mass, fill):
     b.check(g, 'right end: post above the speaker opening', u_hi - spk[1], '>=', G('frame_wall'))
     b.check(g, 'USB-C opening takes a plug (12 mm)', usb[1] - usb[0], '>=', 12.0)
     b.info(g, 'openings', 'USB-C u %.0f..%.0f, speaker u %.0f..%.0f' % (usb + spk))
-    # two screws from the front through the top rail into the plate
+    # screws from the front through the top rail into the plate: each must
+    # land in solid plate — left of the slot, or right of the funnel's reach
     solid_from = G('slot_x0') + G('slot_w') + G('mouth_flare_x') + G('wall')
-    for x in G('top_screw_x'):
-        b.check(g, 'top screw at x=%.0f hits solid plate, past the funnel' % x, x - solid_from, '>=', 3.0,
-                note='the screw would go into the slot')
-        b.check(g, 'top screw at x=%.0f clear of the key window' % x, x - w1, '>=', G('top_cb_d'))
-        b.check(g, 'top screw at x=%.0f inside the frame' % x, G('phone_l') - x, '>=', G('top_cb_d'))
+    solid_to = G('slot_x0') - G('wall')
+    r_tap = G('screw_tap_d') / 2
+    for x, u in G('top_screws'):
+        if x < G('slot_x0'):
+            b.check(g, 'top screw at x=%.1f left of the slot, one wall clear' % x,
+                    solid_to - (x + r_tap), '>=', 0.0, note='the hole breaks into the slot')
+            b.check(g, 'top screw at x=%.1f below the funnel\'s flare' % x,
+                    G('mouth_u0') - (u + r_tap), '>=', 1.0)
+            b.check(g, 'top screw at x=%.1f inside the plate (left)' % x,
+                    (x - G('top_cb_d') / 2) - G('x_left'), '>=', 0.8)
+        else:
+            b.check(g, 'top screw at x=%.0f past the funnel' % x, x - solid_from, '>=', 3.0,
+                    note='the screw would go into the slot')
+            b.check(g, 'top screw at x=%.0f clear of the key window' % x, x - w1, '>=', G('top_cb_d'))
+            b.check(g, 'top screw at x=%.0f inside the frame' % x, G('phone_l') - x, '>=', G('top_cb_d'))
+        b.check(g, 'top screw at x=%.1f above the phone\'s edge' % x,
+                (u - r_tap) - (G('phone_h') + G('play')), '>=', 0.5)
+        b.check(g, 'top screw at x=%.1f inside the top rail' % x,
+                G('u_hi') - (u + G('top_cb_d') / 2), '>=', 0.8)
+        # inside the rounded corner: the counterbore stays within the arc
+        cx, cy = G('x_left') + G('corner_r'), G('u_hi') - G('corner_r')
+        if x < cx:
+            b.check(g, 'top screw at x=%.1f inside the rounded corner' % x,
+                    G('corner_r') - (math.hypot(x - cx, u - cy) + G('top_cb_d') / 2), '>=', 0.0,
+                    note='the counterbore breaks out of the corner')
     b.check(g, 'top rail takes the counterbore', G('top_wall') - G('top_cb_d'), '>=', 1.6,
             note='less than two perimeters beside the head')
     bite = G('top_bite')
@@ -300,7 +321,7 @@ def compute(p, bed, phone_mass, fill):
     b.check(g, 'tap hole < screw', G('screw_d') - G('screw_tap_d'), '>=', 0.15,
             note='1.8 for M2 in PLA is the usual pilot; the thread still bites')
     b.info(g, 'shopping', 'M2 x %.0f, %d pieces: %d from below, %d from the front'
-           % (G('screw_l'), len(G('screw_x')) + len(G('top_screw_x')), len(G('screw_x')), len(G('top_screw_x'))))
+           % (G('screw_l'), len(G('screw_x')) + len(G('top_screws')), len(G('screw_x')), len(G('top_screws'))))
 
     # --- 6. Printing ------------------------------------------------------
     g = '6. Printing - Ender 3 V2, 0.4 mm nozzle, 0.2 mm layers, PLA'

@@ -195,9 +195,11 @@ frame_over  = 2.0;   // how far the lip reaches over the screen
 key_win_margin = 3.0;   // one window over volume AND power keys, plus this each side
 port_margin    = 4.0;   // the USB-C and speaker openings, plus this each side
 
-// The top rail is screwed to the plate from the front, outside the slot's
-// reach where the plate is solid. The body has the tap holes.
-top_screw_x   = [100.0, 150.0];  // [K] from the phone's left end
+// The top rail is screwed to the plate from the front where the plate is
+// solid behind it: one at the far left, beside the slot, two on the right
+// past the funnel. The body has the tap holes. [x, u] from the phone's
+// left end and bottom edge.
+top_screws    = [[1.5, 76.5], [100.0, 77.1], [150.0, 77.1]];   // [K]
 top_cb_d      = 4.2;             // counterbore for the head, in the rail
 top_cb_depth  = 6.5;             // deep enough for M2 x 10 to bite the plate
 
@@ -430,8 +432,8 @@ module screw_holes_body() {
         translate([0, 0, -1]) cylinder(d = screw_clear_d, h = floor_t + 2);
         translate([0, 0, -1]) cylinder(d = screw_head_d + 0.4, h = 1 + cb_depth);
     }
-    for (x = top_screw_x)
-        plane() translate([x, phone_h + play + top_wall / 2, -top_bite - 1])
+    for (sc = top_screws)
+        plane() translate([sc[0], sc[1], -top_bite - 1])
             cylinder(d = screw_tap_d, h = top_bite + 2);
 }
 
@@ -504,7 +506,7 @@ module frame_cuts() {
         pbox(phone_l - 1, x_right + 1, uu[0] - port_margin, uu[1] + port_margin, -1, face_n1 + 1);
     // two screws from the front through the top rail into the plate:
     // clearance hole, and a counterbore so M2 x 10 reaches the plate
-    for (x = top_screw_x) translate([x, u_topr + top_wall / 2, 0]) {
+    for (sc = top_screws) translate([sc[0], sc[1], 0]) {
         translate([0, 0, -1]) cylinder(d = screw_clear_d, h = face_n1 + 2);
         translate([0, 0, face_n1 - top_cb_depth]) cylinder(d = top_cb_d, h = top_cb_depth + 1);
     }
