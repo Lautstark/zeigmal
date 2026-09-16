@@ -1,6 +1,6 @@
 # ADR 0008 — The card holds the record, and the phone streams the video
 
-**Status:** accepted · **Date:** 2026-09-13 · **Applies to:** `core/CardRecord.kt`, `core/Provider.kt`, `core/SignDigitalProvider.kt`, `app/nfc/NfcReader.kt`
+**Status:** accepted · **Date:** 2026-09-13 · **Applies to:** `core/Model.kt` (`CardRecord`, `Provider`), `core/SignDigitalProvider.kt`, `app/nfc/AndroidTagSource.kt`
 
 ## Context
 

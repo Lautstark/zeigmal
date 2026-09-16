@@ -1,6 +1,6 @@
 # ADR 0009 — The phone writes the stickers
 
-**Status:** accepted · **Date:** 2026-09-13 · **Applies to:** `app/ui/WriteScreen.kt`, `app/nfc/NfcReader.kt`, `core/SignBox.kt`
+**Status:** accepted · **Date:** 2026-09-13 · **Applies to:** `app/ui/WriteScreen.kt`, `app/nfc/AndroidTagSource.kt`, `core/SignBox.kt`
 
 ## Context
 
