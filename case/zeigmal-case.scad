@@ -461,9 +461,12 @@ module frame_raw() {
             pbox(x_left, x_right, u_bot - 40, u_bot, 0, foot_n);
             pbox(x_left, x_right, u_bot - frame_wall, u_bot, 0, face_n1);
         }
-        // ... all of it inside rounded outer corners
-        translate([x_left, u_bot - frame_wall, -1]) linear_extrude(face_n1 + 2)
-            rounded_rect(x_right - x_left, u_hi - (u_bot - frame_wall), frame_r);
+        // ... all of it inside rounded outer corners. The rectangle reaches
+        // down past the foot: the version that started at the face's bottom
+        // edge clipped the foot to 2.4 mm, and the frame printed on
+        // 2026-09-15 had nothing to screw into.
+        translate([x_left, u_bot - 40, -1]) linear_extrude(face_n1 + 2)
+            rounded_rect(x_right - x_left, u_hi - (u_bot - 40), frame_r);
         }
         // the window in the face: the screen minus the overlap, its corners
         // rounded like the phone's
