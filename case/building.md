@@ -14,7 +14,7 @@ with them.
 | Part | What it does | Outer size |
 |---|---|---|
 | **Body** | the block that leans 20° back: a front apron, the plate with the card slot in its top, a 50° rear slope, a rear apron; hollow under the slope with two ribs | 164.3 × 110 × 82.4 mm |
-| **Frame** | the picture frame over the phone: a 2.4 mm face with a 2 mm lip over the screen, rails round all four edges, openings for USB-C and speaker, a window over the keys, a foot the lower screws bite into, seats for the upper screws | 164.3 × 83 × 10.6 mm |
+| **Frame** | the picture frame over the phone: a 2.4 mm face with a 2 mm lip over the screen, rails round all four edges, openings for USB-C and speaker, a window over the keys, a foot the lower screws bite into, seats for the upper screws | 164.3 × 92 × 10.6 mm, foot included |
 
 Plus M2 × 10, four pieces: two from underneath, two from the front.
 
