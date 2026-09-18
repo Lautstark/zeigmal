@@ -216,6 +216,12 @@ def compute(p, bed, phone_mass, fill):
             note='the coil is too near the end for a centred sticker')
     b.check(g, 'stop sits above the floor slab, one wall clear',
             G('slot_u0') - (G('plate_u_at_floor') + G('wall')), '>=', 0.0)
+    b.check(g, 'the front ramp fits above the frame\'s rail',
+            G('mouth_h') - G('mouth_ramp_h'), '>=', 0.0,
+            note='the ramp would cut into the top rail')
+    b.info(g, 'block above the frame', '%.1f mm: ramp %.0f + lead-in %.0f'
+           % (pz(G('u_top'), -G('plate_t')) - pz(G('u_hi'), 0), G('mouth_ramp_h'),
+              G('mouth_h') - G('mouth_ramp_h')))
     b.check(g, 'funnel starts at the frame\'s top rail, not below it',
             G('mouth_u0') - (G('phone_h') + G('play') + G('frame_wall')), '>=', 0.0,
             note='the funnel would open into the frame')

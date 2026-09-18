@@ -153,7 +153,11 @@ chamfer  = 0.8;   // lead-in at the slot mouth
 // each side, `mouth_flare_n` deeper front and back. At the front the flare
 // reaches the plate's face, so a child can put the card flat against the
 // wall above the phone and slide it down; the funnel finds the slot.
-mouth_h       = 15.0;
+// How far the plate stands above the frame's top rail is exactly this number,
+// and that is the whole reason the block is taller than the phone. 15 was
+// generous; the floor is mouth_ramp_h, because the front ramp has to fit
+// above the frame's rail and not cut into it.
+mouth_h       = 8.0;
 mouth_flare_x =  6.0;
 mouth_flare_n =  5.0;
 mouth_ramp_h  =  6.0;   // the front ramp only over the top part, so the
