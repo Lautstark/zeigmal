@@ -153,15 +153,20 @@ chamfer  = 0.8;   // lead-in at the slot mouth
 // each side, `mouth_flare_n` deeper front and back. At the front the flare
 // reaches the plate's face, so a child can put the card flat against the
 // wall above the phone and slide it down; the funnel finds the slot.
-// How far the plate stands above the frame's top rail is exactly this number,
-// and that is the whole reason the block is taller than the phone. 15 was
-// generous; the floor is mouth_ramp_h, because the front ramp has to fit
-// above the frame's rail and not cut into it.
+// How far the funnel rises above the frame's top rail — the mouth's own
+// height, and the whole reason the holder is taller than the phone.
 mouth_h       = 8.0;
 mouth_flare_x =  6.0;
-mouth_flare_n =  5.0;
-mouth_ramp_h  =  6.0;   // the front ramp only over the top part, so the
-                        // plate's top edge stays thick and not a knife
+mouth_flare_n =  3.5;   // how far the mouth flares BACK. It is the funnel's
+                        // back wall that overhangs, and once the funnel came
+                        // down to 8 mm a 5 mm flare was a 38 degree overhang.
+                        // verify.py computes the angle in world coordinates
+// The mouth opens upward and only upward. It used to fall away at the front
+// as well, so a card could be slid down the plate's face into it — but the
+// frame's rail stood 10.6 mm in front of that face, so nobody could reach it,
+// and now the frame's band closes the front entirely. A front opening there
+// would be a way into the funnel from inside the key window.
+
 
 // The wall between the phone's back and the card. E5 says whether 2.4 reads
 // or whether this has to come down to 1.0. It is the whole slot's front
@@ -206,6 +211,9 @@ lip_r       = phone_corner_r - frame_over;  // [G] the lip's inner corners follo
 // power key, at the right end, that the rail overlapped by about 1 mm.
 key_win_left   = 3.0;   // [K] left of the first volume key
 key_win_right  = 6.0;   // [K] right of the power key, 3 mm more than the rest
+key_win_bridge = 3.0;   // [K] band left above the window. The window may not
+                        // break through the top edge: a notch there would be
+                        // a second slot, in the middle of the width
 // The openings in the right rail, [u0, u1, margin, wrap]: the feature's own
 // extent up the plane, the air around it, and how far the opening reaches
 // from the phone's right edge back over the face — a plug needs room, a
@@ -264,7 +272,6 @@ plate_x_left  = min(x_left, slot_x0 - mouth_flare_x - wall);
 plate_x_right = max(x_right, slot_x0 + slot_w + mouth_flare_x + wall);
 u_top    = phone_h + play + top_wall + mouth_h;   // the funnel starts at the frame's top edge
 mouth_u0 = u_top - mouth_h;                        // where the funnel starts
-mouth_n_front = min(-win_t + mouth_flare_n, 0);    // the flare, clamped at the plate's face
 
 // Where the plane frame sits in the world. The phone's bottom edge is
 // foot_h above the floor slab; the plane's origin is that edge.
@@ -296,7 +303,13 @@ plate_u_at_floor = (floor_t - z0) / c;
 // The frame's edges up the plane.
 u_bot  = -play;                  // the phone's bottom edge, with play
 u_topr = phone_h + play;         // the phone's top edge, with play
-u_hi   = u_topr + top_wall;      // the frame's top edge
+// The frame's top edge is the whole holder's top edge. It used to stop at
+// u_topr + top_wall, which left the plate's face standing 10.6 mm behind it
+// — a card-shaped recess the whole width of the holder, and the children
+// posted cards into it. Filling that from the body would have been an
+// overhang printed in mid-air; the frame reaches up instead, and prints
+// flat on its face as it always did.
+u_hi   = u_top;
 
 // The ridge: at the top the wedge is as thick as the plate plus the funnel's
 // rear flare plus a wall. The back slopes from the ridge's back edge down to
@@ -324,7 +337,7 @@ echo(str("with card ", pz(slot_u0 + card_h, -win_t - channel), " mm high"));
 echo(str("frame     ", x_right - x_left, " x ", u_top - mouth_h + play + top_wall, " x ", face_n1, " mm"));
 top_bite = screw_l - (face_n1 - top_cb_depth);   // [G] thread in the plate
 echo(str("top screw M2 x ", screw_l, " bites ", top_bite, " mm of the ", plate_t, " mm plate"));
-echo(str("mouth     ", slot_w + 2 * mouth_flare_x, " wide, ", channel + mouth_flare_n + (mouth_n_front + win_t), " front to back at the top, ", mouth_h, " tall"));
+echo(str("mouth     ", slot_w + 2 * mouth_flare_x, " wide, ", channel + mouth_flare_n, " front to back at the top, ", mouth_h, " tall"));
 floor_left   = floor_t - cb_depth;            // [G] floor under the screw head
 screw_engage = screw_l - floor_left;          // [G] thread in the foot
 echo(str("screw     M2 x ", screw_l, ": ", floor_left, " of floor under the head, ", screw_engage, " into the foot"));
@@ -414,19 +427,6 @@ module plate() {
     plane() pbox(x_left, x_right, plate_u_at_floor - 5, u_top, -plate_t, 0);
 }
 
-// Above the frame's top rail the plate sits 10.6 mm behind the frame's face,
-// and that recess is itself a card-shaped gap running the whole width — the
-// children tried to post cards into it. This fills it with a slope that
-// starts flush with the frame and rises back to the mouth, so the thing has
-// one opening and the slope leads into it. The gap left to the frame is
-// `play`: far too thin for a card, wide enough that the frame seats.
-module front_ridge() {
-    plane() hull() {
-        pbox(x_left, x_right, u_hi + play, u_hi + play + 0.01, 0, face_n1);
-        pbox(x_left, x_right, u_top - 0.01, u_top, 0, 0.01);
-    }
-}
-
 module slot_cut() {
     plane() {
         // the channel
@@ -437,14 +437,6 @@ module slot_cut() {
             pbox(slot_x0, slot_x0 + slot_w, mouth_u0, mouth_u0 + 0.01, -win_t - channel, -win_t);
             pbox(slot_x0 - mouth_flare_x, slot_x0 + slot_w + mouth_flare_x, u_top, u_top + 1,
                  -win_t - channel - mouth_flare_n, -win_t + 0.01);
-        }
-        // the front ramp: over the top mouth_ramp_h the front wall falls
-        // away to the plate's face, so a card slid down the face drops in
-        hull() {
-            pbox(slot_x0, slot_x0 + slot_w, u_top - mouth_ramp_h, u_top - mouth_ramp_h + 0.01,
-                 -win_t - channel, -win_t);
-            pbox(slot_x0 - mouth_flare_x, slot_x0 + slot_w + mouth_flare_x, u_top, u_top + 1,
-                 -win_t - channel - mouth_flare_n, mouth_n_front + 0.01);
         }
     }
 }
@@ -485,7 +477,6 @@ module body() {
         intersection() {
             union() {
                 base_solid();
-                front_ridge();
                 intersection() {
                     plate();
                     translate([x_left, y_front, 0]) cube([x_right - x_left, base_depth, 200]);
@@ -534,7 +525,7 @@ module frame_cuts() {
     // one window over the volume keys and the power key: through the top
     // rail and the face above the phone's edge, never into the lip
     pbox(key_vol_up[0] - key_win_left, key_power[1] + key_win_right,
-         u_topr - 0.01, u_hi + 1, -1, face_n1 + 1);
+         u_topr - 0.01, u_hi - key_win_bridge, -1, face_n1 + 1);
     // the right end: jack, USB-C plug and speaker, through rail and face
     for (pt = ports)
         pbox(phone_l - pt[3], x_right + 1, pt[0] - pt[2], pt[1] + pt[2], -1, face_n1 + 1);

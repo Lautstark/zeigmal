@@ -216,27 +216,29 @@ def compute(p, bed, phone_mass, fill):
             note='the coil is too near the end for a centred sticker')
     b.check(g, 'stop sits above the floor slab, one wall clear',
             G('slot_u0') - (G('plate_u_at_floor') + G('wall')), '>=', 0.0)
-    b.check(g, 'the front ramp fits above the frame\'s rail',
-            G('mouth_h') - G('mouth_ramp_h'), '>=', 0.0,
-            note='the ramp would cut into the top rail')
-    b.info(g, 'block above the frame', '%.1f mm: ramp %.0f + lead-in %.0f'
-           % (pz(G('u_top'), -G('plate_t')) - pz(G('u_hi'), 0), G('mouth_ramp_h'),
-              G('mouth_h') - G('mouth_ramp_h')))
-    # The slope that fills the recess over the frame: the only gap left above
-    # the frame must be too thin for a card to be posted into.
-    b.check(g, 'gap between frame and slope takes no card', G('card_t') - G('play'), '>', 0.0,
-            note='the recess over the frame is a second, false slot')
+    b.info(g, 'mouth', '%.0f x %.1f mm at the top, %.0f mm deep, opening upward only'
+           % (G('slot_w') + 2 * G('mouth_flare_x'), G('channel') + G('mouth_flare_n'), G('mouth_h')))
+    # One opening, and one only: the frame's face reaches the holder's top
+    # edge, so there is no recess over it to post a card into.
+    b.check(g, 'the frame closes the front up to the top', G('u_top') - G('u_hi'), '==', 0.0,
+            unit='', note='a recess over the frame is a second, false slot')
+    b.check(g, 'the key window keeps a band above it', G('key_win_bridge'), '>=', 2.4,
+            note='the window would break through the top edge and be a slot')
     b.check(g, 'funnel starts at the frame\'s top rail, not below it',
             G('mouth_u0') - (G('phone_h') + G('play') + G('frame_wall')), '>=', 0.0,
             note='the funnel would open into the frame')
-    b.check(g, 'funnel front reaches the plate face (a ramp to slide down)',
-            G('mouth_n_front'), '==', 0.0, unit='',
-            note='raise mouth_flare_n to at least win_t')
-    b.check(g, 'ramp is not a step (rise over run)', G('win_t') / G('mouth_ramp_h'), '<=', 0.6, unit='',
-            note='a steep ramp is a step, not a funnel')
-    b.check(g, 'plate edge above the ramp is not a knife',
-            2.0 * G('win_t') / G('mouth_ramp_h'), '>=', 0.6,
-            note='2 mm below the top the wall is thinner than 0.6 mm')
+    b.check(g, 'the mouth flares wide enough to find without aiming',
+            (G('channel') + G('mouth_flare_n')) / G('channel'), '>=', 3.0, unit='x',
+            note='the mouth is barely wider than the channel')
+    # The funnel's back wall is the one overhang in the body that is neither
+    # the plate nor the rear slope: it leans back as it rises, so it hangs
+    # over the channel. In the plane frame that looks steep; in the world,
+    # which is what the printer sees, the plate's own 20 degrees come off it.
+    dy = G('mouth_h') * G('s') + G('mouth_flare_n') * G('c')
+    dz = G('mouth_h') * G('c') - G('mouth_flare_n') * G('s')
+    flare_deg = math.degrees(math.atan2(dz, dy))
+    b.check(g, 'the funnel\'s back wall prints without support', flare_deg, '>=', 45.0,
+            unit='deg', note='shorter mouth_flare_n, or a taller mouth_h')
     b.check(g, 'rear wall kept behind the funnel', G('back_t'), '>=', 0.8)
     # the camera island's relief pocket is cut into the same plate the slot
     # is in. Where the two overlap, what is left between them is the
@@ -308,8 +310,11 @@ def compute(p, bed, phone_mass, fill):
         b.check(g, 'top screw at x=%.1f inside the top rail' % x,
                 G('u_hi') - (u + G('top_cb_d') / 2), '>=', 0.8)
         # inside the rounded corner: the counterbore stays within the arc
+        # The rounded corner only bites while the screw is beside the arc's
+        # centre, i.e. above it in u as well as inside it in x; below that the
+        # frame's edge is straight and the check above covers it.
         cx, cy = G('x_left') + G('corner_r'), G('u_hi') - G('corner_r')
-        if x < cx:
+        if x < cx and u > cy:
             b.check(g, 'top screw at x=%.1f inside the rounded corner' % x,
                     G('corner_r') - (math.hypot(x - cx, u - cy) + G('top_cb_d') / 2), '>=', 1.0,
                     note='the counterbore breaks out of the corner')
@@ -369,6 +374,9 @@ def compute(p, bed, phone_mass, fill):
     b.check(g, 'plate underside overhang (no supports)', G('tilt'), '<=', 45.0, unit='deg')
     b.check(g, 'rear slope underside overhang (no supports)', 90.0 - G('slope_deg'), '<=', 45.0,
             unit='deg', note='steeper slope_deg')
+    b.info(g, 'overhangs', 'plate %.0f deg, rear slope %.0f deg, funnel back wall %.0f deg '
+                           '- all measured from horizontal, 45 is the limit'
+           % (90 - G('tilt'), G('slope_deg'), flare_deg))
     b.check(g, 'ridge holds the funnel and a wall', G('ridge_t') - (G('plate_t') + G('mouth_flare_n')), '>=', G('wall'))
     b.check(g, 'cavity stops below the funnel', G('mouth_u0') - G('cavity_u_top'), '>=', G('wall'))
     b.info(g, 'body', '%.1f x %.1f x %.1f mm, base down' % (body_l, G('base_depth'), body_h))
