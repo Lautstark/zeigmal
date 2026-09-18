@@ -230,10 +230,13 @@ ports = [[jack_u[0],    jack_u[1],    3.0, 0.0],     // a 3.5 mm plug and its ba
          [speaker_u[0], speaker_u[1], 1.5, 4.0]];    // tight, and round the corner
 
 // The top rail is screwed to the plate from the front where the plate is
-// solid behind it: one at the far left, beside the slot, two on the right
-// past the funnel. The body has the tap holes. [x, u] from the phone's
-// left end and bottom edge.
-top_screws    = [[2.0, 76.5], [100.0, 77.1], [150.0, 77.1]];   // [K]
+// solid behind it: one at the far left beside the slot, two on the right
+// past the funnel. The body has the tap holes. The outer pair sits the same
+// distance in from the frame's outer edge and all three stand on one line;
+// how far in the outer pair may come is not free, because the card's channel
+// runs directly behind the left one (see top_screws in section 6).
+top_screw_margin = 6.0;   // [K] from the frame's outer edge, both ends
+top_screw_u      = 77.0;  // [K] all three on this line, up the plane
 top_cb_d      = 4.2;             // counterbore for the head, in the rail
 top_cb_depth  = 6.5;             // deep enough for M2 x 10 to bite the plate
 
@@ -305,6 +308,14 @@ y_front  = py(u_at(floor_t, face_n0), face_n0) + play;
 // The stop must be inside the plate (above the floor), the slot must fit
 // between the plate's ends.
 plate_u_at_floor = (floor_t - z0) / c;
+
+// The three screws through the top rail. The outer pair is symmetric about
+// the frame; the middle one cannot join them at the centre, because the
+// card's channel is behind the plate there — it sits past the funnel's reach
+// instead, and verify.py checks every one of them against the channel.
+top_screws = [[x_left + top_screw_margin, top_screw_u],
+              [100.0, top_screw_u],
+              [x_right - top_screw_margin, top_screw_u]];
 
 // The frame's edges up the plane.
 u_bot  = -play;                  // the phone's bottom edge, with play

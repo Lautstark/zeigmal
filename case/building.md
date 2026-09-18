@@ -65,9 +65,12 @@ Five M2 × 10 hold the frame to the body:
 
 - **Two from below**, through the holes in the body's floor slab, up into the
   frame's foot. The foot has 1.8 mm holes; the screws cut their own thread.
-- **Three from the front**, through the top rail into the plate: one at the
-  far left beside the slot, two on the right past the funnel. The body has the
-  tap holes — nothing to drill.
+- **Three from the front**, through the top rail into the plate. The outer
+  two sit 6 mm in from each end of the frame and all three stand on one line.
+  The left one cannot come further in than that: the card's channel runs
+  directly behind it and 0.6 mm of plate is what is left beside the tap hole.
+  The middle one cannot sit at the centre for the same reason; it is past the
+  funnel's reach. The body has the tap holes — nothing to drill.
 
 The top rail has one window over the volume keys and the power key, 25 to
 72 mm from the camera end. All three keys are reachable; a child reaching the

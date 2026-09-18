@@ -305,7 +305,7 @@ def compute(p, bed, phone_mass, fill):
     for x, u in G('top_screws'):
         if x < G('slot_x0'):
             b.check(g, 'top screw at x=%.1f left of the slot, one wall clear' % x,
-                    solid_to - (x + r_tap), '>=', 0.0, note='the hole breaks into the slot')
+                    solid_to - (x + r_tap), '>=', 0.4, note='the hole breaks into the slot')
             b.check(g, 'top screw at x=%.1f below the funnel\'s flare' % x,
                     G('mouth_u0') - (u + r_tap), '>=', 1.0)
             b.check(g, 'top screw at x=%.1f inside the plate (left)' % x,
@@ -314,7 +314,8 @@ def compute(p, bed, phone_mass, fill):
             b.check(g, 'top screw at x=%.0f past the funnel' % x, x - solid_from, '>=', 3.0,
                     note='the screw would go into the slot')
             b.check(g, 'top screw at x=%.0f clear of the key window' % x, x - w1, '>=', G('top_cb_d'))
-            b.check(g, 'top screw at x=%.0f inside the frame' % x, G('phone_l') - x, '>=', G('top_cb_d'))
+            b.check(g, 'top screw at x=%.0f inside the frame (right)' % x,
+                    G('x_right') - (x + G('top_cb_d') / 2), '>=', 0.8)
         b.check(g, 'top screw at x=%.1f above the phone\'s edge' % x,
                 (u - r_tap) - (G('phone_h') + G('play')), '>=', 0.5)
         b.check(g, 'top screw at x=%.1f inside the top rail' % x,
@@ -328,6 +329,15 @@ def compute(p, bed, phone_mass, fill):
             b.check(g, 'top screw at x=%.1f inside the rounded corner' % x,
                     G('corner_r') - (math.hypot(x - cx, u - cy) + G('top_cb_d') / 2), '>=', 1.0,
                     note='the counterbore breaks out of the corner')
+    xs = [x for x, u in G('top_screws')]
+    b.check(g, 'the outer top screws are the same way in',
+            abs((xs[0] - G('x_left')) - (G('x_right') - xs[-1])), '<=', 0.001, unit='',
+            note='one sits further from the edge than the other')
+    b.check(g, 'the top screws are on one line',
+            max(u for x, u in G('top_screws')) - min(u for x, u in G('top_screws')),
+            '<=', 0.001, unit='', note='they will not read as a row')
+    b.info(g, 'top screws', '%.1f mm in from each end, all at u %.1f'
+           % (xs[0] - G('x_left'), G('top_screws')[0][1]))
     b.check(g, 'top rail takes the counterbore', G('top_wall') - G('top_cb_d'), '>=', 1.6,
             note='less than two perimeters beside the head')
     bite = G('top_bite')
