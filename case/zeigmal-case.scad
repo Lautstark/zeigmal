@@ -414,6 +414,19 @@ module plate() {
     plane() pbox(x_left, x_right, plate_u_at_floor - 5, u_top, -plate_t, 0);
 }
 
+// Above the frame's top rail the plate sits 10.6 mm behind the frame's face,
+// and that recess is itself a card-shaped gap running the whole width — the
+// children tried to post cards into it. This fills it with a slope that
+// starts flush with the frame and rises back to the mouth, so the thing has
+// one opening and the slope leads into it. The gap left to the frame is
+// `play`: far too thin for a card, wide enough that the frame seats.
+module front_ridge() {
+    plane() hull() {
+        pbox(x_left, x_right, u_hi + play, u_hi + play + 0.01, 0, face_n1);
+        pbox(x_left, x_right, u_top - 0.01, u_top, 0, 0.01);
+    }
+}
+
 module slot_cut() {
     plane() {
         // the channel
@@ -472,6 +485,7 @@ module body() {
         intersection() {
             union() {
                 base_solid();
+                front_ridge();
                 intersection() {
                     plate();
                     translate([x_left, y_front, 0]) cube([x_right - x_left, base_depth, 200]);

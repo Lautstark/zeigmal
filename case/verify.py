@@ -222,6 +222,10 @@ def compute(p, bed, phone_mass, fill):
     b.info(g, 'block above the frame', '%.1f mm: ramp %.0f + lead-in %.0f'
            % (pz(G('u_top'), -G('plate_t')) - pz(G('u_hi'), 0), G('mouth_ramp_h'),
               G('mouth_h') - G('mouth_ramp_h')))
+    # The slope that fills the recess over the frame: the only gap left above
+    # the frame must be too thin for a card to be posted into.
+    b.check(g, 'gap between frame and slope takes no card', G('card_t') - G('play'), '>', 0.0,
+            note='the recess over the frame is a second, false slot')
     b.check(g, 'funnel starts at the frame\'s top rail, not below it',
             G('mouth_u0') - (G('phone_h') + G('play') + G('frame_wall')), '>=', 0.0,
             note='the funnel would open into the frame')
