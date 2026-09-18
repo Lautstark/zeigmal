@@ -253,12 +253,12 @@ def compute(p, bed, phone_mass, fill):
     b.check(g, 'play round the phone (no rattle)', G('play'), '<=', 0.6)
     b.check(g, 'face is whole layers', 1.0 if multiple_of(G('frame_face'), 0.2) else 0.0,
             '==', 1.0, unit='')
-    w0, w1 = G('key_vol_up')[0] - G('key_win_margin'), G('key_power')[1] + G('key_win_margin')
+    w0, w1 = G('key_vol_up')[0] - G('key_win_left'), G('key_power')[1] + G('key_win_right')
     b.check(g, 'key window inside the top rail (left)', w0 - G('x_left'), '>=', G('frame_wall'))
     b.check(g, 'key window clear of the right rail', G('phone_l') - w1, '>=', G('frame_wall'))
-    b.check(g, 'window clears the power key at both ends',
-            min(G('key_vol_up')[0] - w0, w1 - G('key_power')[1]), '>=', 4.0,
+    b.check(g, 'window clears the power key at its end', w1 - G('key_power')[1], '>=', 4.0,
             note='3.0 left the power key overlapped by about 1 mm')
+    b.check(g, 'window clears the first volume key', G('key_vol_up')[0] - w0, '>=', 2.0)
     b.info(g, 'key window', 'x %.0f..%.0f: volume keys and power key both reachable' % (w0, w1))
     # the closed right end: the openings and the posts between and around them
     u_lo, u_hi = -G('play') - G('frame_wall'), G('u_hi')

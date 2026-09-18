@@ -198,8 +198,10 @@ frame_over  = 3.0;   // how far the lip reaches over the screen. 2 covered the
                      // black border only; 3 holds better and is Stefanie's call,
                      // 2026-09-16, even where it takes half a millimetre of picture
 lip_r       = phone_corner_r - frame_over;  // [G] the lip's inner corners follow the phone's
-key_win_margin = 4.5;   // one window over volume AND power keys, plus this each
-                        // side. 3.0 left the power key overlapped by about 1 mm
+// One window over all three keys. The volume end was fine at 3.0; it was the
+// power key, at the right end, that the rail overlapped by about 1 mm.
+key_win_left   = 3.0;   // [K] left of the first volume key
+key_win_right  = 6.0;   // [K] right of the power key, 3 mm more than the rest
 // The openings in the right rail, [u0, u1, margin, wrap]: the feature's own
 // extent up the plane, the air around it, and how far the opening reaches
 // from the phone's right edge back over the face — a plug needs room, a
@@ -513,7 +515,7 @@ module frame_cuts() {
         rounded_rect(phone_l - 2 * frame_over, phone_h - 2 * frame_over, lip_r);
     // one window over the volume keys and the power key: through the top
     // rail and the face above the phone's edge, never into the lip
-    pbox(key_vol_up[0] - key_win_margin, key_power[1] + key_win_margin,
+    pbox(key_vol_up[0] - key_win_left, key_power[1] + key_win_right,
          u_topr - 0.01, u_hi + 1, -1, face_n1 + 1);
     // the right end: jack, USB-C plug and speaker, through rail and face
     for (pt = ports)
