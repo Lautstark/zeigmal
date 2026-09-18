@@ -177,9 +177,17 @@ def compute(p, bed, phone_mass, fill):
             note='sticker_y and coil_from_top disagree with insert')
     b.check(g, 'sticker centre lands on the coil centre (x)',
             abs((G('slot_x0') + G('clr') + G('sticker_x')) - G('coil_x')), '<=', 0.001)
-    b.check(g, 'whole sticker inside the slot at the stop',
-            insert - (G('sticker_y') + G('sticker_d') / 2), '>=', 2.0,
-            note='the sticker\'s top edge is above the phone\'s edge')
+    # The whole sticker behind the phone is impossible once the coil sits
+    # closer to the top edge than the sticker's radius, and it does not
+    # matter: the coil reads the sticker's centre. What must hold is that
+    # the centre is behind the phone with room, and the sticker is fully in
+    # the slot's channel rather than half in the funnel's flare.
+    b.check(g, 'sticker centre behind the phone, with room',
+            insert - G('sticker_y'), '>=', 8.0,
+            note='the coil centre would sit at the phone\'s very edge')
+    b.check(g, 'sticker below the funnel\'s flare',
+            (G('phone_h') - G('coil_from_top') + G('sticker_d') / 2), '<=', G('mouth_u0'),
+            note='the sticker\'s top half sits in the flare, not in the channel')
     b.check(g, 'card stands proud enough to take back',
             G('card_h') - insert, '>=', G('card_proud_min'),
             note='a child needs a fingernail')
@@ -248,16 +256,25 @@ def compute(p, bed, phone_mass, fill):
     w0, w1 = G('key_vol_up')[0] - G('key_win_margin'), G('key_power')[1] + G('key_win_margin')
     b.check(g, 'key window inside the top rail (left)', w0 - G('x_left'), '>=', G('frame_wall'))
     b.check(g, 'key window clear of the right rail', G('phone_l') - w1, '>=', G('frame_wall'))
+    b.check(g, 'window clears the power key at both ends',
+            min(G('key_vol_up')[0] - w0, w1 - G('key_power')[1]), '>=', 4.0,
+            note='3.0 left the power key overlapped by about 1 mm')
     b.info(g, 'key window', 'x %.0f..%.0f: volume keys and power key both reachable' % (w0, w1))
-    # the closed right end: two openings, three posts between and around them
-    u_lo, u_hi = -G('play') - G('frame_wall'), G('phone_h') + G('play') + G('top_wall')
-    usb = (G('usb_u')[0] - G('port_margin'), G('usb_u')[1] + G('port_margin'))
-    spk = (G('speaker_u')[0] - G('port_margin'), G('speaker_u')[1] + G('port_margin'))
-    b.check(g, 'right end: post below the USB-C opening', usb[0] - u_lo, '>=', G('frame_wall'))
-    b.check(g, 'right end: post between USB-C and speaker', spk[0] - usb[1], '>=', G('frame_wall'))
-    b.check(g, 'right end: post above the speaker opening', u_hi - spk[1], '>=', G('frame_wall'))
-    b.check(g, 'USB-C opening takes a plug (12 mm)', usb[1] - usb[0], '>=', 12.0)
-    b.info(g, 'openings', 'USB-C u %.0f..%.0f, speaker u %.0f..%.0f' % (usb + spk))
+    # the closed right end: the openings and the posts between and around them
+    u_lo, u_hi = -G('play') - G('frame_wall'), G('u_hi')
+    ports = sorted((p0 - m, p1 + m, w) for p0, p1, m, w in G('ports'))
+    edges = [u_lo] + [v for p in ports for v in p[:2]] + [u_hi]
+    names = ['jack', 'USB-C', 'speaker']
+    for i in range(0, len(edges) - 1, 2):
+        what = 'post below %s' % names[i // 2] if i // 2 < len(names) else 'post above the top opening'
+        b.check(g, 'right end: %s' % what, edges[i + 1] - edges[i], '>=', G('frame_wall'),
+                note='the rail has no material left between the openings')
+    for (a0, a1, w), n in zip(ports, names):
+        b.check(g, '%s opening takes a plug' % n, a1 - a0, '>=', 8.0 if n != 'speaker' else 12.0)
+        b.check(g, '%s opening wraps past the lip' % n, w - G('frame_over'), '>=', 1.0,
+                note='the lip still stands in front of it')
+        b.info(g, '%s opening' % n, 'u %.1f .. %.1f, %.0f mm around the corner' % (a0, a1, w))
+    b.info(g, 'microphone', 'u %.0f..%.0f stays covered - the station never records' % tuple(G('mic_u')))
     # screws from the front through the top rail into the plate: each must
     # land in solid plate — left of the slot, or right of the funnel's reach
     solid_from = G('slot_x0') + G('slot_w') + G('mouth_flare_x') + G('wall')
@@ -284,7 +301,7 @@ def compute(p, bed, phone_mass, fill):
         cx, cy = G('x_left') + G('corner_r'), G('u_hi') - G('corner_r')
         if x < cx:
             b.check(g, 'top screw at x=%.1f inside the rounded corner' % x,
-                    G('corner_r') - (math.hypot(x - cx, u - cy) + G('top_cb_d') / 2), '>=', 0.0,
+                    G('corner_r') - (math.hypot(x - cx, u - cy) + G('top_cb_d') / 2), '>=', 1.0,
                     note='the counterbore breaks out of the corner')
     b.check(g, 'top rail takes the counterbore', G('top_wall') - G('top_cb_d'), '>=', 1.6,
             note='less than two perimeters beside the head')

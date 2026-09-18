@@ -101,7 +101,9 @@ speaker_u = [55.0, 68.0];   // [A]
 // Stefanie, 2026-09-13, by eye: in the corner by the camera. The centre of
 // the reliable area is still E4's to find; these put the slot in that corner.
 coil_x        = 20.0;  // [A] from the phone's left end
-coil_from_top = 15.0;  // [A] below the phone's top edge
+coil_from_top = 12.5;  // [M] Stefanie, 2026-09-18: the printed slot took the
+                       // card 2.5 mm deeper than it needed to, so the coil
+                       // sits that much higher than the first guess
 coil_r        = 15.0;  // [A] radius of the area that reads 5 of 5 (E4)
 
 
@@ -177,7 +179,9 @@ slope_deg  = 60.0;  // the back, from the horizontal; its underside is then a
                     // 30 degree overhang when printed base down, 45 is the limit
 foot_h     =  8.0;  // the phone's bottom edge this far above the floor slab —
                     // this is the frame's foot, and the screws bite into it
-corner_r   =  8.0;  // the body's and the frame's top corners, seen from the front
+corner_r   =  5.0;  // the body's and the frame's top corners, seen from the
+                    // front. 8.0 left the top-left screw's counterbore only a
+                    // quarter millimetre inside the arc, and it broke out
 rib_x      = [52.0, 108.0];  // two ribs under the plate, x from the phone's left end
 rib_t      = 2.4;
 
@@ -194,14 +198,22 @@ frame_over  = 3.0;   // how far the lip reaches over the screen. 2 covered the
                      // black border only; 3 holds better and is Stefanie's call,
                      // 2026-09-16, even where it takes half a millimetre of picture
 lip_r       = phone_corner_r - frame_over;  // [G] the lip's inner corners follow the phone's
-key_win_margin = 3.0;   // one window over volume AND power keys, plus this each side
-port_margin    = 4.0;   // the USB-C and speaker openings, plus this each side
+key_win_margin = 4.5;   // one window over volume AND power keys, plus this each
+                        // side. 3.0 left the power key overlapped by about 1 mm
+// The openings in the right rail, [u0, u1, margin, wrap]: the feature's own
+// extent up the plane, the air around it, and how far the opening reaches
+// from the phone's right edge back over the face — a plug needs room, a
+// speaker wants to fire forward and not sideways past the child.
+// The microphone at mic_u stays covered: the station never records.
+ports = [[jack_u[0],    jack_u[1],    3.0, 6.0],     // a 3.5 mm plug and its barrel
+         [usb_u[0],     usb_u[1],     4.0, 6.0],     // a USB-C plug, angled or straight
+         [speaker_u[0], speaker_u[1], 1.5, 9.0]];    // tight, and well round the corner
 
 // The top rail is screwed to the plate from the front where the plate is
 // solid behind it: one at the far left, beside the slot, two on the right
 // past the funnel. The body has the tap holes. [x, u] from the phone's
 // left end and bottom edge.
-top_screws    = [[1.5, 76.5], [100.0, 77.1], [150.0, 77.1]];   // [K]
+top_screws    = [[2.0, 76.5], [100.0, 77.1], [150.0, 77.1]];   // [K]
 top_cb_d      = 4.2;             // counterbore for the head, in the rail
 top_cb_depth  = 6.5;             // deep enough for M2 x 10 to bite the plate
 
@@ -503,9 +515,9 @@ module frame_cuts() {
     // rail and the face above the phone's edge, never into the lip
     pbox(key_vol_up[0] - key_win_margin, key_power[1] + key_win_margin,
          u_topr - 0.01, u_hi + 1, -1, face_n1 + 1);
-    // the right end: USB-C plug and speaker, straight through rail and face
-    for (uu = [usb_u, speaker_u])
-        pbox(phone_l - 1, x_right + 1, uu[0] - port_margin, uu[1] + port_margin, -1, face_n1 + 1);
+    // the right end: jack, USB-C plug and speaker, through rail and face
+    for (pt = ports)
+        pbox(phone_l - pt[3], x_right + 1, pt[0] - pt[2], pt[1] + pt[2], -1, face_n1 + 1);
     // two screws from the front through the top rail into the plate:
     // clearance hole, and a counterbore so M2 x 10 reaches the plate
     for (sc = top_screws) translate([sc[0], sc[1], 0]) {
