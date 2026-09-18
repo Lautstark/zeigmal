@@ -281,10 +281,20 @@ def compute(p, bed, phone_mass, fill):
         what = 'post below %s' % names[i // 2] if i // 2 < len(names) else 'post above the top opening'
         b.check(g, 'right end: %s' % what, edges[i + 1] - edges[i], '>=', G('frame_wall'),
                 note='the rail has no material left between the openings')
+    # A cut that reaches past the lip meets the screen's window and leaves the
+    # rail between two openings connected to nothing. Only one opening may
+    # wrap, and only where the face above it carries the post.
+    lip_cutters = [n for (a0, a1, w), n in zip(ports, names) if w > G('frame_over')]
+    b.check(g, 'at most one opening cuts the lip', float(len(lip_cutters)), '<=', 1.0, unit='',
+            note='the posts between the others would be loose pieces: %s' % ', '.join(lip_cutters))
     for (a0, a1, w), n in zip(ports, names):
+        if w > G('frame_over'):
+            b.check(g, '%s: face above the wrap carries the post' % n,
+                    (G('phone_h') - G('frame_over')) - a1, '>=', 0.0,
+                    note='nothing above this opening is attached')
         b.check(g, '%s opening takes a plug' % n, a1 - a0, '>=', 8.0 if n != 'speaker' else 12.0)
-        b.check(g, '%s opening wraps past the lip' % n, w - G('frame_over'), '>=', 1.0,
-                note='the lip still stands in front of it')
+        b.check(g, '%s opening clears the phone\'s edge' % n, G('x_right') - G('phone_l'), '>=', 2.0,
+                note='the plug has no room beside the phone')
         b.info(g, '%s opening' % n, 'u %.1f .. %.1f, %.0f mm around the corner' % (a0, a1, w))
     b.info(g, 'microphone', 'u %.0f..%.0f stays covered - the station never records' % tuple(G('mic_u')))
     # screws from the front through the top rail into the plate: each must

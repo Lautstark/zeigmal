@@ -219,9 +219,15 @@ key_win_bridge = 3.0;   // [K] band left above the window. The window may not
 // from the phone's right edge back over the face — a plug needs room, a
 // speaker wants to fire forward and not sideways past the child.
 // The microphone at mic_u stays covered: the station never records.
-ports = [[jack_u[0],    jack_u[1],    3.0, 6.0],     // a 3.5 mm plug and its barrel
-         [usb_u[0],     usb_u[1],     4.0, 6.0],     // a USB-C plug, angled or straight
-         [speaker_u[0], speaker_u[1], 1.5, 9.0]];    // tight, and well round the corner
+// `wrap` is what severed the frame's right rail into loose pieces: past the
+// lip the face is already the screen's window, so a cut that reaches over
+// the lip leaves the rail between two openings hanging on nothing. Only the
+// speaker wraps, and the 3 mm lip it leaves elsewhere is what ties the posts
+// to the rest of the frame. A plug does not need the wrap: the port is on
+// the phone's edge and the lip is in front of the screen, not the port.
+ports = [[jack_u[0],    jack_u[1],    3.0, 0.0],     // a 3.5 mm plug and its barrel
+         [usb_u[0],     usb_u[1],     4.0, 0.0],     // a USB-C plug, angled or straight
+         [speaker_u[0], speaker_u[1], 1.5, 4.0]];    // tight, and round the corner
 
 // The top rail is screwed to the plate from the front where the plate is
 // solid behind it: one at the far left, beside the slot, two on the right

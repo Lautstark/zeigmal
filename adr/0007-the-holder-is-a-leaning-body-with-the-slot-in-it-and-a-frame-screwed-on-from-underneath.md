@@ -1,6 +1,6 @@
 # ADR 0007 — The holder is a leaning body with the slot in it, and a frame screwed on from underneath
 
-**Status:** accepted, amended 2026-09-16 · **Date:** 2026-09-13 · **Applies to:** `case/`, docs/enclosure.md
+**Status:** accepted, amended 2026-09-16 and 2026-09-18 · **Date:** 2026-09-13 · **Applies to:** `case/`, docs/enclosure.md
 
 ## Context
 
@@ -85,6 +85,39 @@ requirement was never asked for, and it is what made the slot start 20 mm
 past the phone's end and the plate 20 mm wider than the phone. The printed
 body keeps that slot. A future body puts the sticker's corner over the coil
 and the slot inside the phone's length.
+
+## Amended, 2026-09-18, after the second holder was printed
+
+The second holder was the first one that worked: the card goes in, the phone
+reads it, the phone stays put. Four things it still got wrong, and one of them
+is the reason this ADR needed a third pass.
+
+**A holder has exactly one opening.** The frame's top rail stopped 8 mm below
+the holder's top edge, so the plate's face stood 10.6 mm behind it — a recess
+the whole width of the holder, card-shaped, right under the real slot. The
+children posted cards into it, which is not a mistake on their part: it looks
+like a slot. The frame's face now reaches the top edge and both parts are
+rounded at that same edge. The first fix drawn was a slope on the body filling
+the recess from behind; it would have been printed in mid-air, and the frame
+reaching up costs nothing because the frame prints flat on its face.
+
+**Overhangs are measured in world coordinates.** The funnel's back wall looked
+steep in the plate's own frame and was 38° in the world, because the plate's
+20° of tilt came off it. `verify.py` computes it properly now and
+`check-stl.py` walks the exported facets, tells a bridge from a ledge, and
+says where support would have to go. Support is allowed when it is planned;
+today neither part needs any.
+
+**The exported file is checked, not the preview.** Each of the three openings
+in the frame's right rail cut the whole rail, and the two strips between them
+were attached to nothing — two loose blocks in a file that previewed
+perfectly. Only the speaker's opening wraps past the lip now, because past the
+lip the face is already the screen's window.
+
+**The power key is reachable and the sound is not the holder's problem.** The
+key window is 3 mm longer at the power end. The speaker opening is tight and
+wraps round the corner, the jack has an opening for an active speaker, and the
+app puts 8 dB of loudness on the player.
 
 ## Not to be "fixed" later
 
