@@ -13,7 +13,9 @@ import de.lautstark.zeigmal.core.TagEvent
 import de.lautstark.zeigmal.core.TagId
 import de.lautstark.zeigmal.core.TagMode
 import de.lautstark.zeigmal.core.TagSource
+import de.lautstark.zeigmal.core.WriteEvent
 import de.lautstark.zeigmal.core.WriteOutcome
+import de.lautstark.zeigmal.core.WriteStarted
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -37,11 +39,11 @@ class AndroidTagSource(
 ) : TagSource {
     private val adapter: NfcAdapter? = NfcAdapter.getDefaultAdapter(activity)
     private val _tags = MutableSharedFlow<TagEvent>(extraBufferCapacity = 64)
-    private val _writes = MutableSharedFlow<WriteOutcome>(extraBufferCapacity = 64)
+    private val _writes = MutableSharedFlow<WriteEvent>(extraBufferCapacity = 64)
     private val _mode = MutableStateFlow<TagMode>(TagMode.Read)
 
     override val tags: SharedFlow<TagEvent> = _tags
-    override val writes: SharedFlow<WriteOutcome> = _writes
+    override val writes: SharedFlow<WriteEvent> = _writes
     override val mode: StateFlow<TagMode> = _mode
     override val available: Boolean get() = adapter != null
     override val enabled: Boolean get() = adapter?.isEnabled == true
@@ -68,6 +70,16 @@ class AndroidTagSource(
         val id = TagId.of(tag.id)
         when (val mode = _mode.value) {
             is TagMode.Write -> {
+                // A sticker that already carries a record is reported without a
+                // "writing": the one just written lies there and is seen again
+                // and again, and the core tells those apart from a stranger.
+                if (!mode.overwrite) {
+                    read(tag)?.let {
+                        _writes.tryEmit(WriteOutcome.AlreadyWritten(id, it))
+                        return
+                    }
+                }
+                _writes.tryEmit(WriteStarted(id))
                 _writes.tryEmit(write(tag, id, mode))
             }
 
@@ -105,9 +117,6 @@ class AndroidTagSource(
         val ndef = Ndef.get(tag)
         try {
             if (ndef != null) {
-                if (!mode.overwrite) {
-                    read(tag)?.let { return WriteOutcome.AlreadyWritten(id, it) }
-                }
                 ndef.connect()
                 if (!ndef.isWritable) return WriteOutcome.Failed(id, "Aufkleber ist schreibgeschützt")
                 if (ndef.maxSize < message.byteArrayLength) return WriteOutcome.Failed(id, "Aufkleber zu klein (${ndef.maxSize} Bytes)")

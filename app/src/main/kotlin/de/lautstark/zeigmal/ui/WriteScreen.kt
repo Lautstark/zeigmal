@@ -1,6 +1,12 @@
 package de.lautstark.zeigmal.ui
 
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -21,13 +27,16 @@ import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
@@ -41,20 +50,22 @@ import coil3.compose.AsyncImage
 import de.lautstark.zeigmal.LogLine
 import de.lautstark.zeigmal.R
 import de.lautstark.zeigmal.core.SignBox
-import de.lautstark.zeigmal.core.WriteOutcome
+import de.lautstark.zeigmal.core.WriteStatus
 import de.lautstark.zeigmal.core.Writing
 
 /**
  * Writing the box, card by card. Left the box's order with what is done and
  * what comes next; middle the card as SIGNdigital shows it, so the right one
- * comes out of the stack; right the word, three steps and the status line.
+ * comes out of the stack; right the word and, right under it, the one line
+ * that says what the sticker is up to. The card's border says the same in
+ * colour, for a glance from across the table.
  */
 @Composable
 fun WriteScreen(
     writing: Writing,
     onGoTo: (Int) -> Unit,
     onSkip: () -> Unit,
-    onBack: () -> Unit,
+    onRetry: () -> Unit,
     onOverwrite: () -> Unit,
     onSettings: () -> Unit,
     onDone: () -> Unit,
@@ -71,7 +82,7 @@ fun WriteScreen(
         horizontalArrangement = Arrangement.spacedBy(18.dp),
     ) {
         WordList(w, onGoTo, onSettings, Modifier.width(170.dp).fillMaxHeight())
-        CardImage(w.cardImageUrl, w.lookupFailed, Modifier.fillMaxHeight(0.92f).aspectRatio(2f / 3f))
+        CardImage(w.cardImageUrl, w.lookupFailed, w.status, Modifier.fillMaxHeight(0.92f).aspectRatio(2f / 3f))
         Column(Modifier.weight(1f).fillMaxHeight()) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Mark(Modifier.size(22.dp))
@@ -83,12 +94,18 @@ fun WriteScreen(
                     fontWeight = FontWeight.Medium,
                 )
                 Spacer(Modifier.weight(1f))
-                TextButton(onClick = onDone, modifier = Modifier.testTag("done")) {
-                    Text(stringResource(R.string.done), color = Palette.accentStrong, fontWeight = FontWeight.SemiBold, maxLines = 1)
+                TextButton(onClick = onDone, enabled = !w.busy, modifier = Modifier.testTag("done")) {
+                    Text(
+                        stringResource(R.string.done),
+                        color = if (w.busy) Palette.textFaint else Palette.accentStrong,
+                        fontWeight = FontWeight.SemiBold,
+                        maxLines = 1,
+                    )
                 }
             }
-            val outcome = w.lastOutcome
-            if (outcome is WriteOutcome.AlreadyWritten) {
+            val status = w.status
+            if (status is WriteStatus.Already) {
+                val outcome = status.outcome
                 Text(
                     stringResource(R.string.sticker_already, outcome.record.label),
                     color = Palette.text,
@@ -117,43 +134,30 @@ fun WriteScreen(
                 }
             } else {
                 Text(
-                    w.word.label,
+                    w.shownLabel,
                     color = Palette.text,
                     fontSize = 40.sp,
                     fontWeight = FontWeight.SemiBold,
                     lineHeight = 44.sp,
                     modifier = Modifier.padding(top = 4.dp).testTag("word"),
                 )
-                // The one line read while writing, right under the word and large.
-                Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(top = 14.dp).fillMaxWidth()) {
-                    when (outcome) {
-                        is WriteOutcome.Failed -> {
-                            Text(stringResource(R.string.write_failed, outcome.reason), color = Palette.danger, fontSize = 17.sp)
-                        }
-
-                        else -> {
-                            Box(Modifier.size(14.dp).clip(RoundedCornerShape(7.dp)).background(Palette.accentStrong))
-                            Spacer(Modifier.width(12.dp))
-                            Text(stringResource(R.string.waiting_for_sticker), color = Palette.text, fontSize = 20.sp)
-                        }
-                    }
-                }
+                StatusLine(w)
                 if (log != null) {
                     Box(Modifier.weight(1f).padding(top = 8.dp)) { LogPanel(log) }
                 } else {
                     Spacer(Modifier.weight(1f))
                 }
-                if (outcome is WriteOutcome.Written) {
-                    Text(
-                        "✓ „${outcome.record.label}“ · ${outcome.tag}",
-                        color = Palette.accentStrong,
-                        fontSize = 14.sp,
-                        fontWeight = FontWeight.SemiBold,
-                        modifier = Modifier.testTag("written"),
-                    )
-                }
-                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
-                    TextButton(onClick = onSkip, modifier = Modifier.testTag("skip")) { Text(stringResource(R.string.skip), maxLines = 1) }
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End, verticalAlignment = Alignment.CenterVertically) {
+                    TextButton(onClick = onSkip, enabled = !w.busy, modifier = Modifier.testTag("skip")) {
+                        Text(stringResource(R.string.skip), color = if (w.busy) Palette.textFaint else Palette.accentStrong, maxLines = 1)
+                    }
+                    if (status is WriteStatus.Failed) {
+                        Spacer(Modifier.width(8.dp))
+                        Button(
+                            onClick = onRetry,
+                            modifier = Modifier.testTag("retry"),
+                        ) { Text(stringResource(R.string.retry), maxLines = 1) }
+                    }
                 }
             }
             LinearProgressIndicator(
@@ -163,6 +167,69 @@ fun WriteScreen(
                 modifier = Modifier.fillMaxWidth().padding(top = 6.dp).height(3.dp),
             )
         }
+    }
+}
+
+/** The one line read while writing: what the sticker is up to, and in the colour of it. */
+@Composable
+private fun StatusLine(w: Writing) {
+    val status = w.status
+    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(top = 14.dp).fillMaxWidth()) {
+        when (status) {
+            is WriteStatus.Busy -> {
+                CircularProgressIndicator(
+                    color = Palette.accentStrong,
+                    trackColor = Palette.accentSoft,
+                    strokeWidth = 3.dp,
+                    modifier = Modifier.size(18.dp),
+                )
+                Spacer(Modifier.width(12.dp))
+                Text(stringResource(R.string.writing_busy), color = Palette.text, fontSize = 20.sp, modifier = Modifier.testTag("busy"))
+            }
+
+            is WriteStatus.Done -> {
+                Text("✓", color = Palette.accentStrong, fontSize = 24.sp, fontWeight = FontWeight.Bold)
+                Spacer(Modifier.width(10.dp))
+                Text(
+                    stringResource(R.string.written_ok),
+                    color = Palette.accentStrong,
+                    fontSize = 20.sp,
+                    modifier = Modifier.testTag("written"),
+                )
+            }
+
+            is WriteStatus.Failed -> {
+                Box(Modifier.size(14.dp).clip(RoundedCornerShape(7.dp)).background(Palette.danger))
+                Spacer(Modifier.width(12.dp))
+                Text(stringResource(R.string.write_failed), color = Palette.danger, fontSize = 20.sp, modifier = Modifier.testTag("failed"))
+            }
+
+            else -> {
+                // The dot breathes: the reader is on, and nothing lies there yet.
+                val breath = rememberInfiniteTransition(label = "waiting")
+                val alpha by breath.animateFloat(0.35f, 1f, infiniteRepeatable(tween(700), RepeatMode.Reverse), label = "alpha")
+                Box(
+                    Modifier
+                        .size(14.dp)
+                        .alpha(alpha)
+                        .clip(RoundedCornerShape(7.dp))
+                        .background(Palette.accentStrong),
+                )
+                Spacer(Modifier.width(12.dp))
+                Text(stringResource(R.string.waiting_for_sticker), color = Palette.text, fontSize = 20.sp)
+            }
+        }
+    }
+    // The small print under the line: what to do, or what went wrong.
+    val sub =
+        when (status) {
+            is WriteStatus.Busy -> stringResource(R.string.writing_busy_hint)
+            is WriteStatus.Done -> "${status.outcome.tag} · " + stringResource(R.string.next_up, w.word.label)
+            is WriteStatus.Failed -> status.outcome.reason
+            else -> null
+        }
+    if (sub != null) {
+        Text(sub, color = Palette.textDim, fontSize = 14.sp, modifier = Modifier.padding(start = 26.dp, top = 2.dp))
     }
 }
 
@@ -234,9 +301,20 @@ private fun WordList(
 private fun CardImage(
     url: String?,
     failed: String?,
+    status: WriteStatus,
     modifier: Modifier,
 ) {
-    Box(modifier.clip(RoundedCornerShape(8.dp)).background(Color.White), contentAlignment = Alignment.Center) {
+    // The border says what the line says, in colour alone.
+    val edge =
+        when (status) {
+            is WriteStatus.Busy, is WriteStatus.Done -> Palette.accentStrong
+            is WriteStatus.Failed -> Palette.danger
+            else -> Color.Transparent
+        }
+    Box(
+        modifier.clip(RoundedCornerShape(8.dp)).background(Color.White).border(3.dp, edge, RoundedCornerShape(8.dp)),
+        contentAlignment = Alignment.Center,
+    ) {
         when {
             url != null -> {
                 AsyncImage(

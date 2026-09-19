@@ -2,6 +2,7 @@ package de.lautstark.zeigmal.core
 
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
+import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import mockwebserver3.MockResponse
@@ -97,6 +98,78 @@ class AdultModelTest {
         }
 
     @Test
+    fun `a write is shown long enough to be seen, then written for a moment, then the next card`() =
+        runTest {
+            store.put(SignDigitalProvider.KEY_TOKEN, "tok")
+            val m = AdultModel(this, provider(), store, logger)
+            val tag = TagId("04c5d4a88d2681")
+            m.onWrite(WriteStarted(tag))
+            assertEquals(WriteStatus.Busy(tag), m.writing.value.status)
+            assertEquals(true, m.writing.value.busy)
+            // The hardware is done in 100 ms; the screen is not.
+            val written = WriteOutcome.Written(tag, m.writing.value.record)
+            m.onWrite(written)
+            advanceTimeBy(100)
+            assertEquals(WriteStatus.Busy(tag), m.writing.value.status)
+            advanceTimeBy(AdultModel.MIN_BUSY_MILLIS)
+            assertEquals(WriteStatus.Done(written), m.writing.value.status)
+            // The box has moved on for the reader, the screen still shows what was written.
+            assertEquals(1, m.writing.value.index)
+            assertEquals("Abend(s)", m.writing.value.shownLabel)
+            assertEquals("aber", m.writing.value.word.label)
+            server.enqueue(MockResponse(body = sign("p/aber.png")))
+            server.enqueue(MockResponse(body = """["https://cdn/aber?sig"]"""))
+            advanceTimeBy(AdultModel.DONE_MILLIS + 1)
+            advanceUntilIdle()
+            assertEquals(WriteStatus.Waiting, m.writing.value.status)
+            assertEquals("aber", m.writing.value.shownLabel)
+            assertEquals("https://cdn/aber?sig", m.writing.value.cardImageUrl)
+        }
+
+    @Test
+    fun `the sticker just written, still lying there, is no stranger`() =
+        runTest {
+            store.put(SignDigitalProvider.KEY_TOKEN, "tok")
+            val m = AdultModel(this, provider(), store, logger)
+            val tag = TagId("04c5d4a88d2681")
+            val record = m.writing.value.record
+            m.onWrite(WriteOutcome.Written(tag, record))
+            // Three times a second, for as long as it lies there.
+            repeat(5) {
+                advanceTimeBy(300)
+                m.onWrite(WriteOutcome.AlreadyWritten(tag, record))
+            }
+            assertEquals(1, m.writing.value.index)
+            assertTrue(m.writing.value.status !is WriteStatus.Already)
+            // A stranger is a stranger at once.
+            m.onWrite(WriteOutcome.AlreadyWritten(TagId("04ffffffffffff"), CardRecord("signdigital", "essen", "essen")))
+            assertTrue(m.writing.value.status is WriteStatus.Already)
+            m.overwriteNext()
+            // And the same sticker, put back after a while, is a question again.
+            advanceTimeBy(AdultModel.SAME_STICKER_MILLIS + 1)
+            m.onWrite(WriteOutcome.AlreadyWritten(tag, record))
+            assertTrue(m.writing.value.status is WriteStatus.Already)
+        }
+
+    @Test
+    fun `a failed write stays on the card and Nochmal waits again`() =
+        runTest {
+            store.put(SignDigitalProvider.KEY_TOKEN, "tok")
+            store.put(SignDigitalProvider.KEY_EMAIL, "mail@example.org")
+            val m = AdultModel(this, provider(), store, logger)
+            val tag = TagId("04c5d4a88d2681")
+            m.onWrite(WriteStarted(tag))
+            m.onWrite(WriteOutcome.Failed(tag, "Tag was lost"))
+            advanceTimeBy(AdultModel.MIN_BUSY_MILLIS + 1)
+            assertEquals(WriteStatus.Failed(WriteOutcome.Failed(tag, "Tag was lost")), m.writing.value.status)
+            assertEquals(0, m.writing.value.index)
+            assertEquals(emptySet<String>(), m.writing.value.written)
+            m.retry()
+            assertEquals(WriteStatus.Waiting, m.writing.value.status)
+            assertEquals(TagMode.Write(m.writing.value.record), m.tagMode(active = true))
+        }
+
+    @Test
     fun `a sticker that is already written waits for the adult, and overwrite is one write`() =
         runTest {
             store.put(SignDigitalProvider.KEY_TOKEN, "tok")
@@ -104,7 +177,7 @@ class AdultModelTest {
             val m = AdultModel(this, provider(), store, logger)
             val existing = CardRecord("signdigital", "essen", "essen")
             m.onWrite(WriteOutcome.AlreadyWritten(TagId("04c4d4a88d2681"), existing))
-            assertTrue(m.writing.value.lastOutcome is WriteOutcome.AlreadyWritten)
+            assertTrue(m.writing.value.status is WriteStatus.Already)
             assertEquals(0, m.writing.value.index)
             m.overwriteNext()
             assertEquals(true, (m.tagMode(active = true) as TagMode.Write).overwrite)

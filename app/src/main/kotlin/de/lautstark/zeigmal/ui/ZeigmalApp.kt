@@ -100,7 +100,7 @@ fun ZeigmalApp(model: ZeigmalViewModel) {
                     writing = writing,
                     onGoTo = model.adult::goTo,
                     onSkip = model.adult::skip,
-                    onBack = model.adult::back,
+                    onRetry = model.adult::retry,
                     onOverwrite = model.adult::overwriteNext,
                     onSettings = model::openSettings,
                     onDone = model::leaveAdult,

@@ -18,6 +18,7 @@ import de.lautstark.zeigmal.core.Phase
 import de.lautstark.zeigmal.core.StationState
 import de.lautstark.zeigmal.core.TagId
 import de.lautstark.zeigmal.core.WriteOutcome
+import de.lautstark.zeigmal.core.WriteStatus
 import de.lautstark.zeigmal.core.Writing
 import de.lautstark.zeigmal.ui.KidScreen
 import de.lautstark.zeigmal.ui.LoginScreen
@@ -91,7 +92,7 @@ class ScreensTest {
         var skipped = false
         compose.setContent {
             WriteScreen(Writing(index = 3), onGoTo = {
-            }, onSkip = { skipped = true }, onBack = {}, onOverwrite = {}, onSettings = {}, onDone = {}, log = null)
+            }, onSkip = { skipped = true }, onRetry = {}, onOverwrite = {}, onSettings = {}, onDone = {}, log = null)
         }
         compose.onNodeWithTag("word").assertTextEquals("allein")
         // Off-screen in a portrait host; the action is what is under test, not the position.
@@ -104,10 +105,13 @@ class ScreensTest {
         var overwrite = false
         compose.setContent {
             WriteScreen(
-                Writing(index = 0, lastOutcome = WriteOutcome.AlreadyWritten(a, CardRecord("signdigital", "essen", "essen"))),
+                Writing(
+                    index = 0,
+                    status = WriteStatus.Already(WriteOutcome.AlreadyWritten(a, CardRecord("signdigital", "essen", "essen"))),
+                ),
                 onGoTo = {},
                 onSkip = {},
-                onBack = {},
+                onRetry = {},
                 onOverwrite = { overwrite = true },
                 onSettings = {},
                 onDone = {},
@@ -116,5 +120,44 @@ class ScreensTest {
         }
         compose.onNodeWithTag("overwrite").performSemanticsAction(SemanticsActions.OnClick)
         assert(overwrite)
+    }
+
+    @Test
+    fun writeScreenSaysWhyAWriteFailedAndOffersAnotherGo() {
+        var retried = false
+        compose.setContent {
+            WriteScreen(
+                Writing(index = 0, status = WriteStatus.Failed(WriteOutcome.Failed(a, "Tag was lost"))),
+                onGoTo = {},
+                onSkip = {},
+                onRetry = { retried = true },
+                onOverwrite = {},
+                onSettings = {},
+                onDone = {},
+                log = null,
+            )
+        }
+        compose.onNodeWithTag("failed").assertExists()
+        compose.onNodeWithText("Tag was lost").assertExists()
+        compose.onNodeWithTag("retry").performSemanticsAction(SemanticsActions.OnClick)
+        assert(retried)
+    }
+
+    @Test
+    fun writeScreenShowsTheWordJustWrittenWhileTheBoxHasMovedOn() {
+        compose.setContent {
+            WriteScreen(
+                Writing(index = 1, status = WriteStatus.Done(WriteOutcome.Written(a, CardRecord("signdigital", "abend-s", "Abend(s)")))),
+                onGoTo = {},
+                onSkip = {},
+                onRetry = {},
+                onOverwrite = {},
+                onSettings = {},
+                onDone = {},
+                log = null,
+            )
+        }
+        compose.onNodeWithTag("word").assertTextEquals("Abend(s)")
+        compose.onNodeWithTag("written").assertExists()
     }
 }

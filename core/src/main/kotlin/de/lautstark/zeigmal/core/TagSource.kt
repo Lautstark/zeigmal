@@ -14,21 +14,31 @@ sealed interface TagMode {
     ) : TagMode
 }
 
+/** What the reader says about a write: that it began, or how it ended. */
+sealed interface WriteEvent {
+    val tag: TagId
+}
+
+/** The write has begun; the sticker has to stay where it is. */
+data class WriteStarted(
+    override val tag: TagId,
+) : WriteEvent
+
 /** What writing a sticker came to. */
-sealed interface WriteOutcome {
+sealed interface WriteOutcome : WriteEvent {
     data class Written(
-        val tag: TagId,
+        override val tag: TagId,
         val record: CardRecord,
     ) : WriteOutcome
 
     /** The sticker already carries a record; nothing was written. The adult decides. */
     data class AlreadyWritten(
-        val tag: TagId,
+        override val tag: TagId,
         val record: CardRecord,
     ) : WriteOutcome
 
     data class Failed(
-        val tag: TagId,
+        override val tag: TagId,
         val reason: String,
     ) : WriteOutcome
 }
@@ -43,7 +53,7 @@ interface TagSource {
     val tags: Flow<TagEvent>
 
     /** What writing came to, while the mode is [TagMode.Write]. */
-    val writes: Flow<WriteOutcome>
+    val writes: Flow<WriteEvent>
 
     val mode: StateFlow<TagMode>
 

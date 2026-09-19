@@ -12,7 +12,12 @@
     <string name="now">now</string>
     <string name="then">then</string>
     <string name="waiting_for_sticker">Waiting for the sticker …</string>
-    <string name="write_failed">Writing failed: %1$s</string>
+    <string name="write_failed">Writing failed</string>
+    <string name="writing_busy">Writing …</string>
+    <string name="writing_busy_hint">Leave the sticker where it is</string>
+    <string name="written_ok">Written</string>
+    <string name="next_up">next: “%1$s”</string>
+    <string name="retry">Try again</string>
     <string name="sticker_already">This sticker is already “%1$s”</string>
     <string name="sticker_already_hint">Does it belong on the card “%1$s”? Otherwise continue with the next sticker.</string>
     <string name="overwrite_as">Overwrite as “%1$s”</string>

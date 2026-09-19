@@ -11,10 +11,10 @@ class FakeTagSource(
     override val enabled: Boolean = true,
 ) : TagSource {
     private val _tags = MutableSharedFlow<TagEvent>(extraBufferCapacity = 64)
-    private val _writes = MutableSharedFlow<WriteOutcome>(extraBufferCapacity = 64)
+    private val _writes = MutableSharedFlow<WriteEvent>(extraBufferCapacity = 64)
     private val _mode = MutableStateFlow<TagMode>(TagMode.Read)
     override val tags: SharedFlow<TagEvent> = _tags
-    override val writes: SharedFlow<WriteOutcome> = _writes
+    override val writes: SharedFlow<WriteEvent> = _writes
     override val mode: StateFlow<TagMode> = _mode
     val modes = mutableListOf<TagMode>()
 
@@ -29,6 +29,8 @@ class FakeTagSource(
     ) = check(_tags.tryEmit(TagEvent.Seen(tag, record, listOf("NfcA"))))
 
     fun gone(tag: TagId) = check(_tags.tryEmit(TagEvent.Gone(tag)))
+
+    fun writing(tag: TagId) = check(_writes.tryEmit(WriteStarted(tag)))
 
     fun wrote(outcome: WriteOutcome) = check(_writes.tryEmit(outcome))
 }

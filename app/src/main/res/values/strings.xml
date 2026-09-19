@@ -19,7 +19,12 @@
     <string name="now">jetzt</string>
     <string name="then">dann</string>
     <string name="waiting_for_sticker">Warte auf den Aufkleber …</string>
-    <string name="write_failed">Schreiben fehlgeschlagen: %1$s</string>
+    <string name="write_failed">Schreiben fehlgeschlagen</string>
+    <string name="writing_busy">Schreibt …</string>
+    <string name="writing_busy_hint">Aufkleber liegen lassen</string>
+    <string name="written_ok">Geschrieben</string>
+    <string name="next_up">weiter mit „%1$s“</string>
+    <string name="retry">Nochmal</string>
     <string name="sticker_already">Dieser Aufkleber ist schon „%1$s“</string>
     <string name="sticker_already_hint">Gehört er auf die Karte „%1$s“? Sonst weiter mit dem nächsten Aufkleber.</string>
     <string name="overwrite_as">Als „%1$s“ überschreiben</string>

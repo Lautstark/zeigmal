@@ -49,6 +49,25 @@ Card ──PlaybackFailed──► Card(DONE)               no network, no link:
 
 The clip loops in the player itself, no reload and no ring in between; `MAX_ROUNDS` is 20, a named constant in `Station`, to be tuned after watching a child with it.
 
+## Writing a sticker
+
+The reader reports a write in two steps, `WriteStarted` and then a
+`WriteOutcome`; the adult model turns them into a `WriteStatus` the screen
+draws, and slows them down to a person's pace:
+
+```text
+Waiting ──WriteStarted──► Busy            "Schreibt …", at least 400 ms even if the hardware is done in 100
+Busy ──Written──► Done                    "Geschrieben", 1.5 s; the index has already moved on, the screen has not
+Done ──(1.5 s | next WriteStarted)──► Waiting   the next word, its card fetched now
+Busy ──Failed──► Failed                   the reason, and "Nochmal"
+Failed ──retry()──► Waiting               the reader sees the resting sticker again on its own and writes
+any ──AlreadyWritten(stranger)──► Already  "schon beschrieben als …", overwrite or move on
+```
+
+A sticker that was just written keeps reporting itself as already written,
+three times a second for as long as it lies there. Within 3 s of its write
+that is the same sticker, not a stranger, and the status stays where it is.
+
 ## The provider seam
 
 ```kotlin
