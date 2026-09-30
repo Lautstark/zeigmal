@@ -186,6 +186,13 @@ back_t  = 2.4;   // the slot's rear wall, the one the card leans on
 tilt       = 20.0;  // degrees back from vertical
 slope_deg  = 60.0;  // the back, from the horizontal; its underside is then a
                     // 30 degree overhang when printed base down, 45 is the limit
+back_n     = 80.0;  // where the wedge ends behind the plate. The rear slope
+                    // would run out to a feather edge at the table, which
+                    // prints badly and chips; it is cut off on a plane
+                    // parallel to the plate this far back. The number was
+                    // doing this already, as the depth of the box that
+                    // rounds the corners, and nothing said so — the model
+                    // claimed a 105 mm base and the part measured 92.5
 foot_h     =  8.0;  // the phone's bottom edge this far above the floor slab —
                     // this is the frame's foot, and the screws bite into it
 corner_r   =  5.0;  // the body's and the frame's top corners, seen from the
@@ -334,9 +341,16 @@ u_hi   = u_top;
 ridge_t  = plate_t + mouth_flare_n + wall;
 ridge_y  = py(u_top, -ridge_t);
 ridge_z  = pz(u_top, -ridge_t);
-slope_y  = ridge_y + ridge_z / tan(slope_deg);
-y_back   = slope_y;
-base_depth = y_back - y_front;                // [G]
+slope_y  = ridge_y + ridge_z / tan(slope_deg);   // where the slope WOULD reach the table
+
+// The plane that closes the wedge, and where the slope meets it. y_back is
+// the footprint's back edge; the widest point is higher up, at back_y.
+back_foot_y = y0 - s * (z0 - back_n * s) / c + back_n * c;
+back_z   = (slope_y - back_foot_y) / (s / c + 1 / tan(slope_deg));
+back_y   = slope_y - back_z / tan(slope_deg);
+y_back   = back_foot_y;
+base_depth = y_back - y_front;                // [G] what stands on the table
+bbox_depth = back_y - y_front;                // [G] what the slicer needs
 
 // The cavity underneath stops one wall below where the funnel starts, so the
 // ridge with the funnel in it is solid (infill, in practice).
@@ -349,7 +363,7 @@ echo(str("slot      x ", slot_x0 - wall, " .. ", slot_x0 + slot_w + wall, " of p
 echo(str("card      stands ", max(0, -(slot_x0 + clr)), " mm past the phone's left end"));
 echo(str("read path ", win_t + clr + sticker_t, " mm from back glass to sticker face"));
 echo(str("body      ", plate_x_right - plate_x_left, " x ", base_depth, " x ", pz(u_top, -plate_t) , " mm (l x d x h)"));
-echo(str("base      ", base_depth, " deep: slab front at y ", y_front, ", back edge at ", y_back, ", ridge ", ridge_t, " thick"));
+echo(str("base      ", base_depth, " on the table, ", bbox_depth, " at its widest; slab front at y ", y_front, ", back edge at ", y_back));
 echo(str("with card ", pz(slot_u0 + card_h, -win_t - channel), " mm high"));
 echo(str("frame     ", x_right - x_left, " x ", u_top - mouth_h + play + top_wall, " x ", face_n1, " mm"));
 top_bite = screw_l - (face_n1 - top_cb_depth);   // [G] thread in the plate
@@ -392,6 +406,7 @@ function base_profile() = [
     [py(plate_u_at_floor, -plate_t), floor_t],
     [py(u_top, -plate_t), pz(u_top, -plate_t)],
     [ridge_y, ridge_z],
+    [back_y, back_z],
     [y_back, 0]
 ];
 
@@ -499,7 +514,7 @@ module body() {
                     translate([x_left, y_front, 0]) cube([x_right - x_left, base_depth, 200]);
                 }
             }
-            plane() translate([x_left, -80, -80]) linear_extrude(100)
+            plane() translate([x_left, -80, -back_n]) linear_extrude(back_n + 20)
                 top_rounded(x_right - x_left, u_top + 80, corner_r);
         }
         base_hollow();

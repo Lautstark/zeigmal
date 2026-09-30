@@ -379,9 +379,9 @@ def compute(p, bed, phone_mass, fill):
     # --- 6. Printing ------------------------------------------------------
     g = '6. Printing - Ender 3 V2, 0.4 mm nozzle, 0.2 mm layers, PLA'
     body_l = G('plate_x_right') - G('plate_x_left')
-    body_h = pz(G('u_top'), -G('plate_t'))
+    body_h = pz(G('u_top'), 0)      # the plate's front top corner is the highest point
     b.check(g, 'body fits the bed (length)', body_l, '<=', bed[0])
-    b.check(g, 'body fits the bed (depth)', G('base_depth'), '<=', bed[1])
+    b.check(g, 'body fits the bed (depth)', G('bbox_depth'), '<=', bed[1])
     b.check(g, 'body fits the bed (height)', body_h, '<=', bed[2])
     frame_d = G('u_hi') + G('play') + G('frame_wall') + (G('z0') / G('c'))
     frame_l = G('x_right') - G('x_left')
@@ -397,9 +397,16 @@ def compute(p, bed, phone_mass, fill):
     b.info(g, 'overhangs', 'plate %.0f deg, rear slope %.0f deg, funnel back wall %.0f deg '
                            '- all measured from horizontal, 45 is the limit'
            % (90 - G('tilt'), G('slope_deg'), flare_deg))
+    b.check(g, 'the back cut leaves most of the slope', G('back_z'), '<=', G('ridge_z') / 3.0,
+            note='back_n is so shallow the wedge is a wall, not a slope')
+    b.check(g, 'the back cut is not a feather edge', G('back_z'), '>=', 4.0,
+            note='the wedge runs out to an edge that chips')
+    b.info(g, 'back edge', 'the slope is cut %.1f mm above the table, on a plane %.0f mm behind the plate'
+           % (G('back_z'), G('back_n')))
     b.check(g, 'ridge holds the funnel and a wall', G('ridge_t') - (G('plate_t') + G('mouth_flare_n')), '>=', G('wall'))
     b.check(g, 'cavity stops below the funnel', G('mouth_u0') - G('cavity_u_top'), '>=', G('wall'))
-    b.info(g, 'body', '%.1f x %.1f x %.1f mm, base down' % (body_l, G('base_depth'), body_h))
+    b.info(g, 'body', '%.1f x %.1f x %.1f mm, base down; %.1f of that stands on the table'
+           % (body_l, G('bbox_depth'), body_h, G('base_depth')))
     b.info(g, 'frame', '%.1f x %.1f x %.1f mm, face down' % (frame_l, frame_d, G('face_n1')))
     b.info(g, 'with a card', '%.1f mm tall' % pz(G('slot_u0') + G('card_h'), -G('win_t') - channel))
 

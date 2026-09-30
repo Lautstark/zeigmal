@@ -14,7 +14,7 @@ with them.
 
 | Part | What it does | Outer size | Volume |
 |---|---|---|---|
-| **Body** | the wedge: the plate the phone lies on, the funnel and slot cut into its top, a 60° back down to the table, hollow inside with two ribs | 164.3 × 97.3 × 94.0 mm | 180 cm³ |
+| **Body** | the wedge: the plate the phone lies on, the funnel and slot cut into its top, a 60° back cut off 13 mm above the table so it ends on an edge rather than a feather, hollow inside with two ribs | 164.3 × 97.3 × 94.0 mm, standing on 92.5 | 180 cm³ |
 | **Frame** | the front, from the table to the holder's top edge: a 2.4 mm face with a 3 mm lip over the screen, rails round all four edges, openings for jack, USB-C and speaker, one window over the keys | 164.3 × 103.9 × 10.6 mm | 44 cm³ |
 
 Plus M2 × 10, five pieces: two from underneath, three from the front.
@@ -257,10 +257,11 @@ tries a correction before it is written into the file.
 
 `verify.py` estimates the sideways push at the card's top that tips the
 holder, from masses it works out of the geometry. It is a light push, about
-2 N backwards, because PLA is light and a card standing 77 mm proud is a
-lever. The base stays 110 mm deep anyway (ADR 0007): the children push cards
-in, which does not tip it, and do not shove them. If that turns out wrong,
-the hollow under the back is where ballast goes.
+1.6 N backwards, because PLA is light and a card standing 77 mm proud is a
+lever. The holder stands on 92.5 mm of base and that is accepted (ADR 0007):
+the children push cards in, which does not tip it — that takes 18 N — and
+they do not shove them. If that turns out wrong, the hollow under the back is
+where ballast goes.
 
 ## The fit test
 
