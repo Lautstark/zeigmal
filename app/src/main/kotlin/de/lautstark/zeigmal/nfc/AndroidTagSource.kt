@@ -115,6 +115,10 @@ class AndroidTagSource(
     ): WriteOutcome {
         val message = NdefMessage(NdefRecord.createExternal(CardRecord.NDEF_DOMAIN, CardRecord.NDEF_TYPE, mode.record.encode()))
         val ndef = Ndef.get(tag)
+        // Only one technology of a tag can be connected at a time, and one left
+        // connected keeps the next discovery from connecting at all - so the
+        // formatter is closed like the Ndef, whichever of the two did the work.
+        var formatable: NdefFormatable? = null
         try {
             if (ndef != null) {
                 ndef.connect()
@@ -123,14 +127,16 @@ class AndroidTagSource(
                 ndef.writeNdefMessage(message)
                 return WriteOutcome.Written(id, mode.record)
             }
-            val formatable = NdefFormatable.get(tag) ?: return WriteOutcome.Failed(id, "Aufkleber kann kein NDEF")
-            formatable.connect()
-            formatable.format(message)
+            val blank = NdefFormatable.get(tag) ?: return WriteOutcome.Failed(id, "Aufkleber kann kein NDEF")
+            formatable = blank
+            blank.connect()
+            blank.format(message)
             return WriteOutcome.Written(id, mode.record)
         } catch (e: Exception) {
             return WriteOutcome.Failed(id, e.message ?: e.javaClass.simpleName)
         } finally {
             runCatching { ndef?.close() }
+            runCatching { formatable?.close() }
         }
     }
 
