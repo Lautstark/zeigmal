@@ -200,12 +200,30 @@ class AdultModel(
         busyHold = null
         when (outcome) {
             is WriteOutcome.Written -> {
+                val last = lastWritten
+                if (last != null && last.tag == outcome.tag && last.record == outcome.record) {
+                    // The same sticker written with the same card again. After an
+                    // overwrite the reader keeps the overwrite mode until this
+                    // outcome is applied, which is only after the busy hold — and
+                    // the A51 rediscovers a resting sticker every ~290 ms, inside
+                    // that hold. So the sticker is written twice, and counting the
+                    // second as a card skipped the next word in the box. One
+                    // sticker is one word, however often the reader wrote it.
+                    logger.log("written ${outcome.tag} again, same card: not a new one")
+                    rememberSticker(last)
+                    _writing.update { if (it.status is WriteStatus.Busy) it.copy(status = WriteStatus.Waiting) else it }
+                    return
+                }
                 logger.log("written ${outcome.tag}: ${outcome.record.provider}/${outcome.record.ref}")
                 val written = _writing.value.written + outcome.record.ref
                 store.put(KEY_WRITTEN, written.joinToString(","))
                 // The box moves on now, so the reader writes the right card to a
                 // sticker that comes early; the screen stays on this one a moment.
-                val next = (_writing.value.index + 1).coerceAtMost(SignBox.box1.lastIndex)
+                // Only a write of the card the box is on moves it: an outcome for
+                // a card the box has already left is a sticker written, not a step.
+                val advance = outcome.record == _writing.value.record
+                val here = _writing.value.index
+                val next = if (advance) (here + 1).coerceAtMost(SignBox.box1.lastIndex) else here
                 _writing.update { it.copy(written = written, status = WriteStatus.Done(outcome), overwriteNext = false, index = next) }
                 store.put(KEY_WRITE_INDEX, next.toString())
                 rememberSticker(outcome)

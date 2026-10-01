@@ -188,4 +188,48 @@ class AdultModelTest {
             assertEquals(false, (m.tagMode(active = true) as TagMode.Write).overwrite)
             assertEquals(1, m.writing.value.index)
         }
+
+    @Test
+    fun `an overwritten sticker rediscovered during the busy hold is still one word`() =
+        runTest {
+            store.put(SignDigitalProvider.KEY_TOKEN, "tok")
+            store.put(SignDigitalProvider.KEY_EMAIL, "mail@example.org")
+            val m = AdultModel(this, provider(), store, logger)
+            m.goTo(5)
+            advanceUntilIdle()
+            val tag = TagId("04aabbccddeeff")
+            m.onWrite(WriteOutcome.AlreadyWritten(tag, CardRecord("signdigital", "essen", "essen")))
+            m.overwriteNext()
+            val record = m.writing.value.record
+            // The first discovery writes; "Schreibt" holds the outcome for 400 ms.
+            m.onWrite(WriteStarted(tag))
+            advanceTimeBy(100)
+            m.onWrite(WriteOutcome.Written(tag, record))
+            // The A51 sees the resting sticker again ~290 ms after the first
+            // discovery, inside that hold: the reader is still in overwrite mode
+            // for the same card and writes it a second time.
+            advanceTimeBy(190)
+            assertEquals(TagMode.Write(record, overwrite = true), m.tagMode(active = true))
+            m.onWrite(WriteStarted(tag))
+            advanceTimeBy(100)
+            m.onWrite(WriteOutcome.Written(tag, record))
+            advanceUntilIdle()
+            assertEquals("one sticker, one word", 6, m.writing.value.index)
+            assertEquals(WriteStatus.Waiting, m.writing.value.status)
+            assertEquals(false, (m.tagMode(active = true) as TagMode.Write).overwrite)
+        }
+
+    @Test
+    fun `a write for a card the box has already left does not move it again`() =
+        runTest {
+            store.put(SignDigitalProvider.KEY_TOKEN, "tok")
+            val m = AdultModel(this, provider(), store, logger)
+            m.goTo(5)
+            val stale = m.writing.value.record
+            m.skip()
+            m.onWrite(WriteOutcome.Written(TagId("04c4d4a88d2681"), stale))
+            advanceUntilIdle()
+            assertEquals(6, m.writing.value.index)
+            assertTrue(stale.ref in m.writing.value.written)
+        }
 }
