@@ -112,4 +112,20 @@ class SignDigitalProviderTest {
                 assertEquals(0, server.requestCount)
             }
         }
+
+    @Test
+    fun `a ref off a sticker is one encoded query parameter, whatever it holds`() =
+        runTest {
+            store.put(SignDigitalProvider.KEY_TOKEN, "tok-1")
+            server.enqueue(MockResponse(body = """{"total":0,"data":[]}"""))
+            try {
+                provider.resolve("a&slug=b#c")
+                fail()
+            } catch (e: SignDigitalProvider.NotFound) {
+                // nothing found is the right answer; the question is what was asked
+            }
+            val request = server.takeRequest()
+            assertEquals(listOf("a&slug=b#c"), request.url.queryParameterValues("slug"))
+            assertEquals("slug=a%26slug%3Db%23c", request.url.encodedQuery)
+        }
 }

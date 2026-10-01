@@ -12,6 +12,7 @@ import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
+import okhttp3.HttpUrl.Companion.toHttpUrl
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.Request
@@ -100,7 +101,17 @@ class SignDigitalProvider(
         ref: String,
         token: String,
     ): Media {
-        val page = request("GET", "$baseUrl/api/signs?slug=$ref", null, token).jsonObject
+        // The ref comes off a sticker anyone can write, so it is a query
+        // parameter, encoded, and never text pasted into the URL: a "&" or "#"
+        // in it would otherwise ask the server a different question.
+        val signs =
+            "$baseUrl/api/signs"
+                .toHttpUrl()
+                .newBuilder()
+                .addQueryParameter("slug", ref)
+                .build()
+                .toString()
+        val page = request("GET", signs, null, token).jsonObject
         val sign = page["data"]?.jsonArray?.firstOrNull()?.jsonObject ?: throw NotFound("kein Zeichen mit der Kennung $ref")
         val edge = sign["edge"]?.jsonObject ?: JsonObject(emptyMap())
         val videoPath = edge["signVideo"]?.jsonObject?.let { pick(it, VIDEO_VARIANTS) }
