@@ -23,6 +23,7 @@ import androidx.media3.common.Player
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.ui.PlayerView
 import de.lautstark.zeigmal.R
+import kotlinx.coroutines.CancellationException
 
 /**
  * One sign video on the shared [player], from a link [resolve] hands back,
@@ -34,6 +35,10 @@ import de.lautstark.zeigmal.R
  * Listener first, then the media item, prepare and play: a short clip can end
  * before a listener attached afterwards hears about it, and a station that
  * misses that stays on the last frame forever.
+ *
+ * The callbacks are bound to [round] by the caller, so whatever a round reports
+ * after it has been replaced arrives tagged with that round and the station
+ * ignores it.
  */
 @Composable
 fun SignVideo(
@@ -85,6 +90,13 @@ fun SignVideo(
         val url =
             try {
                 resolve()
+            } catch (e: CancellationException) {
+                // Not a failure: the round is over — the card was swapped or
+                // taken away while its link was on its way. Reporting it as one
+                // used to send whichever card was in the slot by then straight
+                // to its picture, without its video. The effect is cancelled;
+                // it goes quietly.
+                throw e
             } catch (e: Exception) {
                 onFailed(e.message ?: e.javaClass.simpleName)
                 return@LaunchedEffect

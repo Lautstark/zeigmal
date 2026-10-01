@@ -29,6 +29,9 @@ sealed interface StationState {
     ) : StationState {
         /** Whether the player should loop again after this one. */
         fun wantsAnotherLoop(maxLoops: Int): Boolean = present && loop < maxLoops
+
+        /** Which round this is, for the screen to hand back with every playback event. */
+        val round: Round get() = Round(tag, record)
     }
 
     /** A sticker without a record: the grey ring, until it is gone. */
@@ -36,6 +39,19 @@ sealed interface StationState {
         val tag: TagId,
     ) : StationState
 }
+
+/**
+ * Which card a playback event is about: the sticker and the record that were in
+ * the slot when the screen started fetching and playing. The screen's video runs
+ * a little behind the station — the link is fetched over the network, the
+ * player reports from its own thread — so by the time an event arrives the card
+ * may have been swapped. An event for a round that is no longer the station's
+ * is about a card that has gone and must not move the one that is there now.
+ */
+data class Round(
+    val tag: TagId,
+    val record: CardRecord,
+)
 
 enum class Phase {
     /** The ring: the card is known, the video is on its way. */

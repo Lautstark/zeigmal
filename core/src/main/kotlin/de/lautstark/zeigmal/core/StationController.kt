@@ -13,9 +13,10 @@ import kotlinx.coroutines.launch
  * the station's rules, a provider for the link, and the screen's callbacks
  * back in. Everything the child mode does, with no Android in it.
  *
- * One instance per app; the screen reads [state] and calls the three playback
- * callbacks. The presence hold and the pause between rounds are coroutine
- * delays on [scope], so a test drives them with virtual time.
+ * One instance per app; the screen reads [state] and calls the playback
+ * callbacks, each with the [Round] it was playing. The presence hold and the
+ * pause between rounds are coroutine delays on [scope], so a test drives them
+ * with virtual time.
  */
 class StationController(
     private val scope: CoroutineScope,
@@ -76,15 +77,18 @@ class StationController(
         }
     }
 
-    fun onFirstFrame() = apply(StationEvent.FirstFrame)
+    fun onFirstFrame(round: Round) = applyFor(round, StationEvent.FirstFrame)
 
-    fun onLooped() = apply(StationEvent.Looped)
+    fun onLooped(round: Round) = applyFor(round, StationEvent.Looped)
 
-    fun onPlaybackEnded() = apply(StationEvent.PlaybackEnded)
+    fun onPlaybackEnded(round: Round) = applyFor(round, StationEvent.PlaybackEnded)
 
-    fun onPlaybackFailed(reason: String) {
-        logger.log("video failed: $reason")
-        apply(StationEvent.PlaybackFailed)
+    fun onPlaybackFailed(
+        round: Round,
+        reason: String,
+    ) {
+        logger.log("video failed for ${round.record.ref}: $reason")
+        applyFor(round, StationEvent.PlaybackFailed)
     }
 
     /** The clip for a card, from whichever provider the card names. Throws with a reason. */
@@ -100,6 +104,30 @@ class StationController(
         val media = provider.resolve(record.ref)
         logger.log("${record.provider}/${record.ref}: link after ${(System.nanoTime() - t0) / 1_000_000} ms")
         return media
+    }
+
+    /**
+     * A playback event, applied only while its round is still the station's.
+     * Card A swapped for card B while A's link was on its way cancels A's fetch,
+     * and that cancellation used to arrive as "A failed" while B was loading —
+     * B went straight to its picture without ever playing. The station's state
+     * is checked inside the same atomic update that applies the event, so a
+     * card coming in between the check and the change cannot slip through.
+     */
+    private fun applyFor(
+        round: Round,
+        event: StationEvent,
+    ) {
+        _state.update { current ->
+            if (current !is StationState.Card || current.round != round) {
+                logger.log("stale $event for ${round.record.ref}, ignored")
+                current
+            } else {
+                val next = station.next(current, event)
+                if (next != current) logger.log("→ ${describe(next)}")
+                next
+            }
+        }
     }
 
     private fun apply(event: StationEvent) {

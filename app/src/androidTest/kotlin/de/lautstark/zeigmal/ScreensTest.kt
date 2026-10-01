@@ -15,6 +15,7 @@ import androidx.compose.ui.test.performTextInput
 import de.lautstark.zeigmal.core.CardRecord
 import de.lautstark.zeigmal.core.Login
 import de.lautstark.zeigmal.core.Phase
+import de.lautstark.zeigmal.core.Round
 import de.lautstark.zeigmal.core.StationState
 import de.lautstark.zeigmal.core.TagId
 import de.lautstark.zeigmal.core.WriteOutcome
@@ -35,6 +36,8 @@ import org.junit.Test
  * by the app's manifest and is looked at by eye.
  */
 class ScreensTest {
+    private val ignoreFailure: (Round, String) -> Unit = { _, _ -> }
+
     @get:Rule
     val compose = createAndroidComposeRule<ComponentActivity>()
 
@@ -44,7 +47,13 @@ class ScreensTest {
     @Test
     fun kidScreenShowsTheRingForACardAndGreyForAnUnknownSticker() {
         compose.setContent {
-            KidScreen(StationState.Card(trinken, a, Phase.LOADING), videoUrl = { "" }, onFirstFrame = {}, onEnded = {}, onFailed = {})
+            KidScreen(
+                StationState.Card(trinken, a, Phase.LOADING),
+                videoUrl = { "" },
+                onFirstFrame = {},
+                onEnded = {},
+                onFailed = ignoreFailure,
+            )
         }
         compose.onNodeWithTag("ring-seen").assertIsDisplayed()
         compose.onNodeWithTag("video").assertIsDisplayed()
@@ -52,7 +61,15 @@ class ScreensTest {
 
     @Test
     fun kidScreenIsOnlyTheMarkWhenIdle() {
-        compose.setContent { KidScreen(StationState.Unknown(a), videoUrl = { "" }, onFirstFrame = {}, onEnded = {}, onFailed = {}) }
+        compose.setContent {
+            KidScreen(
+                StationState.Unknown(a),
+                videoUrl = { "" },
+                onFirstFrame = {},
+                onEnded = {},
+                onFailed = ignoreFailure,
+            )
+        }
         compose.onNodeWithTag("ring-unknown").assertIsDisplayed()
     }
 

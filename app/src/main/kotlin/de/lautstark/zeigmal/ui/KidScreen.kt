@@ -30,6 +30,7 @@ import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
 import de.lautstark.zeigmal.core.CardRecord
 import de.lautstark.zeigmal.core.Phase
+import de.lautstark.zeigmal.core.Round
 import de.lautstark.zeigmal.core.Station
 import de.lautstark.zeigmal.core.StationState
 
@@ -41,6 +42,9 @@ import de.lautstark.zeigmal.core.StationState
  * card in their hand.
  *
  * One player for the life of the screen; each round swaps the media item.
+ * Every playback callback carries the [Round] it was playing, bound here when
+ * the round starts, so a late report from a card that has been swapped out
+ * cannot move the card that is in the slot now.
  */
 @Composable
 fun KidScreen(
@@ -48,10 +52,10 @@ fun KidScreen(
     maxLoops: Int = Station.MAX_ROUNDS,
     videoUrl: suspend (CardRecord) -> String,
     cardImageUrl: suspend (CardRecord) -> String? = { null },
-    onFirstFrame: () -> Unit,
-    onLooped: () -> Unit = {},
-    onEnded: () -> Unit,
-    onFailed: (String) -> Unit,
+    onFirstFrame: (Round) -> Unit,
+    onLooped: (Round) -> Unit = {},
+    onEnded: (Round) -> Unit,
+    onFailed: (Round, String) -> Unit,
 ) {
     val player = rememberLoudPlayer()
 
@@ -69,16 +73,17 @@ fun KidScreen(
             MarkWithRing(ring)
         }
         if (station is StationState.Card && station.phase != Phase.DONE) {
+            val round = station.round
             SignVideo(
                 player = player,
-                round = station.tag to station.record.ref,
-                resolve = { videoUrl(station.record) },
+                round = round,
+                resolve = { videoUrl(round.record) },
                 loopAgain = station.wantsAnotherLoop(maxLoops),
                 visible = station.phase == Phase.PLAYING,
-                onFirstFrame = onFirstFrame,
-                onLooped = onLooped,
-                onEnded = onEnded,
-                onFailed = onFailed,
+                onFirstFrame = { onFirstFrame(round) },
+                onLooped = { onLooped(round) },
+                onEnded = { onEnded(round) },
+                onFailed = { reason -> onFailed(round, reason) },
             )
         }
     }
