@@ -29,15 +29,21 @@ data class CardRecord(
     val label: String,
 ) {
     init {
-        require(provider.isNotBlank() && provider == provider.trim()) { "provider" }
-        require(ref.isNotBlank() && ref == ref.trim()) { "ref" }
-        require(label.isNotBlank() && '\n' !in label) { "label" }
+        // One field per line on the wire, so a line break inside a field would
+        // be a field of its own: a ref of "x\nprovider=other" would decode as a
+        // different card. Trimming already keeps them off the ends; this keeps
+        // them out of the middle, for every field and not only the label.
+        require(provider.isNotBlank() && provider == provider.trim() && provider.none(::isLineBreak)) { "provider" }
+        require(ref.isNotBlank() && ref == ref.trim() && ref.none(::isLineBreak)) { "ref" }
+        require(label.isNotBlank() && label.none(::isLineBreak)) { "label" }
     }
 
     fun encode(): ByteArray = "$HEADER\nprovider=$provider\nref=$ref\nlabel=$label\n".toByteArray(Charsets.UTF_8)
 
     companion object {
         const val HEADER = "zeigmal/1"
+
+        private fun isLineBreak(c: Char) = c == '\n' || c == '\r'
 
         /** The NDEF external type this record travels under: `lautstark.de:zeigmal`. */
         const val NDEF_DOMAIN = "lautstark.de"
@@ -57,7 +63,10 @@ data class CardRecord(
             val ref = fields["ref"]?.trim().orEmpty()
             val label = fields["label"]?.trim().orEmpty()
             if (provider.isEmpty() || ref.isEmpty()) return null
-            return CardRecord(provider, ref, label.ifEmpty { ref })
+            // A sticker anyone can write must not throw on the reader's thread:
+            // what the constructor refuses (a stray carriage return mid-field)
+            // is simply not one of ours.
+            return runCatching { CardRecord(provider, ref, label.ifEmpty { ref }) }.getOrNull()
         }
     }
 }

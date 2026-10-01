@@ -2,6 +2,7 @@ package de.lautstark.zeigmal.core
 
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertThrows
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -38,5 +39,19 @@ class CardRecordTest {
     @Test
     fun `a missing label falls back to the ref`() {
         assertEquals("essen", CardRecord.decode("zeigmal/1\nprovider=signdigital\nref=essen\n".toByteArray())?.label)
+    }
+
+    @Test
+    fun `a line break inside any field is refused, so no field can smuggle in another`() {
+        for (bad in listOf("x\nprovider=other", "x\rlabel=y")) {
+            assertThrows(IllegalArgumentException::class.java) { CardRecord(bad, "essen", "essen") }
+            assertThrows(IllegalArgumentException::class.java) { CardRecord("signdigital", bad, "essen") }
+            assertThrows(IllegalArgumentException::class.java) { CardRecord("signdigital", "essen", bad) }
+        }
+    }
+
+    @Test
+    fun `a carriage return mid-field on a foreign sticker is unknown, not a crash`() {
+        assertNull(CardRecord.decode("zeigmal/1\nprovider=signdigital\nref=es\rsen\n".toByteArray()))
     }
 }
