@@ -16,6 +16,11 @@ So the first thing it counts is shells.
     openscad -o /tmp/frame.stl -D 'part="frame"' case/zeigmal-case.scad
     python3 case/check-stl.py /tmp/body.stl /tmp/frame.stl
 
+`--scad` points it at another model in this directory, for the parts whose
+length it then knows to check:
+
+    python3 case/check-stl.py --scad case/zeigmal-cards.scad /tmp/box.stl
+
 Exit code 0 = everything fine, 1 = at least one check failed.
 """
 
@@ -187,8 +192,22 @@ def check(path, p, b):
             note='the part floats or digs in; it will not slice as modelled')
     b.info(g, 'size', '%.1f x %.1f x %.1f mm' % size)
 
-    expect_x = p['plate_x_right'] - p['plate_x_left'] if 'body' in g else p['x_right'] - p['x_left']
-    b.check(g, 'as long as the model says', size[0], '==', round(expect_x, 3))
+    # The model's own word for how long this part is, where it has one.
+    # Other files in this directory describe other things; a part the table
+    # below does not name is still checked for everything else.
+    named = {'body': ('plate_x_right', 'plate_x_left'),
+             'frame': ('x_right', 'x_left'),
+             'box': ('box_l', None),
+             'shelf': ('sh_l', 'minus_tab')}
+    for key, pair in named.items():
+        if key in g and pair[0] in p:
+            expect = p[pair[0]] if pair[1] is None else (
+                p[pair[0]] + p['tab_w'] if pair[1] == 'minus_tab' else p[pair[0]] - p[pair[1]])
+            # A tolerance, because a rounded corner is a polygon in the
+            # export and sits a few microns inside the circle it stands for.
+            b.check(g, 'as long as the model says', abs(size[0] - expect), '<=', 0.05,
+                    note='the part is %.3f mm, the model says %.3f' % (size[0], expect))
+            break
     b.check(g, 'fits the bed (x)', size[0], '<=', 220.0)
     b.check(g, 'fits the bed (y)', size[1], '<=', 220.0)
     b.check(g, 'fits the bed (z)', size[2], '<=', 250.0)
@@ -204,10 +223,16 @@ def check(path, p, b):
 
 
 def main():
-    paths = sys.argv[1:]
+    args = sys.argv[1:]
+    scad = SCAD
+    if '--scad' in args:
+        i = args.index('--scad')
+        scad = args[i + 1]
+        args = args[:i] + args[i + 2:]
+    paths = args
     if not paths:
         raise SystemExit(__doc__.strip().split('\n\n')[-2])
-    p = load_parameters(SCAD)
+    p = load_parameters(scad)
     b = Report()
     for path in paths:
         check(path, p, b)

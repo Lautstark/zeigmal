@@ -17,3 +17,4 @@ repository's own.
 | [0007](0007-the-holder-is-a-leaning-body-with-the-slot-in-it-and-a-frame-screwed-on-from-underneath.md) | The holder is a leaning body with the slot in it, and a frame screwed on from underneath |
 | [0008](0008-the-card-holds-the-record-and-the-phone-streams-the-video.md) | The card holds the record, and the phone streams the video |
 | [0009](0009-the-phone-writes-the-stickers.md) | The phone writes the stickers |
+| [0010](0010-a-shelf-shows-two-cards-and-there-are-several-shelves.md) | A shelf shows two cards, and there are several shelves |
