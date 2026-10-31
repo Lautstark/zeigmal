@@ -54,7 +54,7 @@ import de.lautstark.zeigmal.core.WriteStatus
 import de.lautstark.zeigmal.core.Writing
 
 /**
- * Writing the box, card by card. Left the box's order with what is done and
+ * Writing a set, card by card. Left the box's order with what is done and
  * what comes next; middle the card as SIGNdigital shows it, so the right one
  * comes out of the stack; right the word and, right under it, the one line
  * that says what the sticker is up to. The card's border says the same in
@@ -70,6 +70,7 @@ fun WriteScreen(
     onSettings: () -> Unit,
     onDone: () -> Unit,
     log: List<LogLine>?,
+    onChooseSet: (String) -> Unit = {},
 ) {
     val w = writing
     Row(
@@ -81,7 +82,7 @@ fun WriteScreen(
             .testTag("write"),
         horizontalArrangement = Arrangement.spacedBy(18.dp),
     ) {
-        WordList(w, onGoTo, onSettings, Modifier.width(170.dp).fillMaxHeight())
+        WordList(w, onGoTo, onChooseSet, onSettings, Modifier.width(170.dp).fillMaxHeight())
         CardImage(w.cardImageUrl, w.lookupFailed, w.status, Modifier.fillMaxHeight(0.92f).aspectRatio(2f / 3f))
         Column(Modifier.weight(1f).fillMaxHeight()) {
             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -237,20 +238,42 @@ private fun StatusLine(w: Writing) {
 private fun WordList(
     w: Writing,
     onGoTo: (Int) -> Unit,
+    onChooseSet: (String) -> Unit,
     onSettings: () -> Unit,
     modifier: Modifier,
 ) {
     val list = rememberLazyListState()
     LaunchedEffect(w.index) { list.animateScrollToItem((w.index - 3).coerceAtLeast(0)) }
     Column(modifier) {
-        Row(Modifier.padding(bottom = 6.dp)) {
-            Text("SIGNBOX 1", color = Palette.textFaint, fontSize = 11.sp, fontWeight = FontWeight.SemiBold, letterSpacing = 1.sp)
-            Spacer(Modifier.weight(1f))
-            Text("${w.index + 1} von ${w.total}", color = Palette.textFaint, fontSize = 12.sp)
+        // The sets, side by side: the one being written is in colour, a tap on
+        // another switches to where that one stopped. Still while the reader writes.
+        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            for (set in SignBox.sets) {
+                val current = set == w.set
+                Text(
+                    set.title.uppercase(),
+                    color = if (current) Palette.accentStrong else Palette.textFaint,
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    letterSpacing = 1.sp,
+                    maxLines = 1,
+                    modifier =
+                        Modifier
+                            .clickable(enabled = !current && !w.busy) { onChooseSet(set.id) }
+                            .padding(vertical = 4.dp)
+                            .testTag("set-${set.id}"),
+                )
+            }
         }
+        Text(
+            "${w.index + 1} von ${w.total}",
+            color = Palette.textFaint,
+            fontSize = 12.sp,
+            modifier = Modifier.padding(bottom = 6.dp),
+        )
         LazyColumn(state = list, modifier = Modifier.weight(1f)) {
-            itemsIndexed(SignBox.box1) { i, word ->
-                val done = word.ref in w.written
+            itemsIndexed(w.set.words) { i, word ->
+                val done = word.label in w.written
                 val current = i == w.index
                 val next = i == w.index + 1
                 Row(

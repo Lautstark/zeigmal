@@ -60,7 +60,7 @@ class AdultModelTest {
             advanceUntilIdle()
             val again = AdultModel(this, provider(), store, logger)
             assertEquals(6, again.writing.value.index)
-            assertEquals(setOf(SignBox.box1[5].ref), again.writing.value.written)
+            assertEquals(setOf(SignBox.box1[5].label), again.writing.value.written)
         }
 
     @Test
@@ -87,14 +87,14 @@ class AdultModelTest {
             advanceUntilIdle()
             assertEquals(1, m.writing.value.index)
             assertEquals("aber", m.writing.value.word.label)
-            assertEquals(setOf("abend-s"), m.writing.value.written)
+            assertEquals(setOf("Abend(s)"), m.writing.value.written)
             assertEquals("1", store.get(AdultModel.KEY_WRITE_INDEX))
-            assertEquals("abend-s", store.get(AdultModel.KEY_WRITTEN))
+            assertEquals("Abend(s)", store.get(AdultModel.KEY_WRITTEN))
             assertEquals("https://cdn/aber?sig", m.writing.value.cardImageUrl)
             // A fresh model picks up where this one left off.
             val again = AdultModel(this, provider(), store, logger)
             assertEquals(1, again.writing.value.index)
-            assertEquals(setOf("abend-s"), again.writing.value.written)
+            assertEquals(setOf("Abend(s)"), again.writing.value.written)
         }
 
     @Test
@@ -230,6 +230,46 @@ class AdultModelTest {
             m.onWrite(WriteOutcome.Written(TagId("04c4d4a88d2681"), stale))
             advanceUntilIdle()
             assertEquals(6, m.writing.value.index)
-            assertTrue(stale.ref in m.writing.value.written)
+            assertTrue(stale.label in m.writing.value.written)
+        }
+
+    @Test
+    fun `each set keeps where it stopped, and the chosen set survives a restart`() =
+        runTest {
+            store.put(SignDigitalProvider.KEY_TOKEN, "tok")
+            val m = AdultModel(this, provider(), store, logger)
+            m.goTo(5)
+            m.chooseSet(SignBox.HALLOWEEN)
+            assertEquals(0, m.writing.value.index)
+            assertEquals("Halloween", m.writing.value.word.label)
+            m.goTo(2)
+            assertEquals(CardRecord("signdigital", "oder-variante", "oder"), m.writing.value.record)
+            val again = AdultModel(this, provider(), store, logger)
+            assertEquals(SignBox.HALLOWEEN, again.writing.value.set.id)
+            assertEquals(2, again.writing.value.index)
+            again.chooseSet(SignBox.BOX1)
+            assertEquals(5, again.writing.value.index)
+            advanceUntilIdle()
+        }
+
+    @Test
+    fun `two cards on one sign are two cards`() =
+        runTest {
+            store.put(SignDigitalProvider.KEY_TOKEN, "tok")
+            val m = AdultModel(this, provider(), store, logger)
+            m.chooseSet(SignBox.HALLOWEEN)
+            m.goTo(SignBox.halloween.indexOfFirst { it.label == "Kostüm" })
+            m.onWrite(WriteOutcome.Written(TagId("04aabbccddeeff"), m.writing.value.record))
+            advanceUntilIdle()
+            assertEquals(setOf("Kostüm"), m.writing.value.written)
+            assertTrue("verkleiden" !in m.writing.value.written)
+        }
+
+    @Test
+    fun `SIGNbox progress stored as refs reads as labels`() =
+        runTest {
+            store.put(AdultModel.KEY_WRITTEN, "abend-s,aber")
+            val m = AdultModel(this, provider(), store, logger)
+            assertEquals(setOf("Abend(s)", "aber"), m.writing.value.written)
         }
 }

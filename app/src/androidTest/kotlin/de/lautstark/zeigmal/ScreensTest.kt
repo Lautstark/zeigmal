@@ -16,6 +16,7 @@ import de.lautstark.zeigmal.core.CardRecord
 import de.lautstark.zeigmal.core.Login
 import de.lautstark.zeigmal.core.Phase
 import de.lautstark.zeigmal.core.Round
+import de.lautstark.zeigmal.core.SignBox
 import de.lautstark.zeigmal.core.StationState
 import de.lautstark.zeigmal.core.TagId
 import de.lautstark.zeigmal.core.WriteOutcome
@@ -176,5 +177,26 @@ class ScreensTest {
         }
         compose.onNodeWithTag("word").assertTextEquals("Abend(s)")
         compose.onNodeWithTag("written").assertExists()
+    }
+
+    @Test
+    fun writeScreenSwitchesToAnotherSet() {
+        var chosen: String? = null
+        compose.setContent {
+            WriteScreen(
+                Writing(set = SignBox.set(SignBox.HALLOWEEN), index = 2),
+                onGoTo = {},
+                onSkip = {},
+                onRetry = {},
+                onOverwrite = {},
+                onSettings = {},
+                onDone = {},
+                log = null,
+                onChooseSet = { chosen = it },
+            )
+        }
+        compose.onNodeWithTag("word").assertTextEquals("oder")
+        compose.onNodeWithTag("set-${SignBox.BOX1}").performSemanticsAction(SemanticsActions.OnClick)
+        assert(chosen == SignBox.BOX1)
     }
 }

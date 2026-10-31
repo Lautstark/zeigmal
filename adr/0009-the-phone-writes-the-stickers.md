@@ -34,7 +34,8 @@ strings. ADR 0001 stands for everything beyond that.
 ## Consequences
 
 The app knows one card box by name. A second box, or "Eigenes Wort", is a
-list and a text field away and is not in the MVP. The writing mode needs the
+list and a text field away and is not in the MVP. (A second set came on
+2026-10-31, as a list: ADR 0011.) The writing mode needs the
 provider's login, because the card picture comes from the provider.
 
 ## Not to be "fixed" later

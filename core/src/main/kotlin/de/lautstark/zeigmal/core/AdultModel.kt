@@ -49,8 +49,12 @@ sealed interface WriteStatus {
     ) : WriteStatus
 }
 
-/** Where in the box the writing mode is, and what the sticker on the antenna is up to. */
+/**
+ * Where in the set the writing mode is, and what the sticker on the antenna is
+ * up to. [written] holds labels, not refs: two cards of a set may share a sign.
+ */
 data class Writing(
+    val set: CardSet = SignBox.set(null),
     val index: Int = 0,
     val cardImageUrl: String? = null,
     val lookupFailed: String? = null,
@@ -58,8 +62,8 @@ data class Writing(
     val written: Set<String> = emptySet(),
     val overwriteNext: Boolean = false,
 ) {
-    val word: SignBoxWord get() = SignBox.box1[index.coerceIn(0, SignBox.box1.lastIndex)]
-    val total: Int get() = SignBox.box1.size
+    val word: SignBoxWord get() = set.words[index.coerceIn(0, set.words.lastIndex)]
+    val total: Int get() = set.words.size
     val record: CardRecord get() = CardRecord(SignDigitalProvider.ID, word.ref, word.label)
 
     /** The word on screen: while "written" is shown it is the one just written, not the next. */
@@ -84,18 +88,7 @@ class AdultModel(
     private val _login = MutableStateFlow<Login>(signDigital.email?.takeIf { signDigital.loggedIn }?.let { Login.In(it) } ?: Login.Out)
     val login: StateFlow<Login> = _login
 
-    private val _writing =
-        MutableStateFlow(
-            Writing(
-                index = store.get(KEY_WRITE_INDEX)?.toIntOrNull() ?: 0,
-                written =
-                    store
-                        .get(KEY_WRITTEN)
-                        ?.split(',')
-                        ?.filter { it.isNotEmpty() }
-                        ?.toSet() ?: emptySet(),
-            ),
-        )
+    private val _writing = MutableStateFlow(progress(SignBox.set(store.get(KEY_WRITE_SET))))
     val writing: StateFlow<Writing> = _writing
 
     /* The reader's timing is too fast to see and the box's too fast to check;
@@ -143,9 +136,39 @@ class AdultModel(
         if (_writing.value.cardImageUrl == null) lookupCurrentCard()
     }
 
+    /** Another stack of cards: each set keeps where it stopped and what is done. */
+    fun chooseSet(id: String) {
+        val set = SignBox.set(id)
+        if (set == _writing.value.set || _writing.value.busy) return
+        doneHold?.cancel()
+        store.put(KEY_WRITE_SET, set.id)
+        _writing.value = progress(set)
+        lookupCurrentCard()
+    }
+
+    /**
+     * A set's progress as the store keeps it. SIGNbox 1 keeps its first keys,
+     * which held refs before sets had two cards on one sign; a stored ref reads
+     * as the label of its card.
+     */
+    private fun progress(set: CardSet): Writing {
+        val written =
+            store
+                .get(writtenKey(set))
+                ?.split(',')
+                ?.filter { it.isNotEmpty() }
+                ?.map { e -> if (set.words.any { it.label == e }) e else set.words.firstOrNull { it.ref == e }?.label ?: e }
+                ?.toSet() ?: emptySet()
+        return Writing(set = set, index = store.get(indexKey(set))?.toIntOrNull() ?: 0, written = written)
+    }
+
+    private fun indexKey(set: CardSet) = if (set.id == SignBox.BOX1) KEY_WRITE_INDEX else "write.${set.id}.index"
+
+    private fun writtenKey(set: CardSet) = if (set.id == SignBox.BOX1) KEY_WRITTEN else "write.${set.id}.written"
+
     fun goTo(index: Int) {
         doneHold?.cancel()
-        val clamped = index.coerceIn(0, SignBox.box1.lastIndex)
+        val clamped = index.coerceIn(0, _writing.value.set.words.lastIndex)
         _writing.update {
             it.copy(
                 index = clamped,
@@ -155,7 +178,7 @@ class AdultModel(
                 overwriteNext = false,
             )
         }
-        store.put(KEY_WRITE_INDEX, clamped.toString())
+        store.put(indexKey(_writing.value.set), clamped.toString())
         lookupCurrentCard()
     }
 
@@ -215,17 +238,18 @@ class AdultModel(
                     return
                 }
                 logger.log("written ${outcome.tag}: ${outcome.record.provider}/${outcome.record.ref}")
-                val written = _writing.value.written + outcome.record.ref
-                store.put(KEY_WRITTEN, written.joinToString(","))
+                val set = _writing.value.set
+                val written = _writing.value.written + outcome.record.label
+                store.put(writtenKey(set), written.joinToString(","))
                 // The box moves on now, so the reader writes the right card to a
                 // sticker that comes early; the screen stays on this one a moment.
                 // Only a write of the card the box is on moves it: an outcome for
                 // a card the box has already left is a sticker written, not a step.
                 val advance = outcome.record == _writing.value.record
                 val here = _writing.value.index
-                val next = if (advance) (here + 1).coerceAtMost(SignBox.box1.lastIndex) else here
+                val next = if (advance) (here + 1).coerceAtMost(set.words.lastIndex) else here
                 _writing.update { it.copy(written = written, status = WriteStatus.Done(outcome), overwriteNext = false, index = next) }
-                store.put(KEY_WRITE_INDEX, next.toString())
+                store.put(indexKey(set), next.toString())
                 rememberSticker(outcome)
                 doneHold =
                     scope.launch {
@@ -289,6 +313,7 @@ class AdultModel(
     companion object {
         const val KEY_WRITE_INDEX = "write.index"
         const val KEY_WRITTEN = "write.written"
+        const val KEY_WRITE_SET = "write.set"
 
         /** "Schreibt …" stays at least this long, or it is a flicker nobody reads. */
         const val MIN_BUSY_MILLIS = 400L

@@ -105,6 +105,7 @@ fun ZeigmalApp(model: ZeigmalViewModel) {
                     onSettings = model::openSettings,
                     onDone = model::leaveAdult,
                     log = if (showLog) log else null,
+                    onChooseSet = model.adult::chooseSet,
                 )
             }
         }

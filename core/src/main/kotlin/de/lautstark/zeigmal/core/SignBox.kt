@@ -1,14 +1,23 @@
 package de.lautstark.zeigmal.core
 
 /**
- * The words of HHO's SIGNbox 1, in the order of their printed list, each with
- * the reference SIGNdigital uses for it. The list is public (HHO publishes it
- * as a PDF); nothing of SIGN's material is in it. It is what the writing mode
- * walks through, card by card.
+ * A word on a card, with the reference SIGNdigital uses for its sign. The
+ * label is what the card says and what the sticker carries; two cards may
+ * share a sign, never a label.
  */
 data class SignBoxWord(
     val label: String,
     val ref: String,
+)
+
+/**
+ * A stack of cards the writing mode walks, in the order the adult holds them.
+ * The words and refs are ours or public; nothing of SIGN's material is in it.
+ */
+data class CardSet(
+    val id: String,
+    val title: String,
+    val words: List<SignBoxWord>,
 )
 
 object SignBox {
@@ -27,25 +36,58 @@ object SignBox {
      */
     fun refForCard(label: String): String = OVERRIDES[label] ?: refFor(label)
 
-    val box1: List<SignBoxWord> by lazy {
-        val stream = SignBox::class.java.getResourceAsStream("/signbox1.txt") ?: error("signbox1.txt missing")
-        stream
-            .bufferedReader(Charsets.UTF_8)
-            .readLines()
+    /**
+     * One card per line. `label = ref` names the sign outright, for a card
+     * whose word has no sign of its own; a bare label gets [refForCard].
+     */
+    fun parse(lines: List<String>): List<SignBoxWord> =
+        lines
             .map { it.substringBefore('#').trim() }
             .filter { it.isNotEmpty() }
-            .map { SignBoxWord(it, refForCard(it)) }
+            .map { line ->
+                val label = line.substringBefore('=').trim()
+                val ref = line.substringAfter('=', "").trim()
+                SignBoxWord(label, ref.ifEmpty { refForCard(label) })
+            }
+
+    private fun load(resource: String): List<SignBoxWord> {
+        val stream = SignBox::class.java.getResourceAsStream(resource) ?: error("$resource missing")
+        return parse(stream.bufferedReader(Charsets.UTF_8).readLines())
     }
 
-    /** Where the printed name and the site's slug part ways. Found by probing the site, 2026-09-13. */
+    /** HHO's SIGNbox 1, in the order of their printed list (HHO publishes it as a PDF). */
+    val box1: List<SignBoxWord> by lazy { load("/signbox1.txt") }
+
+    /** The family's own Halloween cards. */
+    val halloween: List<SignBoxWord> by lazy { load("/halloween.txt") }
+
+    /** Every set the writing mode offers; the first is where it starts. */
+    val sets: List<CardSet> by lazy {
+        listOf(
+            CardSet(BOX1, "SIGNbox 1", box1),
+            CardSet(HALLOWEEN, "Halloween", halloween),
+        )
+    }
+
+    fun set(id: String?): CardSet = sets.firstOrNull { it.id == id } ?: sets.first()
+
+    const val BOX1 = "signbox1"
+    const val HALLOWEEN = "halloween"
+
+    /**
+     * Where the printed name and the site's slug part ways. Found by probing
+     * the site, 2026-09-13; the last five were renamed on the site and found
+     * again 2026-10-31.
+     */
     private val OVERRIDES =
         mapOf(
             "helfen/Hilfe" to "hilfe",
-            "gucken/sehen" to "gucken",
-            "lieben/Liebe" to "lieben",
             "mögen/möchten" to "mogen",
-            "(Hände) waschen" to "waschen",
-            "wehtun (Schmerzen)" to "wehtun",
             "gewesen/Partizip II" to "gewesen",
+            "gucken/sehen" to "gucken-sehen-mg",
+            "lieben/Liebe" to "lieben-liebe",
+            "(Hände) waschen" to "waschen-hande",
+            "wehtun (Schmerzen)" to "schmerzen",
+            "selber" to "selbst",
         )
 }

@@ -18,3 +18,4 @@ repository's own.
 | [0008](0008-the-card-holds-the-record-and-the-phone-streams-the-video.md) | The card holds the record, and the phone streams the video |
 | [0009](0009-the-phone-writes-the-stickers.md) | The phone writes the stickers |
 | [0010](0010-a-shelf-shows-two-cards-and-there-are-several-shelves.md) | A shelf shows two cards, and there are several shelves |
+| [0011](0011-a-card-set-is-a-list-of-words-and-slugs-in-the-app.md) | A card set is a list of words and slugs in the app |
