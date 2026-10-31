@@ -1,47 +1,49 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-  German is the default locale. This is a station on a German-speaking family's
-  table; English in values-en is the translation. Code and comments stay
-  English, as everywhere in the organisation.
+  English is the default locale; values-de/ carries the German. A German phone
+  finds values-de either way, so the default only decides what a phone in any
+  other language gets, and English is read by more of those than German. Code
+  and comments stay English, as everywhere in the organisation.
 -->
 <resources xmlns:tools="http://schemas.android.com/tools">
     <string name="app_name" translatable="false">Zeigmal</string>
     <string name="login_title" translatable="false">SIGNdigital</string>
-    <string name="login_lead">Die Videos kommen aus deinem Abo. Die Anmeldung bleibt auf diesem Handy.</string>
-    <string name="signdigital_email">E-Mail</string>
-    <string name="signdigital_password">Passwort</string>
-    <string name="login">Anmelden</string>
-    <string name="login_failed">Anmeldung fehlgeschlagen. Stimmen E-Mail und Passwort, und ist das Handy im WLAN?</string>
-    <string name="log">Protokoll</string>
-    <string name="back">Zurück</string>
-    <string name="skip">Überspringen</string>
-    <string name="next">Weiter</string>
-    <string name="now">jetzt</string>
-    <string name="then">dann</string>
-    <string name="waiting_for_sticker">Warte auf den Aufkleber …</string>
-    <string name="write_failed">Schreiben fehlgeschlagen</string>
-    <string name="writing_busy">Schreibt …</string>
-    <string name="writing_busy_hint">Aufkleber liegen lassen</string>
-    <string name="written_ok">Geschrieben</string>
-    <string name="next_up">weiter mit „%1$s“</string>
-    <string name="retry">Nochmal</string>
-    <string name="sticker_already">Dieser Aufkleber ist schon „%1$s“</string>
-    <string name="sticker_already_hint">Gehört er auf die Karte „%1$s“? Sonst weiter mit dem nächsten Aufkleber.</string>
-    <string name="overwrite_as">Als „%1$s“ überschreiben</string>
-    <string name="card_not_found">Keine Karte dazu bei SIGNdigital gefunden.</string>
-    <string name="done">Fertig</string>
-    <string name="pin_choose">PIN wählen (vier Ziffern)</string>
+
+    <string name="login_lead">The videos come from your subscription. The login stays on this phone.</string>
+    <string name="signdigital_email">Email</string>
+    <string name="signdigital_password">Password</string>
+    <string name="login">Sign in</string>
+    <string name="login_failed">Sign-in failed. Are email and password right, and is the phone on Wi-Fi?</string>
+    <string name="log">Log</string>
+    <string name="back">Back</string>
+    <string name="skip">Skip</string>
+    <string name="next">Next</string>
+    <string name="now">now</string>
+    <string name="then">then</string>
+    <string name="waiting_for_sticker">Waiting for the sticker …</string>
+    <string name="write_failed">Writing failed</string>
+    <string name="writing_busy">Writing …</string>
+    <string name="writing_busy_hint">Leave the sticker where it is</string>
+    <string name="written_ok">Written</string>
+    <string name="next_up">next: “%1$s”</string>
+    <string name="retry">Try again</string>
+    <string name="sticker_already">This sticker is already “%1$s”</string>
+    <string name="sticker_already_hint">Does it belong on the card “%1$s”? Otherwise continue with the next sticker.</string>
+    <string name="overwrite_as">Overwrite as “%1$s”</string>
+    <string name="card_not_found">No card for this at SIGNdigital.</string>
+    <string name="done">Done</string>
+    <string name="pin_choose">Choose a PIN (four digits)</string>
     <string name="pin_enter">PIN</string>
-    <string name="pin_wrong">Das war nicht die PIN.</string>
-    <string name="settings">Einstellungen</string>
-    <string name="setting_loops">Wiederholungen</string>
-    <string name="setting_loops_hint">So oft läuft ein Video, solange die Karte liegt. Danach bleibt das Kartenbild.</string>
+    <string name="pin_wrong">That was not the PIN.</string>
+    <string name="settings">Settings</string>
+    <string name="setting_loops">Repeats</string>
+    <string name="setting_loops_hint">How often a video plays while the card lies there. Then the card picture stays.</string>
     <string name="setting_pin">PIN</string>
-    <string name="setting_pin_hint">Vier Ziffern vor dem Erwachsenen-Modus.</string>
-    <string name="setting_not_logged_in">nicht angemeldet</string>
-    <string name="setting_log_hint">Was der Leser und die Station gesehen haben, mit Uhrzeit.</string>
-    <string name="change">Ändern</string>
-    <string name="relogin">Neu anmelden</string>
-    <string name="show">Zeigen</string>
-    <string name="hide">Ausblenden</string>
+    <string name="setting_pin_hint">Four digits before the adult mode.</string>
+    <string name="setting_not_logged_in">not signed in</string>
+    <string name="setting_log_hint">What the reader and the station saw, with times.</string>
+    <string name="change">Change</string>
+    <string name="relogin">Sign in again</string>
+    <string name="show">Show</string>
+    <string name="hide">Hide</string>
 </resources>

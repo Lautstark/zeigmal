@@ -58,8 +58,8 @@ of a debug build keeps all of it.
 ## Language
 
 Code, comments, commits and documentation are English. Text a person sees on
-the phone is German first (`res/values`), English as a translation
-(`res/values-en`). Domain nouns stay German in code where they are the
+the phone is German (`res/values-de`) and English (`res/values`); English is
+the default so a phone in any other language falls back to it. Domain nouns stay German in code where they are the
 family's word for the thing: Karte, Aufkleber, SIGNbox.
 
 ## Licensing, in one sentence
