@@ -21,8 +21,11 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
-/** The faces of the app. The corner held for two seconds leaves KID for PIN; Back returns to KID. */
-enum class Mode { KID, PIN, LOGIN, WRITE, SETTINGS, PIN_CHANGE }
+/**
+ * The faces of the app. The corner held for two seconds leaves KID for PIN;
+ * past it the adult lands on LISTS and opens one to WRITE; Fertig returns to KID.
+ */
+enum class Mode { KID, PIN, LOGIN, LISTS, WRITE, SETTINGS, PIN_CHANGE }
 
 data class LogLine(
     val atMillis: Long,
@@ -116,11 +119,21 @@ class ZeigmalViewModel(
         }
     }
 
-    /** Past the PIN (or the debug login): the login, or the writing mode when logged in. */
+    /** Past the PIN (or the debug login): the login, or the lists when logged in. */
     fun enterAdult() {
-        val next = if (adult.login.value is Login.In) Mode.WRITE else Mode.LOGIN
-        _mode.value = next
-        if (next == Mode.WRITE) adult.enterWriting()
+        if (adult.login.value is Login.In) openLists() else _mode.value = Mode.LOGIN
+    }
+
+    /** The overview of what there is to write, freshly loaded from the site. */
+    fun openLists() {
+        _mode.value = Mode.LISTS
+        adult.enterLists()
+    }
+
+    /** A stack chosen in the overview: the writing mode, on its first card not yet written. */
+    fun openList(id: String) {
+        adult.chooseSet(id)
+        _mode.value = Mode.WRITE
     }
 
     fun leaveAdult() {
@@ -133,8 +146,7 @@ class ZeigmalViewModel(
     }
 
     fun closeSettings() {
-        _mode.value = if (adult.login.value is Login.In) Mode.WRITE else Mode.LOGIN
-        if (_mode.value == Mode.WRITE) adult.enterWriting()
+        if (adult.login.value is Login.In) openLists() else _mode.value = Mode.LOGIN
     }
 
     fun changePin() {
@@ -150,16 +162,13 @@ class ZeigmalViewModel(
 
     fun toggleLog() = _showLog.update { !it }
 
-    // Once logged in, the login screen gives way to the writing mode; logged
-    // out from the writing mode, it comes back.
+    // Once logged in, the login screen gives way to the lists; logged out
+    // from the lists or the writing mode, it comes back.
     init {
         viewModelScope.launch {
             adult.login.collect { login ->
-                if (login is Login.In && _mode.value == Mode.LOGIN) {
-                    _mode.value = Mode.WRITE
-                    adult.enterWriting()
-                }
-                if (login is Login.Out && _mode.value == Mode.WRITE) _mode.value = Mode.LOGIN
+                if (login is Login.In && _mode.value == Mode.LOGIN) openLists()
+                if (login is Login.Out && (_mode.value == Mode.WRITE || _mode.value == Mode.LISTS)) _mode.value = Mode.LOGIN
             }
         }
     }

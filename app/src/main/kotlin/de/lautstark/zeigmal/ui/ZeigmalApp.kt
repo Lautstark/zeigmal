@@ -91,8 +91,20 @@ fun ZeigmalApp(model: ZeigmalViewModel) {
                 )
             }
 
-            Mode.WRITE -> {
+            Mode.LISTS -> {
                 BackHandler { model.leaveAdult() }
+                val lists by model.adult.lists.collectAsState()
+                ListsScreen(
+                    lists = lists,
+                    onOpen = model::openList,
+                    onReload = model.adult::loadLists,
+                    onSettings = model::openSettings,
+                    onDone = model::leaveAdult,
+                )
+            }
+
+            Mode.WRITE -> {
+                BackHandler { model.openLists() }
                 val writing by model.adult.writing.collectAsState()
                 val showLog by model.showLog.collectAsState()
                 val log by model.log.collectAsState()
@@ -105,7 +117,7 @@ fun ZeigmalApp(model: ZeigmalViewModel) {
                     onSettings = model::openSettings,
                     onDone = model::leaveAdult,
                     log = if (showLog) log else null,
-                    onChooseSet = model.adult::chooseSet,
+                    onLists = model::openLists,
                 )
             }
         }

@@ -7,6 +7,7 @@ import de.lautstark.zeigmal.core.InMemoryStore
 import de.lautstark.zeigmal.core.Media
 import de.lautstark.zeigmal.core.Phase
 import de.lautstark.zeigmal.core.Provider
+import de.lautstark.zeigmal.core.SignBox
 import de.lautstark.zeigmal.core.SignDigitalProvider
 import de.lautstark.zeigmal.core.StationState
 import de.lautstark.zeigmal.core.TagId
@@ -100,6 +101,11 @@ class ZeigmalViewModelTest {
             val source2 = FakeTagSource()
             loggedIn.attach(source2)
             loggedIn.enterAdult()
+            advanceUntilIdle()
+            // The lists come first, and nothing is written from them.
+            assertEquals(Mode.LISTS, loggedIn.mode.value)
+            assertEquals(TagMode.Read, source2.mode.value)
+            loggedIn.openList(SignBox.BOX1)
             advanceUntilIdle()
             assertEquals(Mode.WRITE, loggedIn.mode.value)
             assertTrue(source2.mode.value is TagMode.Write)

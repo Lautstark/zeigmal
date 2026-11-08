@@ -46,4 +46,13 @@
     <string name="relogin">Sign in again</string>
     <string name="show">Show</string>
     <string name="hide">Hide</string>
+    <string name="lists">Lists</string>
+    <string name="lists_title">Lernlisten</string>
+    <string name="lists_loading">loading …</string>
+    <string name="lists_failed">Could not load; showing the last ones loaded</string>
+    <string name="lists_reload">Reload</string>
+    <string name="lists_empty">No Lernliste yet. Make one on sign-digital.de under “Lernlisten”; it shows up here.</string>
+    <string name="lists_in_app">In the app</string>
+    <string name="lists_made_on_site">New lists are made on sign-digital.de</string>
+    <string name="lists_progress">%1$d of %2$d</string>
 </resources>

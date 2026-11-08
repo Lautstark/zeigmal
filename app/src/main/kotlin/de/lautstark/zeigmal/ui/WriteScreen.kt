@@ -44,12 +44,12 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil3.compose.AsyncImage
 import de.lautstark.zeigmal.LogLine
 import de.lautstark.zeigmal.R
-import de.lautstark.zeigmal.core.SignBox
 import de.lautstark.zeigmal.core.WriteStatus
 import de.lautstark.zeigmal.core.Writing
 
@@ -70,7 +70,7 @@ fun WriteScreen(
     onSettings: () -> Unit,
     onDone: () -> Unit,
     log: List<LogLine>?,
-    onChooseSet: (String) -> Unit = {},
+    onLists: () -> Unit = {},
 ) {
     val w = writing
     Row(
@@ -82,7 +82,7 @@ fun WriteScreen(
             .testTag("write"),
         horizontalArrangement = Arrangement.spacedBy(18.dp),
     ) {
-        WordList(w, onGoTo, onChooseSet, onSettings, Modifier.width(170.dp).fillMaxHeight())
+        WordList(w, onGoTo, onLists, onSettings, Modifier.width(170.dp).fillMaxHeight())
         CardImage(w.cardImageUrl, w.lookupFailed, w.status, Modifier.fillMaxHeight(0.92f).aspectRatio(2f / 3f))
         Column(Modifier.weight(1f).fillMaxHeight()) {
             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -238,33 +238,34 @@ private fun StatusLine(w: Writing) {
 private fun WordList(
     w: Writing,
     onGoTo: (Int) -> Unit,
-    onChooseSet: (String) -> Unit,
+    onLists: () -> Unit,
     onSettings: () -> Unit,
     modifier: Modifier,
 ) {
     val list = rememberLazyListState()
     LaunchedEffect(w.index) { list.animateScrollToItem((w.index - 3).coerceAtLeast(0)) }
     Column(modifier) {
-        // The sets, side by side: the one being written is in colour, a tap on
-        // another switches to where that one stopped. Still while the reader writes.
-        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            for (set in SignBox.sets) {
-                val current = set == w.set
-                Text(
-                    set.title.uppercase(),
-                    color = if (current) Palette.accentStrong else Palette.textFaint,
-                    fontSize = 11.sp,
-                    fontWeight = FontWeight.SemiBold,
-                    letterSpacing = 1.sp,
-                    maxLines = 1,
-                    modifier =
-                        Modifier
-                            .clickable(enabled = !current && !w.busy) { onChooseSet(set.id) }
-                            .padding(vertical = 4.dp)
-                            .testTag("set-${set.id}"),
-                )
-            }
-        }
+        // Back to the lists, and the one being written. Still while the reader writes.
+        Text(
+            "‹ " + stringResource(R.string.lists),
+            color = if (w.busy) Palette.textFaint else Palette.textDim,
+            fontSize = 13.sp,
+            maxLines = 1,
+            modifier =
+                Modifier
+                    .clickable(enabled = !w.busy, onClick = onLists)
+                    .padding(vertical = 4.dp)
+                    .testTag("lists"),
+        )
+        Text(
+            w.set.title,
+            color = Palette.accentStrong,
+            fontSize = 15.sp,
+            fontWeight = FontWeight.SemiBold,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier.testTag("set-title"),
+        )
         Text(
             "${w.index + 1} von ${w.total}",
             color = Palette.textFaint,
@@ -273,7 +274,7 @@ private fun WordList(
         )
         LazyColumn(state = list, modifier = Modifier.weight(1f)) {
             itemsIndexed(w.set.words) { i, word ->
-                val done = word.label in w.written
+                val done = w.isWritten(word)
                 val current = i == w.index
                 val next = i == w.index + 1
                 Row(

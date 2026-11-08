@@ -13,16 +13,21 @@ import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performSemanticsAction
 import androidx.compose.ui.test.performTextInput
 import de.lautstark.zeigmal.core.CardRecord
+import de.lautstark.zeigmal.core.CardSet
+import de.lautstark.zeigmal.core.ListEntry
+import de.lautstark.zeigmal.core.Lists
 import de.lautstark.zeigmal.core.Login
 import de.lautstark.zeigmal.core.Phase
 import de.lautstark.zeigmal.core.Round
 import de.lautstark.zeigmal.core.SignBox
+import de.lautstark.zeigmal.core.SignBoxWord
 import de.lautstark.zeigmal.core.StationState
 import de.lautstark.zeigmal.core.TagId
 import de.lautstark.zeigmal.core.WriteOutcome
 import de.lautstark.zeigmal.core.WriteStatus
 import de.lautstark.zeigmal.core.Writing
 import de.lautstark.zeigmal.ui.KidScreen
+import de.lautstark.zeigmal.ui.ListsScreen
 import de.lautstark.zeigmal.ui.LoginScreen
 import de.lautstark.zeigmal.ui.PinScreen
 import de.lautstark.zeigmal.ui.WriteScreen
@@ -180,8 +185,8 @@ class ScreensTest {
     }
 
     @Test
-    fun writeScreenSwitchesToAnotherSet() {
-        var chosen: String? = null
+    fun writeScreenGoesBackToTheLists() {
+        var back = false
         compose.setContent {
             WriteScreen(
                 Writing(set = SignBox.set(SignBox.HALLOWEEN), index = 2),
@@ -192,11 +197,46 @@ class ScreensTest {
                 onSettings = {},
                 onDone = {},
                 log = null,
-                onChooseSet = { chosen = it },
+                onLists = { back = true },
             )
         }
         compose.onNodeWithTag("word").assertTextEquals("oder")
-        compose.onNodeWithTag("set-${SignBox.BOX1}").performSemanticsAction(SemanticsActions.OnClick)
-        assert(chosen == SignBox.BOX1)
+        compose.onNodeWithTag("set-title").assertTextEquals("Halloween")
+        compose.onNodeWithTag("lists").performSemanticsAction(SemanticsActions.OnClick)
+        assert(back)
+    }
+
+    @Test
+    fun listsScreenOpensAStackAndSaysWhenThereIsNoLernliste() {
+        var opened: String? = null
+        val box = SignBox.set(SignBox.BOX1)
+        val kita = CardSet("sd-L1", "Kita", listOf(SignBoxWord("Jacke", "jacke", "s1"), SignBoxWord("Mama", "mama", "s3")))
+        compose.setContent {
+            ListsScreen(
+                lists = Lists(entries = listOf(ListEntry(kita, 1), ListEntry(box, 0)), fromSite = 1),
+                onOpen = { opened = it },
+                onReload = {},
+                onSettings = {},
+                onDone = {},
+            )
+        }
+        compose.onNodeWithTag("lists-empty").assertDoesNotExist()
+        compose.onNodeWithTag("list-sd-L1").performSemanticsAction(SemanticsActions.OnClick)
+        assert(opened == "sd-L1")
+        compose.onNodeWithTag("list-${SignBox.BOX1}").assertExists()
+    }
+
+    @Test
+    fun listsScreenWithoutLernlistenSaysWhereToMakeOne() {
+        compose.setContent {
+            ListsScreen(
+                lists = Lists(entries = listOf(ListEntry(SignBox.set(SignBox.BOX1), 0)), fromSite = 0),
+                onOpen = {},
+                onReload = {},
+                onSettings = {},
+                onDone = {},
+            )
+        }
+        compose.onNodeWithTag("lists-empty").assertExists()
     }
 }
