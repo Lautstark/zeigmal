@@ -1,13 +1,15 @@
 package de.lautstark.zeigmal
 
+import de.lautstark.zeigmal.core.AdultModel
 import de.lautstark.zeigmal.core.CardRecord
+import de.lautstark.zeigmal.core.CardSet
 import de.lautstark.zeigmal.core.FakeProvider
 import de.lautstark.zeigmal.core.FakeTagSource
 import de.lautstark.zeigmal.core.InMemoryStore
+import de.lautstark.zeigmal.core.ListCard
 import de.lautstark.zeigmal.core.Media
 import de.lautstark.zeigmal.core.Phase
 import de.lautstark.zeigmal.core.Provider
-import de.lautstark.zeigmal.core.SignBox
 import de.lautstark.zeigmal.core.SignDigitalProvider
 import de.lautstark.zeigmal.core.StationState
 import de.lautstark.zeigmal.core.TagId
@@ -20,6 +22,8 @@ import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
+import kotlinx.serialization.builtins.ListSerializer
+import kotlinx.serialization.json.Json
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -97,6 +101,8 @@ class ZeigmalViewModelTest {
 
             store.put(SignDigitalProvider.KEY_TOKEN, "tok")
             store.put(SignDigitalProvider.KEY_EMAIL, "mail@example.org")
+            val box = CardSet("sd-B", "Box", listOf(ListCard("Abend(s)", "abend-s"), ListCard("aber", "aber")))
+            store.put(AdultModel.KEY_LISTS_CACHE, Json.encodeToString(ListSerializer(CardSet.serializer()), listOf(box)))
             val loggedIn = model()
             val source2 = FakeTagSource()
             loggedIn.attach(source2)
@@ -105,7 +111,9 @@ class ZeigmalViewModelTest {
             // The lists come first, and nothing is written from them.
             assertEquals(Mode.LISTS, loggedIn.mode.value)
             assertEquals(TagMode.Read, source2.mode.value)
-            loggedIn.openList(SignBox.BOX1)
+            loggedIn.openList("sd-gone")
+            assertEquals(Mode.LISTS, loggedIn.mode.value)
+            loggedIn.openList(box.id)
             advanceUntilIdle()
             assertEquals(Mode.WRITE, loggedIn.mode.value)
             assertTrue(source2.mode.value is TagMode.Write)

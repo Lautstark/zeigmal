@@ -1,6 +1,6 @@
 # ADR 0011 — A card set is a list of words and slugs in the app
 
-**Status:** accepted · **Date:** 2026-10-31 · **Applies to:** `core/SignBox.kt`, `core/src/main/resources/*.txt`, `core/AdultModel.kt`, `app/ui/WriteScreen.kt`
+**Status:** superseded by [0012](0012-a-list-is-a-lernliste-on-the-site-and-the-phone-only-reads-it.md) · **Date:** 2026-10-31 · **Applies to:** `core/SignBox.kt`, `core/src/main/resources/*.txt`, `core/AdultModel.kt`, `app/ui/WriteScreen.kt`
 
 ## Context
 

@@ -133,10 +133,9 @@ class ZeigmalViewModel(
         adult.enterLists()
     }
 
-    /** A stack chosen in the overview: the writing mode, on its first card not yet written. */
+    /** A stack chosen in the overview: the writing mode, on its first card. A list gone meanwhile stays in the overview. */
     fun openList(id: String) {
-        adult.chooseSet(id)
-        _mode.value = Mode.WRITE
+        if (adult.chooseSet(id)) _mode.value = Mode.WRITE
     }
 
     fun leaveAdult() {

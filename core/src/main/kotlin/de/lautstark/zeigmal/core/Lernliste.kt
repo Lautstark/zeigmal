@@ -39,7 +39,7 @@ data class Lernliste(
         CardSet(
             id = SET_PREFIX + id,
             title = name.ifBlank { "Lernliste" },
-            words = signs.map { SignBoxWord(label = it.name.oneLine().ifEmpty { it.slug }, ref = it.slug, id = it.id) },
+            words = signs.map { ListCard(label = it.name.oneLine().ifEmpty { it.slug }, ref = it.slug, id = it.id) },
         )
 
     companion object {

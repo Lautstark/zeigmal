@@ -121,7 +121,7 @@ fun WriteScreen(
                     fontFamily = FontFamily.Monospace,
                 )
                 Text(
-                    stringResource(R.string.sticker_already_hint, w.word.label),
+                    stringResource(R.string.sticker_already_hint, w.word?.label.orEmpty()),
                     color = Palette.textDim,
                     fontSize = 15.sp,
                     modifier = Modifier.padding(top = 14.dp),
@@ -130,7 +130,7 @@ fun WriteScreen(
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
                     TextButton(onClick = onSkip) { Text(stringResource(R.string.next), maxLines = 1) }
                     Button(onClick = onOverwrite, modifier = Modifier.testTag("overwrite")) {
-                        Text(stringResource(R.string.overwrite_as, w.word.label), maxLines = 1)
+                        Text(stringResource(R.string.overwrite_as, w.word?.label.orEmpty()), maxLines = 1)
                     }
                 }
             } else {
@@ -226,7 +226,7 @@ private fun StatusLine(w: Writing) {
     val sub =
         when (status) {
             is WriteStatus.Busy -> stringResource(R.string.writing_busy_hint)
-            is WriteStatus.Done -> "${status.outcome.tag} · " + stringResource(R.string.next_up, w.word.label)
+            is WriteStatus.Done -> "${status.outcome.tag} · " + stringResource(R.string.next_up, w.word?.label.orEmpty())
             is WriteStatus.Failed -> status.outcome.reason
             else -> null
         }

@@ -82,6 +82,7 @@ dependencies {
 
     testImplementation(libs.junit)
     testImplementation(libs.coroutines.test)
+    testImplementation(libs.serialization.json)
     testImplementation(testFixtures(project(":core")))
 
     // Instrumented: the screens against fake state, and the whole path from a

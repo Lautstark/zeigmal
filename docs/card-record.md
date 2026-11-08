@@ -40,8 +40,11 @@ card out. A read that fails on a blink is simply retried on the next one.
 
 ## Writing
 
-The adult mode walks the SIGNbox 1 list and writes the record for the current
-word onto the next sticker held to the phone. A sticker that already carries a
+The adult mode opens on the account's Lernlisten from sign-digital.de (ADR
+0012), walks the one chosen and writes the record for the current card onto
+the next sticker held to the phone. Every sticker written goes into a write
+log on the phone; the record on the sticker is the slug and the card's word
+as the list names it. A sticker that already carries a
 record is reported instead of overwritten, and overwriting is a button. A
 blank NTAG213 is NDEF-formatted from the factory; one that is not is formatted
 first. The record is not locked, so a sticker can be rewritten when a card

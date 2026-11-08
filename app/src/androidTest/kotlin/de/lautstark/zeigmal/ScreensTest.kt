@@ -14,13 +14,12 @@ import androidx.compose.ui.test.performSemanticsAction
 import androidx.compose.ui.test.performTextInput
 import de.lautstark.zeigmal.core.CardRecord
 import de.lautstark.zeigmal.core.CardSet
+import de.lautstark.zeigmal.core.ListCard
 import de.lautstark.zeigmal.core.ListEntry
 import de.lautstark.zeigmal.core.Lists
 import de.lautstark.zeigmal.core.Login
 import de.lautstark.zeigmal.core.Phase
 import de.lautstark.zeigmal.core.Round
-import de.lautstark.zeigmal.core.SignBox
-import de.lautstark.zeigmal.core.SignBoxWord
 import de.lautstark.zeigmal.core.StationState
 import de.lautstark.zeigmal.core.TagId
 import de.lautstark.zeigmal.core.WriteOutcome
@@ -49,6 +48,15 @@ class ScreensTest {
 
     private val trinken = CardRecord("signdigital", "trinken", "trinken")
     private val a = TagId("04c5d4a88d2681")
+
+    private val box =
+        CardSet(
+            "sd-B",
+            "Box",
+            listOf("Abend(s)" to "abend-s", "aber" to "aber", "alle" to "alle", "allein" to "allein").map { (label, ref) ->
+                ListCard(label, ref)
+            },
+        )
 
     @Test
     fun kidScreenShowsTheRingForACardAndGreyForAnUnknownSticker() {
@@ -114,7 +122,7 @@ class ScreensTest {
     fun writeScreenShowsTheCurrentWordAndSkips() {
         var skipped = false
         compose.setContent {
-            WriteScreen(Writing(index = 3), onGoTo = {
+            WriteScreen(Writing(set = box, index = 3), onGoTo = {
             }, onSkip = { skipped = true }, onRetry = {}, onOverwrite = {}, onSettings = {}, onDone = {}, log = null)
         }
         compose.onNodeWithTag("word").assertTextEquals("allein")
@@ -129,6 +137,7 @@ class ScreensTest {
         compose.setContent {
             WriteScreen(
                 Writing(
+                    set = box,
                     index = 0,
                     status = WriteStatus.Already(WriteOutcome.AlreadyWritten(a, CardRecord("signdigital", "essen", "essen"))),
                 ),
@@ -150,7 +159,7 @@ class ScreensTest {
         var retried = false
         compose.setContent {
             WriteScreen(
-                Writing(index = 0, status = WriteStatus.Failed(WriteOutcome.Failed(a, "Tag was lost"))),
+                Writing(set = box, index = 0, status = WriteStatus.Failed(WriteOutcome.Failed(a, "Tag was lost"))),
                 onGoTo = {},
                 onSkip = {},
                 onRetry = { retried = true },
@@ -170,7 +179,11 @@ class ScreensTest {
     fun writeScreenShowsTheWordJustWrittenWhileTheBoxHasMovedOn() {
         compose.setContent {
             WriteScreen(
-                Writing(index = 1, status = WriteStatus.Done(WriteOutcome.Written(a, CardRecord("signdigital", "abend-s", "Abend(s)")))),
+                Writing(
+                    set = box,
+                    index = 1,
+                    status = WriteStatus.Done(WriteOutcome.Written(a, CardRecord("signdigital", "abend-s", "Abend(s)"))),
+                ),
                 onGoTo = {},
                 onSkip = {},
                 onRetry = {},
@@ -189,7 +202,7 @@ class ScreensTest {
         var back = false
         compose.setContent {
             WriteScreen(
-                Writing(set = SignBox.set(SignBox.HALLOWEEN), index = 2),
+                Writing(set = box, index = 2),
                 onGoTo = {},
                 onSkip = {},
                 onRetry = {},
@@ -200,8 +213,8 @@ class ScreensTest {
                 onLists = { back = true },
             )
         }
-        compose.onNodeWithTag("word").assertTextEquals("oder")
-        compose.onNodeWithTag("set-title").assertTextEquals("Halloween")
+        compose.onNodeWithTag("word").assertTextEquals("alle")
+        compose.onNodeWithTag("set-title").assertTextEquals("Box")
         compose.onNodeWithTag("lists").performSemanticsAction(SemanticsActions.OnClick)
         assert(back)
     }
@@ -209,7 +222,7 @@ class ScreensTest {
     @Test
     fun listsScreenOpensAStackAndSaysWhenThereIsNoLernliste() {
         var opened: String? = null
-        val kita = CardSet("sd-L1", "Kita", listOf(SignBoxWord("Jacke", "jacke", "s1"), SignBoxWord("Mama", "mama", "s3")))
+        val kita = CardSet("sd-L1", "Kita", listOf(ListCard("Jacke", "jacke", "s1"), ListCard("Mama", "mama", "s3")))
         compose.setContent {
             ListsScreen(
                 lists = Lists(entries = listOf(ListEntry(kita))),
@@ -222,7 +235,6 @@ class ScreensTest {
         compose.onNodeWithTag("lists-empty").assertDoesNotExist()
         compose.onNodeWithTag("list-sd-L1").performSemanticsAction(SemanticsActions.OnClick)
         assert(opened == "sd-L1")
-        compose.onNodeWithTag("list-${SignBox.BOX1}").assertDoesNotExist()
     }
 
     @Test

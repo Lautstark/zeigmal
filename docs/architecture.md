@@ -14,7 +14,8 @@ build on any `android.*` import. It holds everything that has to be exactly
 right: the card record and its encoding, the station's state machine with its
 repeat rounds, the presence filter that turns the reader's blinking into one
 card in and one card out, the `Provider` interface and the SIGNdigital
-implementation over OkHttp, and the SIGNbox 1 word list. Tested with JUnit,
+implementation over OkHttp, the Lernlisten it reads from the site, and the
+write log. Tested with JUnit,
 coroutines-test and MockWebServer, in milliseconds.
 
 **`:core`** also holds the two things that used to be a ViewModel:

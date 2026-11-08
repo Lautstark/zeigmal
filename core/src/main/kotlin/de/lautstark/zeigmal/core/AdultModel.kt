@@ -77,7 +77,7 @@ data class Lists(
  * holds the stack and taps the card on top of it.
  */
 data class Writing(
-    val set: CardSet = SignBox.set(null),
+    val set: CardSet = CardSet.NONE,
     val index: Int = 0,
     val cardImageUrl: String? = null,
     val lookupFailed: String? = null,
@@ -85,15 +85,16 @@ data class Writing(
     val counts: Map<String, Int> = emptyMap(),
     val overwriteNext: Boolean = false,
 ) {
-    val word: SignBoxWord get() = set.words[index.coerceIn(0, set.words.lastIndex)]
+    /** The card on top of the stack; none before a list is chosen. */
+    val word: ListCard? get() = set.words.getOrNull(index)
     val total: Int get() = set.words.size
-    val record: CardRecord get() = CardRecord(SignDigitalProvider.ID, word.ref, word.label)
+    val record: CardRecord? get() = word?.let { CardRecord(SignDigitalProvider.ID, it.ref, it.label) }
 
     /** How often this card's sign has gone on a sticker, from any list. */
-    fun count(word: SignBoxWord): Int = counts[word.ref] ?: 0
+    fun count(word: ListCard): Int = counts[word.ref] ?: 0
 
     /** The word on screen: while "written" is shown it is the one just written, not the next. */
-    val shownLabel: String get() = (status as? WriteStatus.Done)?.outcome?.record?.label ?: word.label
+    val shownLabel: String get() = (status as? WriteStatus.Done)?.outcome?.record?.label ?: word?.label.orEmpty()
 
     /** Whether the buttons should sit still: nothing is to be pressed while the reader writes. */
     val busy: Boolean get() = status is WriteStatus.Busy
@@ -120,10 +121,6 @@ class AdultModel(
     /** The Lernlisten as last loaded; kept so the overview and a started list stand without a network. */
     private var siteSets: List<CardSet> = cachedSiteSets()
 
-    init {
-        takeOverOldTicks()
-    }
-
     private val _writing = MutableStateFlow(Writing(counts = counts()))
     val writing: StateFlow<Writing> = _writing
 
@@ -139,12 +136,13 @@ class AdultModel(
 
     /** What the reader should do while the writing mode is up. */
     fun tagMode(active: Boolean): TagMode =
-        if (active && _login.value is Login.In) {
-            val w = _writing.value
-            TagMode.Write(w.record, overwrite = w.overwriteNext)
-        } else {
-            TagMode.Read
+        _writing.value.record?.takeIf { active && _login.value is Login.In }?.let {
+            TagMode.Write(
+                it,
+                overwrite = _writing.value.overwriteNext,
+            )
         }
+            ?: TagMode.Read
 
     fun login(
         email: String,
@@ -174,13 +172,6 @@ class AdultModel(
     fun enterWriting() {
         if (_writing.value.cardImageUrl == null) lookupCurrentCard()
     }
-
-    /**
-     * The Lernliste with this id. An unknown id, or a list emptied on the site,
-     * is SIGNbox 1 as it was in the app: the writing mode always has a card to
-     * stand on, and the overview never offers that one.
-     */
-    private fun set(id: String?): CardSet = siteSets.firstOrNull { it.id == id && it.words.isNotEmpty() } ?: SignBox.set(null)
 
     /** The overview comes up: what is known now, and a fresh load from the site. */
     fun enterLists() {
@@ -224,39 +215,28 @@ class AdultModel(
             emptyList()
         }
 
-    /** Another stack of cards, from its first card: the adult taps the one on top of the pile. */
-    fun chooseSet(id: String) {
-        if (_writing.value.busy) return
+    /**
+     * Another stack of cards, from its first card: the adult taps the one on
+     * top of the pile. False for a list that is gone or empty, which leaves
+     * the writing mode where it was.
+     */
+    fun chooseSet(id: String): Boolean {
+        if (_writing.value.busy) return false
+        val set = siteSets.firstOrNull { it.id == id && it.words.isNotEmpty() } ?: return false
         doneHold?.cancel()
-        _writing.value = Writing(set = set(id), counts = counts())
+        _writing.value = Writing(set = set, counts = counts())
         lookupCurrentCard()
+        return true
     }
 
     private fun counts(): Map<String, Int> = writeLog.all().groupingBy { it.slug }.eachCount()
 
-    /**
-     * Until 2026-11 the app kept ticks per set and a place in each. They become
-     * log entries without a time, one per ticked card, so "how often" starts
-     * right; then the old keys go, so this has nothing to do the next time.
-     */
-    private fun takeOverOldTicks() {
-        for (old in SignBox.sets) {
-            val key = if (old.id == SignBox.BOX1) OLD_KEY_WRITTEN else "write.${old.id}.written"
-            val ticks = store.get(key) ?: continue
-            for (tick in ticks.split(',').filter { it.isNotEmpty() }) {
-                // SIGNbox 1 once kept refs here; either reads as its card.
-                val word = old.words.firstOrNull { it.label == tick } ?: old.words.firstOrNull { it.ref == tick } ?: continue
-                writeLog.append(WriteEntry(at = null, slug = word.ref, label = word.label, list = old.title))
-            }
-            store.put(key, null)
-            logger.log("übernommen: Häkchen aus ${old.title}")
-        }
-        store.put(OLD_KEY_WRITE_INDEX, null)
-        store.put(OLD_KEY_WRITE_SET, null)
-        for (old in SignBox.sets) store.put("write.${old.id}.index", null)
-    }
-
     fun goTo(index: Int) {
+        if (_writing.value.set.words
+                .isEmpty()
+        ) {
+            return
+        }
         doneHold?.cancel()
         val clamped = index.coerceIn(0, _writing.value.set.words.lastIndex)
         _writing.update {
@@ -396,7 +376,7 @@ class AdultModel(
     }
 
     private fun lookupCurrentCard() {
-        val word = _writing.value.word
+        val word = _writing.value.word ?: return
         scope.launch {
             try {
                 val media = signDigital.resolve(word.ref)
@@ -410,11 +390,6 @@ class AdultModel(
 
     companion object {
         const val KEY_LISTS_CACHE = "lernlisten.cache"
-
-        /** Where the app kept ticks and places before the write log; read once, then removed. */
-        const val OLD_KEY_WRITE_INDEX = "write.index"
-        const val OLD_KEY_WRITTEN = "write.written"
-        const val OLD_KEY_WRITE_SET = "write.set"
 
         /** "Schreibt …" stays at least this long, or it is a flicker nobody reads. */
         const val MIN_BUSY_MILLIS = 400L
