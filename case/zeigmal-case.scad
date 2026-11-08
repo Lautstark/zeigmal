@@ -223,20 +223,30 @@ key_win_right  = 6.0;   // [K] right of the power key, 3 mm more than the rest
 key_win_bridge = 3.0;   // [K] band left above the window. The window may not
                         // break through the top edge: a notch there would be
                         // a second slot, in the middle of the width
-// The openings in the right rail, [u centre, length]: two pills, rounded at
-// both ends, cut through the rail only. The face in front of them and a bar
-// behind them stay whole, so the right end is one closed ring instead of
-// posts. Until 2026-11-08 there were three square notches through rail and
-// face, 16 to 18 mm long, and the speaker's wrapped round onto the lip: the
-// end flexed, and above the speaker nothing joined the rail to the face.
-// The jack is covered now — nobody plugs into it, and its notch showed only
-// the phone's edge. The microphone at mic_u stays covered: the station never
-// records. The speaker fires out of its own pill, sideways.
-port_h   = 6.4;   // [K] every pill, front to back: a USB-C overmould is about 6
-port_bar = 1.2;   // [K] the rail left behind a pill, against the plate
-ports = [[(usb_u[0] + usb_u[1]) / 2,         13.0],    // a USB-C plug, 12 wide at the overmould
-         [(speaker_u[0] + speaker_u[1]) / 2, 13.0]];   // the same pill, for the look of it
-port_n = max(phone_t / 2, port_bar + port_h / 2);      // [G] the pills' centre line, depth
+// The openings in the right rail, [u centre, length], cut through the rail
+// only: the face in front of them stays whole, so the right end is one
+// closed piece instead of posts. Until 2026-11-08 there were three square
+// notches through rail and face, 16 to 18 mm long, and the speaker's wrapped
+// round onto the lip: the end flexed, and above the speaker nothing joined
+// the rail to the face. The jack is covered now — nobody plugs into it, and
+// its notch showed only the phone's edge. The microphone at mic_u stays
+// covered: the station never records.
+//
+// The speaker gets a pill, rounded at both ends, with a bar of rail left
+// behind it against the plate. It fires out of it sideways.
+speaker_port = [(speaker_u[0] + speaker_u[1]) / 2, 13.0];   // [K]
+port_h   = 6.4;   // [K] the pill, front to back
+port_bar = 1.2;   // [K] the rail left behind the pill, against the plate
+port_n = max(phone_t / 2, port_bar + port_h / 2);      // [G] the pill's centre line, depth
+// USB-C is open to the plate: the plug lies on it (Stefanie's cable,
+// 2026-11-08), so a bar there, as the pill had, would stop it. Rounded at
+// the two corners toward the face, and where the opening meets the plate
+// its edges are rounded off too. In front, the old notch left about 3 mm
+// above the plug; 1 mm is enough, and the rest stays as rail.
+usb_port   = [(usb_u[0] + usb_u[1]) / 2, 13.0];   // [K] a USB-C overmould is about 12 wide
+usb_top    = phone_t + play - 2.0;   // [M] n of the opening's front edge: 1 mm over the plug
+usb_r      = 3.0;                    // [K] its two front corners
+usb_fillet = 1.0;                    // [K] the edges where it meets the plate
 
 // The top rail is screwed to the plate from the front where the plate is
 // solid behind it: one at the far left beside the slot, two on the right
@@ -571,12 +581,23 @@ module frame_cuts() {
     // rail and the face above the phone's edge, never into the lip
     pbox(key_vol_up[0] - key_win_left, key_power[1] + key_win_right,
          u_topr - 0.01, u_hi - key_win_bridge, -1, face_n1 + 1);
-    // the right end: USB-C plug and speaker, a pill each through the rail;
-    // 2D x -> u, 2D y -> n, extruded along x
-    for (pt = ports)
-        translate([phone_l, 0, 0]) rotate([90, 0, 90]) linear_extrude(x_right - phone_l + 1)
-            hull() for (du = [-1, 1] * (pt[1] - port_h) / 2)
-                translate([pt[0] + du, port_n]) circle(d = port_h);
+    // the right end, through the rail only; 2D x -> u, 2D y -> n, extruded
+    // along x. The speaker's pill:
+    translate([phone_l, 0, 0]) rotate([90, 0, 90]) linear_extrude(x_right - phone_l + 1)
+        hull() for (du = [-1, 1] * (speaker_port[1] - port_h) / 2)
+            translate([speaker_port[0] + du, port_n]) circle(d = port_h);
+    // USB-C, open to the plate. The strip below n = 0 cuts nothing of the
+    // frame; it is there so the closing offset rounds the opening's edges
+    // where they meet the plate.
+    translate([phone_l, 0, 0]) rotate([90, 0, 90]) linear_extrude(x_right - phone_l + 1)
+        offset(r = -usb_fillet) offset(delta = usb_fillet) union() {
+            hull() {
+                for (du = [-1, 1] * (usb_port[1] / 2 - usb_r))
+                    translate([usb_port[0] + du, usb_top - usb_r]) circle(r = usb_r);
+                translate([usb_port[0] - usb_port[1] / 2, -1]) square([usb_port[1], 1]);
+            }
+            translate([usb_port[0] - usb_port[1] / 2 - 5, -6]) square([usb_port[1] + 10, 6]);
+        }
     // two screws from the front through the top rail into the plate:
     // clearance hole, and a counterbore so M2 x 10 reaches the plate
     for (sc = top_screws) translate([sc[0], sc[1], 0]) {

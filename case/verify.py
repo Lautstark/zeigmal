@@ -272,30 +272,36 @@ def compute(p, bed, phone_mass, fill):
             note='3.0 left the power key overlapped by about 1 mm')
     b.check(g, 'window clears the first volume key', G('key_vol_up')[0] - w0, '>=', 2.0)
     b.info(g, 'key window', 'x %.0f..%.0f: volume keys and power key both reachable' % (w0, w1))
-    # the closed right end: two pills through the rail, the face in front of
-    # them and a bar behind them whole, posts between and around them
+    # the closed right end: USB-C open to the plate, the speaker a pill, the
+    # face in front of both whole, posts between and around them
     u_lo, u_hi = -G('play') - G('frame_wall'), G('u_hi')
-    names = ['USB-C', 'speaker']
-    feats = [G('usb_u'), G('speaker_u')]
-    pills = [(uc - l / 2, uc + l / 2) for uc, l in G('ports')]
-    edges = [u_lo] + [v for p in sorted(pills) for v in p] + [u_hi]
-    for i in range(0, len(edges) - 1, 2):
-        what = 'post below %s' % names[i // 2] if i // 2 < len(names) else 'post above the top opening'
-        b.check(g, 'right end: %s' % what, edges[i + 1] - edges[i], '>=', G('frame_wall'),
+    usb_c, usb_l = G('usb_port')
+    spk_c, spk_l = G('speaker_port')
+    usb = (usb_c - usb_l / 2 - G('usb_fillet'), usb_c + usb_l / 2 + G('usb_fillet'))
+    spk = (spk_c - spk_l / 2, spk_c + spk_l / 2)
+    edges = [u_lo] + [v for p in sorted([usb, spk]) for v in p] + [u_hi]
+    for i, what in enumerate(['post below USB-C', 'post between USB-C and speaker',
+                              'post above the speaker']):
+        b.check(g, 'right end: %s' % what, edges[2 * i + 1] - edges[2 * i], '>=', G('frame_wall'),
                 note='the rail has no material left between the openings')
     n0, n1 = G('port_n') - G('port_h') / 2, G('port_n') + G('port_h') / 2
-    b.check(g, 'bar behind the pills', n0, '>=', 1.2, note='a sliver against the plate')
-    b.check(g, 'pills stay behind the face', G('face_n0') - n1, '>=', 0.0,
+    b.check(g, 'bar behind the speaker pill', n0, '>=', 1.2, note='a sliver against the plate')
+    b.check(g, 'speaker pill stays behind the face', G('face_n0') - n1, '>=', 0.0,
             note='the face over the right end is cut, and the end is posts again')
-    b.check(g, 'USB-C shell inside the pill, depth',
-            G('port_h') / 2 - abs(G('port_n') - G('phone_t') / 2), '>=', 1.2 + 0.5)
-    b.check(g, 'USB-C pill takes an overmoulded plug', G('port_h'), '>=', 6.0)
-    for (a0, a1), (f0, f1), n in zip(pills, feats, names):
-        b.check(g, '%s pill covers the feature, below' % n, f0 - a0, '>=', 1.0)
-        b.check(g, '%s pill covers the feature, above' % n, a1 - f1, '>=', 1.0)
+    b.check(g, 'USB-C opening stays behind the face', G('face_n0') - G('usb_top'), '>=', 0.0,
+            note='the face over the right end is cut, and the end is posts again')
+    b.check(g, 'USB-C shell inside the opening, depth',
+            G('usb_top') - (G('phone_t') / 2 + 1.2), '>=', 1.0)
+    b.check(g, 'USB-C front corners fit the opening', usb_l - 2 * G('usb_r'), '>=', 0.0)
+    for (a0, a1), (f0, f1), n in zip([(usb_c - usb_l / 2, usb_c + usb_l / 2), spk],
+                                      [G('usb_u'), G('speaker_u')], ['USB-C', 'speaker']):
+        b.check(g, '%s opening covers the feature, below' % n, f0 - a0, '>=', 1.0)
+        b.check(g, '%s opening covers the feature, above' % n, a1 - f1, '>=', 1.0)
         b.check(g, '%s opening clears the phone\'s edge' % n, G('x_right') - G('phone_l'), '>=', 2.0,
                 note='the plug has no room beside the phone')
-        b.info(g, '%s opening' % n, 'u %.1f .. %.1f, n %.1f .. %.1f' % (a0, a1, n0, n1))
+    b.info(g, 'USB-C opening', 'u %.1f .. %.1f, open to the plate, n 0 .. %.1f; %.1f mm of rail and face in front'
+           % (usb_c - usb_l / 2, usb_c + usb_l / 2, G('usb_top'), G('face_n1') - G('usb_top')))
+    b.info(g, 'speaker opening', 'u %.1f .. %.1f, n %.1f .. %.1f' % (spk[0], spk[1], n0, n1))
     b.info(g, 'jack', 'u %.0f..%.0f stays covered - nobody plugs into it' % tuple(G('jack_u')))
     b.info(g, 'microphone', 'u %.0f..%.0f stays covered - the station never records' % tuple(G('mic_u')))
     # screws from the front through the top rail into the plate: each must
