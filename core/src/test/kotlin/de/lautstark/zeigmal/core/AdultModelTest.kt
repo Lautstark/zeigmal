@@ -5,13 +5,16 @@ import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
+import mockwebserver3.Dispatcher
 import mockwebserver3.MockResponse
 import mockwebserver3.MockWebServer
+import mockwebserver3.RecordedRequest
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
+import java.util.Base64
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class AdultModelTest {
@@ -271,5 +274,145 @@ class AdultModelTest {
             store.put(AdultModel.KEY_WRITTEN, "abend-s,aber")
             val m = AdultModel(this, provider(), store, logger)
             assertEquals(setOf("Abend(s)", "aber"), m.writing.value.written)
+        }
+
+    // --- Lernlisten ---
+
+    private fun jwt(sub: String): String {
+        val enc = Base64.getUrlEncoder().withoutPadding()
+        return enc.encodeToString("{}".toByteArray()) + "." + enc.encodeToString("""{"sub":"$sub"}""".toByteArray()) + ".sig"
+    }
+
+    /** The site, by path: one Lernliste "Kita" of three signs, or a failure for the lists when [listsDown]. */
+    private fun site(listsDown: () -> Boolean = { false }) {
+        server.dispatcher =
+            object : Dispatcher() {
+                override fun dispatch(request: RecordedRequest): MockResponse =
+                    when (request.url.encodedPath) {
+                        "/api/lists" -> {
+                            if (listsDown()) {
+                                MockResponse(code = 502)
+                            } else {
+                                MockResponse(
+                                    body =
+                                        """{"total":1,"data":[{"_id":"L1","name":"Kita","updatedAt":"2026-11-08","signs":[""" +
+                                            """{"_id":"s1","slug":"jacke","name":"Jacke"},""" +
+                                            """{"_id":"s2","slug":"schuh","name":"Schuhe"},""" +
+                                            """{"_id":"s3","slug":"mama","name":"Mama"}]}]}""",
+                                )
+                            }
+                        }
+
+                        "/api/signs" -> {
+                            MockResponse(body = sign("p/card.png"))
+                        }
+
+                        else -> {
+                            MockResponse(body = """["https://cdn/card?sig"]""")
+                        }
+                    }
+            }
+    }
+
+    @Test
+    fun `the overview shows the Lernlisten first, then the sets in the app`() =
+        runTest {
+            store.put(SignDigitalProvider.KEY_TOKEN, jwt("user-1"))
+            site()
+            val m = AdultModel(this, provider(), store, logger)
+            m.enterLists()
+            advanceUntilIdle()
+            val lists = m.lists.value
+            assertEquals(listOf("Kita", "SIGNbox 1", "Halloween"), lists.entries.map { it.set.title })
+            assertEquals(1, lists.fromSite)
+            assertEquals(3, lists.entries.first().total)
+            assertEquals(null, lists.failed)
+        }
+
+    @Test
+    fun `a Lernliste is written as the site names its signs, and kept by the sign's id`() =
+        runTest {
+            store.put(SignDigitalProvider.KEY_TOKEN, jwt("user-1"))
+            site()
+            val m = AdultModel(this, provider(), store, logger)
+            m.enterLists()
+            advanceUntilIdle()
+            m.chooseSet("sd-L1")
+            assertEquals(CardRecord("signdigital", "jacke", "Jacke"), m.writing.value.record)
+            m.onWrite(WriteOutcome.Written(TagId("04aabbccddeeff"), m.writing.value.record))
+            advanceUntilIdle()
+            assertEquals(setOf("s1"), m.writing.value.written)
+            assertEquals("Schuhe", m.writing.value.word.label)
+            m.enterLists()
+            advanceUntilIdle()
+            assertEquals(
+                1,
+                m.lists.value.entries
+                    .first()
+                    .written,
+            )
+        }
+
+    @Test
+    fun `a stack picked up again opens on its first card not yet written`() =
+        runTest {
+            store.put(SignDigitalProvider.KEY_TOKEN, jwt("user-1"))
+            store.put("write.sd-L1.written", "s1,s2")
+            site()
+            val m = AdultModel(this, provider(), store, logger)
+            m.enterLists()
+            advanceUntilIdle()
+            m.chooseSet("sd-L1")
+            assertEquals("Mama", m.writing.value.word.label)
+            advanceUntilIdle()
+        }
+
+    @Test
+    fun `the lists last loaded stand without the network, and the failure is said`() =
+        runTest {
+            store.put(SignDigitalProvider.KEY_TOKEN, jwt("user-1"))
+            var down = false
+            site { down }
+            AdultModel(this, provider(), store, logger).apply {
+                enterLists()
+                advanceUntilIdle()
+            }
+            down = true
+            val offline = AdultModel(this, provider(), store, logger)
+            offline.enterLists()
+            advanceUntilIdle()
+            assertEquals(
+                "Kita",
+                offline.lists.value.entries
+                    .first()
+                    .set.title,
+            )
+            assertTrue(offline.lists.value.failed != null)
+            offline.chooseSet("sd-L1")
+            assertEquals("Jacke", offline.writing.value.word.label)
+            advanceUntilIdle()
+        }
+
+    @Test
+    fun `the list being written survives a restart, and an unknown one falls back to the box`() =
+        runTest {
+            store.put(SignDigitalProvider.KEY_TOKEN, jwt("user-1"))
+            site()
+            val m = AdultModel(this, provider(), store, logger)
+            m.enterLists()
+            advanceUntilIdle()
+            m.chooseSet("sd-L1")
+            advanceUntilIdle()
+            assertEquals(
+                "sd-L1",
+                AdultModel(this, provider(), store, logger)
+                    .writing.value.set.id,
+            )
+            store.put(AdultModel.KEY_WRITE_SET, "sd-gone")
+            assertEquals(
+                SignBox.BOX1,
+                AdultModel(this, provider(), store, logger)
+                    .writing.value.set.id,
+            )
         }
 }

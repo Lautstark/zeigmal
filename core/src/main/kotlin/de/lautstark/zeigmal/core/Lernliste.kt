@@ -31,7 +31,21 @@ data class Lernliste(
     val updatedAt: String,
     val signs: List<ListSign>,
 ) {
+    /**
+     * The list as a stack for the writing mode. The site's name for each sign is
+     * the card's word; its slug goes on the sticker.
+     */
+    fun toCardSet(): CardSet =
+        CardSet(
+            id = SET_PREFIX + id,
+            title = name.ifBlank { "Lernliste" },
+            words = signs.map { SignBoxWord(label = it.name.oneLine().ifEmpty { it.slug }, ref = it.slug, id = it.id) },
+        )
+
     companion object {
+        /** A card set made from a Lernliste has this before the list's id, so it never meets a set in the app. */
+        const val SET_PREFIX = "sd-"
+
         /**
          * One page of `GET /api/lists`, as measured 2026-11-08 with a throwaway
          * list: `data` holds the lists, each with its `signs` already filled in,
@@ -53,7 +67,8 @@ data class Lernliste(
         private fun sign(json: JsonObject?): ListSign? {
             if (json == null) return null
             val id = json.string("_id") ?: return null
-            val slug = json.string("slug") ?: return null
+            // A slug goes on the sticker as it is; one with a space in it is not one the site makes.
+            val slug = json.string("slug")?.takeIf { it.none(Char::isWhitespace) } ?: return null
             val card =
                 json["edge"]
                     ?.jsonObject
@@ -62,6 +77,10 @@ data class Lernliste(
                     ?.string("default")
             return ListSign(id = id, slug = slug, name = json.string("name") ?: slug, cardPath = card)
         }
+
+        // A sticker's fields are single lines (CardRecord): a name the site
+        // wrapped is one line again, with single spaces.
+        private fun String.oneLine(): String = replace(Regex("\\s+"), " ").trim()
 
         private fun JsonObject.string(key: String): String? =
             (this[key] as? JsonPrimitive)

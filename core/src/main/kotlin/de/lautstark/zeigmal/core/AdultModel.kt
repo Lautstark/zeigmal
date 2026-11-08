@@ -7,6 +7,8 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.serialization.builtins.ListSerializer
+import kotlinx.serialization.json.Json
 
 /** The login, as state the screen can draw. */
 sealed interface Login {
@@ -49,9 +51,32 @@ sealed interface WriteStatus {
     ) : WriteStatus
 }
 
+/** One stack in the overview, with how many of its cards are on a sticker. */
+data class ListEntry(
+    val set: CardSet,
+    val written: Int,
+) {
+    val total: Int get() = set.words.size
+}
+
+/**
+ * The overview the adult mode opens on: the account's Lernlisten, newest
+ * first, then the sets still in the app. [lists] is the last good load,
+ * kept on the phone so the overview stands without a network.
+ */
+data class Lists(
+    val entries: List<ListEntry> = emptyList(),
+    val loading: Boolean = false,
+    /** Why the last load failed; the entries are then the ones loaded before. */
+    val failed: String? = null,
+    /** How many of [entries] are Lernlisten; the rest are the sets in the app. */
+    val fromSite: Int = 0,
+)
+
 /**
  * Where in the set the writing mode is, and what the sticker on the antenna is
- * up to. [written] holds labels, not refs: two cards of a set may share a sign.
+ * up to. [written] holds each word's [SignBoxWord.key], not refs: two cards of
+ * a set may share a sign.
  */
 data class Writing(
     val set: CardSet = SignBox.set(null),
@@ -65,6 +90,8 @@ data class Writing(
     val word: SignBoxWord get() = set.words[index.coerceIn(0, set.words.lastIndex)]
     val total: Int get() = set.words.size
     val record: CardRecord get() = CardRecord(SignDigitalProvider.ID, word.ref, word.label)
+
+    fun isWritten(word: SignBoxWord): Boolean = word.key in written
 
     /** The word on screen: while "written" is shown it is the one just written, not the next. */
     val shownLabel: String get() = (status as? WriteStatus.Done)?.outcome?.record?.label ?: word.label
@@ -88,8 +115,14 @@ class AdultModel(
     private val _login = MutableStateFlow<Login>(signDigital.email?.takeIf { signDigital.loggedIn }?.let { Login.In(it) } ?: Login.Out)
     val login: StateFlow<Login> = _login
 
-    private val _writing = MutableStateFlow(progress(SignBox.set(store.get(KEY_WRITE_SET))))
+    /** The Lernlisten as last loaded; kept so the overview and a started list stand without a network. */
+    private var siteSets: List<CardSet> = cachedSiteSets()
+
+    private val _writing = MutableStateFlow(progress(set(store.get(KEY_WRITE_SET))))
     val writing: StateFlow<Writing> = _writing
+
+    private val _lists = MutableStateFlow(Lists())
+    val lists: StateFlow<Lists> = _lists
 
     /* The reader's timing is too fast to see and the box's too fast to check;
        these three jobs slow the screen down to the adult's pace. */
@@ -136,14 +169,81 @@ class AdultModel(
         if (_writing.value.cardImageUrl == null) lookupCurrentCard()
     }
 
-    /** Another stack of cards: each set keeps where it stopped and what is done. */
+    /** Every stack the adult can write: the Lernlisten first, then the sets in the app. */
+    private fun allSets(): List<CardSet> = siteSets + SignBox.sets
+
+    /**
+     * The set with this id, wherever it comes from. An unknown id, or a list
+     * emptied on the site, is the first set in the app: the writing mode always
+     * has a card to stand on.
+     */
+    private fun set(id: String?): CardSet = allSets().firstOrNull { it.id == id && it.words.isNotEmpty() } ?: SignBox.set(null)
+
+    /** The overview comes up: what is known now, and a fresh load from the site. */
+    fun enterLists() {
+        publishLists()
+        loadLists()
+    }
+
+    /** Reads the account's Lernlisten. A failure keeps the ones loaded before and says why. */
+    fun loadLists() {
+        if (_lists.value.loading) return
+        _lists.update { it.copy(loading = true) }
+        scope.launch {
+            try {
+                val loaded = signDigital.lists().map(Lernliste::toCardSet)
+                siteSets = loaded
+                store.put(KEY_LISTS_CACHE, Json.encodeToString(ListSerializer(CardSet.serializer()), loaded))
+                logger.log("lernlisten: ${loaded.size} geladen")
+                // The list being written may have changed on the site: take the new one, keep the place.
+                val current = _writing.value.set
+                val fresh = loaded.firstOrNull { it.id == current.id }
+                if (fresh != null && fresh != current && fresh.words.isNotEmpty() && !_writing.value.busy) {
+                    _writing.update { it.copy(set = fresh, index = it.index.coerceAtMost(fresh.words.lastIndex)) }
+                }
+                _lists.update { it.copy(loading = false, failed = null) }
+            } catch (e: Exception) {
+                logger.log("lernlisten: ${e.message}")
+                _lists.update { it.copy(loading = false, failed = e.message ?: e.javaClass.simpleName) }
+            }
+            publishLists()
+        }
+    }
+
+    private fun publishLists() {
+        val entries = allSets().filter { it.words.isNotEmpty() }.map { ListEntry(it, writtenIn(it).size) }
+        _lists.update { it.copy(entries = entries, fromSite = siteSets.count { s -> s.words.isNotEmpty() }) }
+    }
+
+    private fun cachedSiteSets(): List<CardSet> =
+        try {
+            store.get(KEY_LISTS_CACHE)?.let { Json.decodeFromString(ListSerializer(CardSet.serializer()), it) } ?: emptyList()
+        } catch (e: Exception) {
+            emptyList()
+        }
+
+    /**
+     * Another stack of cards: each set keeps what is done, and opens on the
+     * first card not yet written from where it stopped, so a stack picked up
+     * again goes on with the next card in the pile.
+     */
     fun chooseSet(id: String) {
-        val set = SignBox.set(id)
-        if (set == _writing.value.set || _writing.value.busy) return
+        if (_writing.value.busy) return
+        val set = set(id)
         doneHold?.cancel()
         store.put(KEY_WRITE_SET, set.id)
-        _writing.value = progress(set)
+        val w = progress(set)
+        _writing.value = w.copy(index = firstOpen(w))
+        store.put(indexKey(set), _writing.value.index.toString())
         lookupCurrentCard()
+    }
+
+    private fun firstOpen(w: Writing): Int {
+        val words = w.set.words
+        val from = w.index.coerceIn(0, (words.size - 1).coerceAtLeast(0))
+        return (from until words.size).firstOrNull { !w.isWritten(words[it]) }
+            ?: (0 until from).firstOrNull { !w.isWritten(words[it]) }
+            ?: from
     }
 
     /**
@@ -151,16 +251,16 @@ class AdultModel(
      * which held refs before sets had two cards on one sign; a stored ref reads
      * as the label of its card.
      */
-    private fun progress(set: CardSet): Writing {
-        val written =
-            store
-                .get(writtenKey(set))
-                ?.split(',')
-                ?.filter { it.isNotEmpty() }
-                ?.map { e -> if (set.words.any { it.label == e }) e else set.words.firstOrNull { it.ref == e }?.label ?: e }
-                ?.toSet() ?: emptySet()
-        return Writing(set = set, index = store.get(indexKey(set))?.toIntOrNull() ?: 0, written = written)
-    }
+    private fun progress(set: CardSet): Writing =
+        Writing(set = set, index = store.get(indexKey(set))?.toIntOrNull() ?: 0, written = writtenIn(set))
+
+    private fun writtenIn(set: CardSet): Set<String> =
+        store
+            .get(writtenKey(set))
+            ?.split(WRITTEN_SEPARATOR)
+            ?.filter { it.isNotEmpty() }
+            ?.map { e -> if (set.words.any { it.key == e }) e else set.words.firstOrNull { it.ref == e }?.key ?: e }
+            ?.toSet() ?: emptySet()
 
     private fun indexKey(set: CardSet) = if (set.id == SignBox.BOX1) KEY_WRITE_INDEX else "write.${set.id}.index"
 
@@ -239,8 +339,13 @@ class AdultModel(
                 }
                 logger.log("written ${outcome.tag}: ${outcome.record.provider}/${outcome.record.ref}")
                 val set = _writing.value.set
-                val written = _writing.value.written + outcome.record.label
-                store.put(writtenKey(set), written.joinToString(","))
+                // Kept by the word's key; a record that is no word of this set (it
+                // cannot be, but the label is what it would have been) by its label.
+                val key =
+                    set.words.firstOrNull { CardRecord(SignDigitalProvider.ID, it.ref, it.label) == outcome.record }?.key
+                        ?: outcome.record.label
+                val written = _writing.value.written + key
+                store.put(writtenKey(set), written.joinToString(WRITTEN_SEPARATOR))
                 // The box moves on now, so the reader writes the right card to a
                 // sticker that comes early; the screen stays on this one a moment.
                 // Only a write of the card the box is on moves it: an outcome for
@@ -314,6 +419,14 @@ class AdultModel(
         const val KEY_WRITE_INDEX = "write.index"
         const val KEY_WRITTEN = "write.written"
         const val KEY_WRITE_SET = "write.set"
+        const val KEY_LISTS_CACHE = "lernlisten.cache"
+
+        /**
+         * Between the keys of what is written. A comma, as it always was: a
+         * site id is hex and a label in the app has none; a Lernliste's word is
+         * kept by its id, so its name may hold any comma it likes.
+         */
+        private const val WRITTEN_SEPARATOR = ","
 
         /** "Schreibt …" stays at least this long, or it is a flicker nobody reads. */
         const val MIN_BUSY_MILLIS = 400L

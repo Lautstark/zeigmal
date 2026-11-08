@@ -1,19 +1,28 @@
 package de.lautstark.zeigmal.core
 
+import kotlinx.serialization.Serializable
+
 /**
  * A word on a card, with the reference SIGNdigital uses for its sign. The
  * label is what the card says and what the sticker carries; two cards may
- * share a sign, never a label.
+ * share a sign, never a label. A word from a Lernliste also has the site's
+ * [id] for its sign, which outlives a renamed slug.
  */
+@Serializable
 data class SignBoxWord(
     val label: String,
     val ref: String,
-)
+    val id: String? = null,
+) {
+    /** What "written" is kept by: the site's id where there is one, else the label (the sets in the app). */
+    val key: String get() = id ?: label
+}
 
 /**
  * A stack of cards the writing mode walks, in the order the adult holds them.
  * The words and refs are ours or public; nothing of SIGN's material is in it.
  */
+@Serializable
 data class CardSet(
     val id: String,
     val title: String,
