@@ -54,16 +54,20 @@ class AdultModelTest {
         }
 
     @Test
-    fun `where the writing stopped, and which cards are done, survive a restart`() =
+    fun `every sticker written goes into the log, with when, what, where and which sticker`() =
         runTest {
             store.put(SignDigitalProvider.KEY_TOKEN, "tok")
-            val m = AdultModel(this, provider(), store, logger)
+            val log = MemoryWriteLog()
+            val m = AdultModel(this, provider(), store, logger, log, clock = { 1_000L })
             m.goTo(5)
+            val word = m.writing.value.word
             m.onWrite(WriteOutcome.Written(TagId("04AABBCCDDEEFF"), m.writing.value.record))
             advanceUntilIdle()
-            val again = AdultModel(this, provider(), store, logger)
-            assertEquals(6, again.writing.value.index)
-            assertEquals(setOf(SignBox.box1[5].label), again.writing.value.written)
+            assertEquals(listOf(WriteEntry(1_000L, word.ref, word.label, null, "SIGNbox 1", "04AABBCCDDEEFF")), log.all())
+            // Nothing else is kept: a fresh model starts at the first card and only counts.
+            val again = AdultModel(this, provider(), store, logger, log)
+            assertEquals(0, again.writing.value.index)
+            assertEquals(1, again.writing.value.count(word))
         }
 
     @Test
@@ -79,7 +83,7 @@ class AdultModelTest {
         }
 
     @Test
-    fun `a written sticker moves the box on and is remembered`() =
+    fun `a written sticker moves the box on and is counted`() =
         runTest {
             store.put(SignDigitalProvider.KEY_TOKEN, "tok")
             store.put(SignDigitalProvider.KEY_EMAIL, "mail@example.org")
@@ -90,14 +94,8 @@ class AdultModelTest {
             advanceUntilIdle()
             assertEquals(1, m.writing.value.index)
             assertEquals("aber", m.writing.value.word.label)
-            assertEquals(setOf("Abend(s)"), m.writing.value.written)
-            assertEquals("1", store.get(AdultModel.KEY_WRITE_INDEX))
-            assertEquals("Abend(s)", store.get(AdultModel.KEY_WRITTEN))
+            assertEquals(mapOf("abend-s" to 1), m.writing.value.counts)
             assertEquals("https://cdn/aber?sig", m.writing.value.cardImageUrl)
-            // A fresh model picks up where this one left off.
-            val again = AdultModel(this, provider(), store, logger)
-            assertEquals(1, again.writing.value.index)
-            assertEquals(setOf("Abend(s)"), again.writing.value.written)
         }
 
     @Test
@@ -166,7 +164,7 @@ class AdultModelTest {
             advanceTimeBy(AdultModel.MIN_BUSY_MILLIS + 1)
             assertEquals(WriteStatus.Failed(WriteOutcome.Failed(tag, "Tag was lost")), m.writing.value.status)
             assertEquals(0, m.writing.value.index)
-            assertEquals(emptySet<String>(), m.writing.value.written)
+            assertEquals(emptyMap<String, Int>(), m.writing.value.counts)
             m.retry()
             assertEquals(WriteStatus.Waiting, m.writing.value.status)
             assertEquals(TagMode.Write(m.writing.value.record), m.tagMode(active = true))
@@ -233,11 +231,11 @@ class AdultModelTest {
             m.onWrite(WriteOutcome.Written(TagId("04c4d4a88d2681"), stale))
             advanceUntilIdle()
             assertEquals(6, m.writing.value.index)
-            assertTrue(stale.label in m.writing.value.written)
+            assertEquals(1, m.writing.value.counts[stale.ref])
         }
 
     @Test
-    fun `each set keeps where it stopped, and the chosen set survives a restart`() =
+    fun `a stack opens on its first card, and nothing is kept of where it stopped`() =
         runTest {
             store.put(SignDigitalProvider.KEY_TOKEN, "tok")
             val m = AdultModel(this, provider(), store, logger)
@@ -247,33 +245,61 @@ class AdultModelTest {
             assertEquals("Halloween", m.writing.value.word.label)
             m.goTo(2)
             assertEquals(CardRecord("signdigital", "oder-variante", "oder"), m.writing.value.record)
-            val again = AdultModel(this, provider(), store, logger)
-            assertEquals(SignBox.HALLOWEEN, again.writing.value.set.id)
-            assertEquals(2, again.writing.value.index)
-            again.chooseSet(SignBox.BOX1)
-            assertEquals(5, again.writing.value.index)
+            m.chooseSet(SignBox.BOX1)
+            assertEquals(0, m.writing.value.index)
+            assertEquals(
+                SignBox.BOX1,
+                AdultModel(this, provider(), store, logger)
+                    .writing.value.set.id,
+            )
             advanceUntilIdle()
         }
 
     @Test
-    fun `two cards on one sign are two cards`() =
+    fun `a sign on two cards counts twice`() =
         runTest {
             store.put(SignDigitalProvider.KEY_TOKEN, "tok")
-            val m = AdultModel(this, provider(), store, logger)
+            val log = MemoryWriteLog()
+            val m = AdultModel(this, provider(), store, logger, log)
             m.chooseSet(SignBox.HALLOWEEN)
             m.goTo(SignBox.halloween.indexOfFirst { it.label == "Kostüm" })
             m.onWrite(WriteOutcome.Written(TagId("04aabbccddeeff"), m.writing.value.record))
             advanceUntilIdle()
-            assertEquals(setOf("Kostüm"), m.writing.value.written)
-            assertTrue("verkleiden" !in m.writing.value.written)
+            m.goTo(SignBox.halloween.indexOfFirst { it.label == "verkleiden" })
+            m.onWrite(WriteOutcome.Written(TagId("04aabbccddee00"), m.writing.value.record))
+            advanceUntilIdle()
+            assertEquals(2, m.writing.value.counts["kostum"])
+            assertEquals(listOf("Kostüm", "verkleiden"), log.all().map { it.label })
         }
 
     @Test
-    fun `SIGNbox progress stored as refs reads as labels`() =
+    fun `the old ticks become log entries without a time, once, and the old keys go`() =
         runTest {
-            store.put(AdultModel.KEY_WRITTEN, "abend-s,aber")
-            val m = AdultModel(this, provider(), store, logger)
-            assertEquals(setOf("Abend(s)", "aber"), m.writing.value.written)
+            store.put(AdultModel.OLD_KEY_WRITTEN, "abend-s,aber")
+            store.put("write.halloween.written", "Kostüm,gibtsnicht")
+            store.put(AdultModel.OLD_KEY_WRITE_INDEX, "7")
+            store.put(AdultModel.OLD_KEY_WRITE_SET, SignBox.HALLOWEEN)
+            val log = MemoryWriteLog()
+            val m = AdultModel(this, provider(), store, logger, log)
+            assertEquals(
+                listOf(
+                    WriteEntry(null, "abend-s", "Abend(s)", list = "SIGNbox 1"),
+                    WriteEntry(null, "aber", "aber", list = "SIGNbox 1"),
+                    WriteEntry(null, "kostum", "Kostüm", list = "Halloween"),
+                ),
+                log.all(),
+            )
+            assertEquals(mapOf("abend-s" to 1, "aber" to 1, "kostum" to 1), m.writing.value.counts)
+            for (key in listOf(
+                AdultModel.OLD_KEY_WRITTEN,
+                "write.halloween.written",
+                AdultModel.OLD_KEY_WRITE_INDEX,
+                AdultModel.OLD_KEY_WRITE_SET,
+            )) {
+                assertEquals(key, null, store.get(key))
+            }
+            AdultModel(this, provider(), store, logger, log)
+            assertEquals(3, log.all().size)
         }
 
     // --- Lernlisten ---
@@ -330,40 +356,41 @@ class AdultModelTest {
         }
 
     @Test
-    fun `a Lernliste is written as the site names its signs, and kept by the sign's id`() =
+    fun `a Lernliste is written as the site names its signs, and logged with the sign's id`() =
         runTest {
             store.put(SignDigitalProvider.KEY_TOKEN, jwt("user-1"))
             site()
-            val m = AdultModel(this, provider(), store, logger)
+            val log = MemoryWriteLog()
+            val m = AdultModel(this, provider(), store, logger, log, clock = { 5L })
             m.enterLists()
             advanceUntilIdle()
             m.chooseSet("sd-L1")
             assertEquals(CardRecord("signdigital", "jacke", "Jacke"), m.writing.value.record)
             m.onWrite(WriteOutcome.Written(TagId("04aabbccddeeff"), m.writing.value.record))
             advanceUntilIdle()
-            assertEquals(setOf("s1"), m.writing.value.written)
+            assertEquals(listOf(WriteEntry(5L, "jacke", "Jacke", "s1", "Kita", "04aabbccddeeff")), log.all())
             assertEquals("Schuhe", m.writing.value.word.label)
-            m.enterLists()
-            advanceUntilIdle()
-            assertEquals(
-                1,
-                m.lists.value.entries
-                    .first()
-                    .written,
-            )
         }
 
     @Test
-    fun `a stack picked up again opens on its first card not yet written`() =
+    fun `a sign written from one list counts in every list that holds it`() =
         runTest {
             store.put(SignDigitalProvider.KEY_TOKEN, jwt("user-1"))
-            store.put("write.sd-L1.written", "s1,s2")
             site()
-            val m = AdultModel(this, provider(), store, logger)
+            val log = MemoryWriteLog()
+            log.append(WriteEntry(null, "mama", "Mama", list = "SIGNbox 1"))
+            val m = AdultModel(this, provider(), store, logger, log)
             m.enterLists()
             advanceUntilIdle()
             m.chooseSet("sd-L1")
-            assertEquals("Mama", m.writing.value.word.label)
+            assertEquals("Jacke", m.writing.value.word.label)
+            assertEquals(
+                1,
+                m.writing.value.count(
+                    m.writing.value.set.words
+                        .last(),
+                ),
+            )
             advanceUntilIdle()
         }
 
@@ -394,25 +421,13 @@ class AdultModelTest {
         }
 
     @Test
-    fun `the list being written survives a restart, and an unknown one falls back to the box`() =
+    fun `a list that is gone falls back to the box`() =
         runTest {
             store.put(SignDigitalProvider.KEY_TOKEN, jwt("user-1"))
             site()
             val m = AdultModel(this, provider(), store, logger)
-            m.enterLists()
+            m.chooseSet("sd-gone")
+            assertEquals(SignBox.BOX1, m.writing.value.set.id)
             advanceUntilIdle()
-            m.chooseSet("sd-L1")
-            advanceUntilIdle()
-            assertEquals(
-                "sd-L1",
-                AdultModel(this, provider(), store, logger)
-                    .writing.value.set.id,
-            )
-            store.put(AdultModel.KEY_WRITE_SET, "sd-gone")
-            assertEquals(
-                SignBox.BOX1,
-                AdultModel(this, provider(), store, logger)
-                    .writing.value.set.id,
-            )
         }
 }

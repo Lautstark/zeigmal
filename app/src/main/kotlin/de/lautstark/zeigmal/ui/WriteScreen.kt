@@ -162,7 +162,8 @@ fun WriteScreen(
                 }
             }
             LinearProgressIndicator(
-                progress = { w.written.size.toFloat() / w.total },
+                // Where in the stack, not how much is done: nothing keeps that.
+                progress = { (w.index + 1).toFloat() / w.total },
                 color = Palette.accentStrong,
                 trackColor = Palette.surface2,
                 modifier = Modifier.fillMaxWidth().padding(top = 6.dp).height(3.dp),
@@ -274,7 +275,7 @@ private fun WordList(
         )
         LazyColumn(state = list, modifier = Modifier.weight(1f)) {
             itemsIndexed(w.set.words) { i, word ->
-                val done = w.isWritten(word)
+                val count = w.count(word)
                 val current = i == w.index
                 val next = i == w.index + 1
                 Row(
@@ -290,8 +291,6 @@ private fun WordList(
                         color =
                             if (current) {
                                 Palette.accentStrong
-                            } else if (done) {
-                                Palette.textFaint
                             } else if (next) {
                                 Palette.text
                             } else {
@@ -304,11 +303,15 @@ private fun WordList(
                     Text(
                         when {
                             current -> stringResource(R.string.now)
+
                             next -> stringResource(R.string.then)
-                            done -> "✓"
+
+                            // How often this sign has gone on a sticker, from any list: a card the family has twice counts twice.
+                            count > 0 -> "$count×"
+
                             else -> ""
                         },
-                        color = if (done && !current) Palette.accentStrong else Palette.textFaint,
+                        color = if (count > 0 && !current && !next) Palette.accentStrong else Palette.textFaint,
                         fontSize = 12.sp,
                     )
                 }

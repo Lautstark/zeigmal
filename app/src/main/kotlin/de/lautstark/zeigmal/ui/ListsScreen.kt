@@ -24,6 +24,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -36,8 +37,8 @@ import de.lautstark.zeigmal.core.Lists
 
 /**
  * What the adult mode opens on: the account's Lernlisten, newest first, then
- * the sets still in the app, each with how many of its cards are on a
- * sticker. A tap opens the writing mode on that stack. Nothing here changes a
+ * the sets still in the app, each with how many cards it holds. A tap opens
+ * the writing mode on that stack. Nothing here changes a
  * list: they are made on sign-digital.de.
  */
 @Composable
@@ -126,7 +127,6 @@ private fun ListRow(
     entry: ListEntry,
     onOpen: (String) -> Unit,
 ) {
-    val complete = entry.written >= entry.total
     Column(
         Modifier
             .fillMaxWidth()
@@ -147,23 +147,11 @@ private fun ListRow(
                 modifier = Modifier.weight(1f),
             )
             Text(
-                stringResource(R.string.lists_progress, entry.written, entry.total),
-                color = if (complete) Palette.accentStrong else Palette.textDim,
+                pluralStringResource(R.plurals.lists_cards, entry.total, entry.total),
+                color = Palette.textDim,
                 fontSize = 14.sp,
                 maxLines = 1,
             )
-        }
-        // How far the stack is, as a bar: the same number, for a glance.
-        Box(
-            Modifier
-                .padding(top = 8.dp)
-                .fillMaxWidth()
-                .height(3.dp)
-                .clip(RoundedCornerShape(2.dp))
-                .background(Palette.surface2),
-        ) {
-            val share = if (entry.total == 0) 0f else entry.written.coerceAtMost(entry.total).toFloat() / entry.total
-            Box(Modifier.fillMaxWidth(share).height(3.dp).background(Palette.accent))
         }
     }
 }

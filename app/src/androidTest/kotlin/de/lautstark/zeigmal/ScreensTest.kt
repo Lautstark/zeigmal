@@ -213,7 +213,7 @@ class ScreensTest {
         val kita = CardSet("sd-L1", "Kita", listOf(SignBoxWord("Jacke", "jacke", "s1"), SignBoxWord("Mama", "mama", "s3")))
         compose.setContent {
             ListsScreen(
-                lists = Lists(entries = listOf(ListEntry(kita, 1), ListEntry(box, 0)), fromSite = 1),
+                lists = Lists(entries = listOf(ListEntry(kita), ListEntry(box)), fromSite = 1),
                 onOpen = { opened = it },
                 onReload = {},
                 onSettings = {},
@@ -230,7 +230,7 @@ class ScreensTest {
     fun listsScreenWithoutLernlistenSaysWhereToMakeOne() {
         compose.setContent {
             ListsScreen(
-                lists = Lists(entries = listOf(ListEntry(SignBox.set(SignBox.BOX1), 0)), fromSite = 0),
+                lists = Lists(entries = listOf(ListEntry(SignBox.set(SignBox.BOX1))), fromSite = 0),
                 onOpen = {},
                 onReload = {},
                 onSettings = {},

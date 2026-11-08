@@ -54,5 +54,8 @@
     <string name="lists_empty">No Lernliste yet. Make one on sign-digital.de under “Lernlisten”; it shows up here.</string>
     <string name="lists_in_app">In the app</string>
     <string name="lists_made_on_site">New lists are made on sign-digital.de</string>
-    <string name="lists_progress">%1$d of %2$d</string>
+    <plurals name="lists_cards">
+        <item quantity="one">%1$d card</item>
+        <item quantity="other">%1$d cards</item>
+    </plurals>
 </resources>

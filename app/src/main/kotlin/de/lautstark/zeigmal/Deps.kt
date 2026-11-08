@@ -3,11 +3,14 @@ package de.lautstark.zeigmal
 import android.app.Activity
 import android.content.Context
 import androidx.core.content.edit
+import de.lautstark.zeigmal.core.FileWriteLog
 import de.lautstark.zeigmal.core.KeyValueStore
 import de.lautstark.zeigmal.core.Provider
 import de.lautstark.zeigmal.core.SignDigitalProvider
 import de.lautstark.zeigmal.core.TagSource
+import de.lautstark.zeigmal.core.WriteLog
 import de.lautstark.zeigmal.nfc.AndroidTagSource
+import java.io.File
 
 /**
  * The few things the app is made of, in one place, replaceable by a test.
@@ -22,11 +25,14 @@ object Deps {
     ) -> Map<String, Provider> = { store -> listOf<Provider>(SignDigitalProvider(store)).associateBy { it.id } }
     var tagSource: (Activity) -> TagSource = { activity -> AndroidTagSource(activity) }
 
+    /** Every sticker written, one line each, in the app's private files: gone with the app, like the rest. */
+    var writeLog: (Context) -> WriteLog = { context -> FileWriteLog(File(context.filesDir, "schreibprotokoll.jsonl")) }
+
     /** Whether the activity pins itself on start; a test turns it off. */
     var pin: Boolean = true
 }
 
-/** The app's private preferences: the login and the writing progress, nothing else. */
+/** The app's private preferences: the login, the PIN, the settings and the lists last loaded. */
 class PreferencesStore(
     context: Context,
 ) : KeyValueStore {

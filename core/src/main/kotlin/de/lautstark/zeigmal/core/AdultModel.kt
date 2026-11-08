@@ -51,10 +51,9 @@ sealed interface WriteStatus {
     ) : WriteStatus
 }
 
-/** One stack in the overview, with how many of its cards are on a sticker. */
+/** One stack in the overview. */
 data class ListEntry(
     val set: CardSet,
-    val written: Int,
 ) {
     val total: Int get() = set.words.size
 }
@@ -75,8 +74,9 @@ data class Lists(
 
 /**
  * Where in the set the writing mode is, and what the sticker on the antenna is
- * up to. [written] holds each word's [SignBoxWord.key], not refs: two cards of
- * a set may share a sign.
+ * up to. [counts] is how often each slug has gone on a sticker, from the
+ * [WriteLog]: shown beside a card, never used to skip or resume. The adult
+ * holds the stack and taps the card on top of it.
  */
 data class Writing(
     val set: CardSet = SignBox.set(null),
@@ -84,14 +84,15 @@ data class Writing(
     val cardImageUrl: String? = null,
     val lookupFailed: String? = null,
     val status: WriteStatus = WriteStatus.Waiting,
-    val written: Set<String> = emptySet(),
+    val counts: Map<String, Int> = emptyMap(),
     val overwriteNext: Boolean = false,
 ) {
     val word: SignBoxWord get() = set.words[index.coerceIn(0, set.words.lastIndex)]
     val total: Int get() = set.words.size
     val record: CardRecord get() = CardRecord(SignDigitalProvider.ID, word.ref, word.label)
 
-    fun isWritten(word: SignBoxWord): Boolean = word.key in written
+    /** How often this card's sign has gone on a sticker, from any list. */
+    fun count(word: SignBoxWord): Int = counts[word.ref] ?: 0
 
     /** The word on screen: while "written" is shown it is the one just written, not the next. */
     val shownLabel: String get() = (status as? WriteStatus.Done)?.outcome?.record?.label ?: word.label
@@ -101,16 +102,19 @@ data class Writing(
 }
 
 /**
- * The adult's side: the provider login and the writing mode, walking the box
- * card by card. Progress and the login are kept in the [KeyValueStore]; what
- * the reader should be doing follows from [writing] and is exposed as [tagMode]
- * for whoever owns the hardware.
+ * The adult's side: the provider login and the writing mode, walking a stack
+ * card by card. The login and the lists last loaded are kept in the
+ * [KeyValueStore], every sticker written in the [WriteLog]; what the reader
+ * should be doing follows from [writing] and is exposed as [tagMode] for
+ * whoever owns the hardware.
  */
 class AdultModel(
     private val scope: CoroutineScope,
     private val signDigital: SignDigitalProvider,
     private val store: KeyValueStore,
     private val logger: Logger = Logger { },
+    private val writeLog: WriteLog = MemoryWriteLog(),
+    private val clock: () -> Long = System::currentTimeMillis,
 ) {
     private val _login = MutableStateFlow<Login>(signDigital.email?.takeIf { signDigital.loggedIn }?.let { Login.In(it) } ?: Login.Out)
     val login: StateFlow<Login> = _login
@@ -118,7 +122,11 @@ class AdultModel(
     /** The Lernlisten as last loaded; kept so the overview and a started list stand without a network. */
     private var siteSets: List<CardSet> = cachedSiteSets()
 
-    private val _writing = MutableStateFlow(progress(set(store.get(KEY_WRITE_SET))))
+    init {
+        takeOverOldTicks()
+    }
+
+    private val _writing = MutableStateFlow(Writing(counts = counts()))
     val writing: StateFlow<Writing> = _writing
 
     private val _lists = MutableStateFlow(Lists())
@@ -211,7 +219,7 @@ class AdultModel(
     }
 
     private fun publishLists() {
-        val entries = allSets().filter { it.words.isNotEmpty() }.map { ListEntry(it, writtenIn(it).size) }
+        val entries = allSets().filter { it.words.isNotEmpty() }.map(::ListEntry)
         _lists.update { it.copy(entries = entries, fromSite = siteSets.count { s -> s.words.isNotEmpty() }) }
     }
 
@@ -222,49 +230,37 @@ class AdultModel(
             emptyList()
         }
 
-    /**
-     * Another stack of cards: each set keeps what is done, and opens on the
-     * first card not yet written from where it stopped, so a stack picked up
-     * again goes on with the next card in the pile.
-     */
+    /** Another stack of cards, from its first card: the adult taps the one on top of the pile. */
     fun chooseSet(id: String) {
         if (_writing.value.busy) return
-        val set = set(id)
         doneHold?.cancel()
-        store.put(KEY_WRITE_SET, set.id)
-        val w = progress(set)
-        _writing.value = w.copy(index = firstOpen(w))
-        store.put(indexKey(set), _writing.value.index.toString())
+        _writing.value = Writing(set = set(id), counts = counts())
         lookupCurrentCard()
     }
 
-    private fun firstOpen(w: Writing): Int {
-        val words = w.set.words
-        val from = w.index.coerceIn(0, (words.size - 1).coerceAtLeast(0))
-        return (from until words.size).firstOrNull { !w.isWritten(words[it]) }
-            ?: (0 until from).firstOrNull { !w.isWritten(words[it]) }
-            ?: from
-    }
+    private fun counts(): Map<String, Int> = writeLog.all().groupingBy { it.slug }.eachCount()
 
     /**
-     * A set's progress as the store keeps it. SIGNbox 1 keeps its first keys,
-     * which held refs before sets had two cards on one sign; a stored ref reads
-     * as the label of its card.
+     * Until 2026-11 the app kept ticks per set and a place in each. They become
+     * log entries without a time, one per ticked card, so "how often" starts
+     * right; then the old keys go, so this has nothing to do the next time.
      */
-    private fun progress(set: CardSet): Writing =
-        Writing(set = set, index = store.get(indexKey(set))?.toIntOrNull() ?: 0, written = writtenIn(set))
-
-    private fun writtenIn(set: CardSet): Set<String> =
-        store
-            .get(writtenKey(set))
-            ?.split(WRITTEN_SEPARATOR)
-            ?.filter { it.isNotEmpty() }
-            ?.map { e -> if (set.words.any { it.key == e }) e else set.words.firstOrNull { it.ref == e }?.key ?: e }
-            ?.toSet() ?: emptySet()
-
-    private fun indexKey(set: CardSet) = if (set.id == SignBox.BOX1) KEY_WRITE_INDEX else "write.${set.id}.index"
-
-    private fun writtenKey(set: CardSet) = if (set.id == SignBox.BOX1) KEY_WRITTEN else "write.${set.id}.written"
+    private fun takeOverOldTicks() {
+        for (old in SignBox.sets) {
+            val key = if (old.id == SignBox.BOX1) OLD_KEY_WRITTEN else "write.${old.id}.written"
+            val ticks = store.get(key) ?: continue
+            for (tick in ticks.split(',').filter { it.isNotEmpty() }) {
+                // SIGNbox 1 once kept refs here; either reads as its card.
+                val word = old.words.firstOrNull { it.label == tick } ?: old.words.firstOrNull { it.ref == tick } ?: continue
+                writeLog.append(WriteEntry(at = null, slug = word.ref, label = word.label, list = old.title))
+            }
+            store.put(key, null)
+            logger.log("übernommen: Häkchen aus ${old.title}")
+        }
+        store.put(OLD_KEY_WRITE_INDEX, null)
+        store.put(OLD_KEY_WRITE_SET, null)
+        for (old in SignBox.sets) store.put("write.${old.id}.index", null)
+    }
 
     fun goTo(index: Int) {
         doneHold?.cancel()
@@ -278,7 +274,6 @@ class AdultModel(
                 overwriteNext = false,
             )
         }
-        store.put(indexKey(_writing.value.set), clamped.toString())
         lookupCurrentCard()
     }
 
@@ -339,13 +334,18 @@ class AdultModel(
                 }
                 logger.log("written ${outcome.tag}: ${outcome.record.provider}/${outcome.record.ref}")
                 val set = _writing.value.set
-                // Kept by the word's key; a record that is no word of this set (it
-                // cannot be, but the label is what it would have been) by its label.
-                val key =
-                    set.words.firstOrNull { CardRecord(SignDigitalProvider.ID, it.ref, it.label) == outcome.record }?.key
-                        ?: outcome.record.label
-                val written = _writing.value.written + key
-                store.put(writtenKey(set), written.joinToString(WRITTEN_SEPARATOR))
+                val word = set.words.firstOrNull { CardRecord(SignDigitalProvider.ID, it.ref, it.label) == outcome.record }
+                writeLog.append(
+                    WriteEntry(
+                        at = clock(),
+                        slug = outcome.record.ref,
+                        label = outcome.record.label,
+                        signId = word?.id,
+                        list = set.title,
+                        tag = outcome.tag.hex,
+                    ),
+                )
+                val counts = _writing.value.counts.let { it + (outcome.record.ref to (it[outcome.record.ref] ?: 0) + 1) }
                 // The box moves on now, so the reader writes the right card to a
                 // sticker that comes early; the screen stays on this one a moment.
                 // Only a write of the card the box is on moves it: an outcome for
@@ -353,8 +353,7 @@ class AdultModel(
                 val advance = outcome.record == _writing.value.record
                 val here = _writing.value.index
                 val next = if (advance) (here + 1).coerceAtMost(set.words.lastIndex) else here
-                _writing.update { it.copy(written = written, status = WriteStatus.Done(outcome), overwriteNext = false, index = next) }
-                store.put(indexKey(set), next.toString())
+                _writing.update { it.copy(counts = counts, status = WriteStatus.Done(outcome), overwriteNext = false, index = next) }
                 rememberSticker(outcome)
                 doneHold =
                     scope.launch {
@@ -416,17 +415,12 @@ class AdultModel(
     }
 
     companion object {
-        const val KEY_WRITE_INDEX = "write.index"
-        const val KEY_WRITTEN = "write.written"
-        const val KEY_WRITE_SET = "write.set"
         const val KEY_LISTS_CACHE = "lernlisten.cache"
 
-        /**
-         * Between the keys of what is written. A comma, as it always was: a
-         * site id is hex and a label in the app has none; a Lernliste's word is
-         * kept by its id, so its name may hold any comma it likes.
-         */
-        private const val WRITTEN_SEPARATOR = ","
+        /** Where the app kept ticks and places before the write log; read once, then removed. */
+        const val OLD_KEY_WRITE_INDEX = "write.index"
+        const val OLD_KEY_WRITTEN = "write.written"
+        const val OLD_KEY_WRITE_SET = "write.set"
 
         /** "Schreibt …" stays at least this long, or it is a flicker nobody reads. */
         const val MIN_BUSY_MILLIS = 400L

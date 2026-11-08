@@ -25,7 +25,7 @@ import de.lautstark.zeigmal.ui.ZeigmalApp
 class MainActivity : ComponentActivity() {
     private val model: ZeigmalViewModel by viewModels {
         val store = Deps.store(applicationContext)
-        ZeigmalViewModel.Factory(store, Deps.providers(store))
+        ZeigmalViewModel.Factory(store, Deps.providers(store), Deps.writeLog(applicationContext))
     }
     private lateinit var tags: TagSource
 

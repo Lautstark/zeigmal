@@ -7,6 +7,7 @@ import de.lautstark.zeigmal.core.AdultModel
 import de.lautstark.zeigmal.core.KeyValueStore
 import de.lautstark.zeigmal.core.Logger
 import de.lautstark.zeigmal.core.Login
+import de.lautstark.zeigmal.core.MemoryWriteLog
 import de.lautstark.zeigmal.core.Pin
 import de.lautstark.zeigmal.core.Provider
 import de.lautstark.zeigmal.core.Settings
@@ -14,6 +15,7 @@ import de.lautstark.zeigmal.core.SignDigitalProvider
 import de.lautstark.zeigmal.core.StationController
 import de.lautstark.zeigmal.core.TagMode
 import de.lautstark.zeigmal.core.TagSource
+import de.lautstark.zeigmal.core.WriteLog
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -41,6 +43,7 @@ data class LogLine(
 class ZeigmalViewModel(
     store: KeyValueStore,
     providers: Map<String, Provider>,
+    writeLog: WriteLog = MemoryWriteLog(),
 ) : ViewModel() {
     private val _log = MutableStateFlow<List<LogLine>>(emptyList())
     val log: StateFlow<List<LogLine>> = _log
@@ -55,7 +58,7 @@ class ZeigmalViewModel(
 
     private val _pinRejected = MutableStateFlow(false)
     val pinRejected: StateFlow<Boolean> = _pinRejected
-    val adult = AdultModel(viewModelScope, providers.getValue(SignDigitalProvider.ID) as SignDigitalProvider, store, logger)
+    val adult = AdultModel(viewModelScope, providers.getValue(SignDigitalProvider.ID) as SignDigitalProvider, store, logger, writeLog)
 
     private val _mode = MutableStateFlow(Mode.KID)
     val mode: StateFlow<Mode> = _mode
@@ -178,9 +181,10 @@ class ZeigmalViewModel(
     class Factory(
         private val store: KeyValueStore,
         private val providers: Map<String, Provider>,
+        private val writeLog: WriteLog,
     ) : ViewModelProvider.Factory {
         @Suppress("UNCHECKED_CAST")
-        override fun <T : ViewModel> create(modelClass: Class<T>): T = ZeigmalViewModel(store, providers) as T
+        override fun <T : ViewModel> create(modelClass: Class<T>): T = ZeigmalViewModel(store, providers, writeLog) as T
     }
 
     private companion object {
