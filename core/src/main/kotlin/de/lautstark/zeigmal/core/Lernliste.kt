@@ -1,0 +1,73 @@
+package de.lautstark.zeigmal.core
+
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.jsonArray
+import kotlinx.serialization.json.jsonObject
+
+/**
+ * A sign as a Lernliste holds it. [id] is SIGNdigital's own and survives a
+ * renamed slug, so what has been written is kept by it; [slug] is what goes on
+ * the sticker; [name] is the site's name for the sign, which is the card's word
+ * here: the list is read, never edited, so there is no other word to use.
+ */
+data class ListSign(
+    val id: String,
+    val slug: String,
+    val name: String,
+    /** The card picture's path on the site, to be signed before it is shown. Null when the sign has none. */
+    val cardPath: String?,
+)
+
+/**
+ * One of the family's Lernlisten on sign-digital.de, as the site keeps it. It is
+ * made and changed there; zeigmal only reads it (see the plan in
+ * docs/mocks/eigene-listen.html).
+ */
+data class Lernliste(
+    val id: String,
+    val name: String,
+    /** The site's own timestamp, ISO 8601; the newest list comes first. */
+    val updatedAt: String,
+    val signs: List<ListSign>,
+) {
+    companion object {
+        /**
+         * One page of `GET /api/lists`, as measured 2026-11-08 with a throwaway
+         * list: `data` holds the lists, each with its `signs` already filled in,
+         * in the list's order. A sign without a slug cannot be written, so it is
+         * left out rather than failing the list; so is a list without an id.
+         */
+        fun page(json: JsonObject): List<Lernliste> =
+            json["data"]?.jsonArray.orEmpty().mapNotNull { element ->
+                val list = element as? JsonObject ?: return@mapNotNull null
+                val id = list.string("_id") ?: return@mapNotNull null
+                Lernliste(
+                    id = id,
+                    name = list.string("name") ?: "",
+                    updatedAt = list.string("updatedAt") ?: "",
+                    signs = list["signs"]?.jsonArray.orEmpty().mapNotNull { sign(it as? JsonObject) },
+                )
+            }
+
+        private fun sign(json: JsonObject?): ListSign? {
+            if (json == null) return null
+            val id = json.string("_id") ?: return null
+            val slug = json.string("slug") ?: return null
+            val card =
+                json["edge"]
+                    ?.jsonObject
+                    ?.get("signBox")
+                    ?.jsonObject
+                    ?.string("default")
+            return ListSign(id = id, slug = slug, name = json.string("name") ?: slug, cardPath = card)
+        }
+
+        private fun JsonObject.string(key: String): String? =
+            (this[key] as? JsonPrimitive)
+                ?.takeIf {
+                    it.isString
+                }?.content
+                ?.takeIf { it.isNotEmpty() }
+    }
+}

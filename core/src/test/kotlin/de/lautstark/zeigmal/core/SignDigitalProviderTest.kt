@@ -10,6 +10,7 @@ import org.junit.Assert.assertTrue
 import org.junit.Assert.fail
 import org.junit.Before
 import org.junit.Test
+import java.util.Base64
 
 class SignDigitalProviderTest {
     private val server = MockWebServer()
@@ -127,5 +128,89 @@ class SignDigitalProviderTest {
             val request = server.takeRequest()
             assertEquals(listOf("a&slug=b#c"), request.url.queryParameterValues("slug"))
             assertEquals("slug=a%26slug%3Db%23c", request.url.encodedQuery)
+        }
+
+    /** A token shaped like the site's: a JWT whose payload names the user in `sub`. */
+    private fun jwt(sub: String): String {
+        val enc = Base64.getUrlEncoder().withoutPadding()
+        val header = enc.encodeToString("""{"alg":"HS256","typ":"access"}""".toByteArray())
+        val payload = enc.encodeToString("""{"iat":1,"exp":2,"sub":"$sub","jti":"x"}""".toByteArray())
+        return "$header.$payload.sig"
+    }
+
+    private fun listPage(
+        total: Int,
+        vararg names: String,
+    ): String =
+        names.joinToString(",", prefix = """{"total":$total,"data":[""", postfix = "]}") { name ->
+            """{"_id":"id-$name","name":"$name","updatedAt":"2026-11-08T00:00:00Z","signs":[{"_id":"s-$name","slug":"$name","name":"$name"}]}"""
+        }
+
+    @Test
+    fun `the owner is the token's sub`() {
+        assertEquals("6aa052b857086b62332eb0d4", SignDigitalProvider.ownerOf(jwt("6aa052b857086b62332eb0d4")))
+    }
+
+    @Test
+    fun `a token that is not a JWT is refused, not crashed on`() {
+        for (token in listOf("tok-1", "a.!!!.c", "a.${Base64.getUrlEncoder().encodeToString("{}".toByteArray())}.c")) {
+            try {
+                SignDigitalProvider.ownerOf(token)
+                fail(token)
+            } catch (e: SignDigitalProvider.Refused) {
+                // the app then asks for a new login
+            }
+        }
+    }
+
+    @Test
+    fun `lists asks for the owner's lists, newest first, with the token`() =
+        runTest {
+            val token = jwt("user-1")
+            store.put(SignDigitalProvider.KEY_TOKEN, token)
+            server.enqueue(MockResponse(body = listPage(2, "Kita", "Essen")))
+            val lists = provider.lists()
+            assertEquals(listOf("Kita", "Essen"), lists.map { it.name })
+            val request = server.takeRequest()
+            assertEquals("/api/lists", request.url.encodedPath)
+            assertEquals("user-1", request.url.queryParameter("owner"))
+            assertEquals("users", request.url.queryParameter("ownerType"))
+            assertEquals("-1", request.url.queryParameter("\$sort[updatedAt]"))
+            assertEquals("0", request.url.queryParameter("\$skip"))
+            assertEquals(token, request.headers["Authorization"])
+            assertEquals("GET", request.method)
+        }
+
+    @Test
+    fun `lists reads on until it has them all`() =
+        runTest {
+            store.put(SignDigitalProvider.KEY_TOKEN, jwt("user-1"))
+            server.enqueue(MockResponse(body = listPage(3, "a", "b")))
+            server.enqueue(MockResponse(body = listPage(3, "c")))
+            assertEquals(listOf("a", "b", "c"), provider.lists().map { it.name })
+            assertEquals("0", server.takeRequest().url.queryParameter("\$skip"))
+            assertEquals("2", server.takeRequest().url.queryParameter("\$skip"))
+        }
+
+    @Test
+    fun `lists stops at an empty page even when total says more`() =
+        runTest {
+            store.put(SignDigitalProvider.KEY_TOKEN, jwt("user-1"))
+            server.enqueue(MockResponse(body = listPage(5, "a")))
+            server.enqueue(MockResponse(body = """{"total":5,"data":[]}"""))
+            assertEquals(listOf("a"), provider.lists().map { it.name })
+            assertEquals(2, server.requestCount)
+        }
+
+    @Test
+    fun `lists with an expired token logs in again once`() =
+        runTest {
+            store.put(SignDigitalProvider.KEY_TOKEN, jwt("user-1"))
+            store.put(SignDigitalProvider.KEY_EMAIL, "mail@example.org")
+            store.put(SignDigitalProvider.KEY_PASSWORD, "pw")
+            server.enqueue(MockResponse(code = 401))
+            server.enqueue(MockResponse(body = """{"accessToken":"${jwt("user-1")}"}"""))
+            server.enqueue(MockResponse(body = listPage(1, "Kita")))
+            assertEquals(listOf("Kita"), provider.lists().map { it.name })
         }
 }

@@ -18,6 +18,7 @@ import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
 import java.io.IOException
+import java.util.Base64
 import java.util.concurrent.TimeUnit
 
 /**
@@ -80,18 +81,50 @@ class SignDigitalProvider(
         credentials.put(KEY_TOKEN, null)
     }
 
-    override suspend fun resolve(ref: String): Media =
+    override suspend fun resolve(ref: String): Media = authed { token -> media(ref, token) }
+
+    /**
+     * The Lernlisten of the account the app is logged in with, newest first.
+     * Read only: zeigmal never writes to the account. The owner is the token's
+     * `sub`, which is the user id the site's own list page asks with (checked
+     * 2026-11-08), so a login from before this existed needs nothing new.
+     */
+    suspend fun lists(): List<Lernliste> =
+        authed { token ->
+            val owner = ownerOf(token)
+            val lists = mutableListOf<Lernliste>()
+            do {
+                val url =
+                    "$baseUrl/api/lists"
+                        .toHttpUrl()
+                        .newBuilder()
+                        .addQueryParameter("owner", owner)
+                        .addQueryParameter("ownerType", "users")
+                        .addQueryParameter("\$limit", PAGE.toString())
+                        .addQueryParameter("\$skip", lists.size.toString())
+                        .addQueryParameter("\$sort[updatedAt]", "-1")
+                        .build()
+                        .toString()
+                val json = request("GET", url, null, token).jsonObject
+                val page = Lernliste.page(json)
+                lists += page
+                val total = json["total"]?.jsonPrimitive?.content?.toIntOrNull() ?: 0
+            } while (page.isNotEmpty() && lists.size < total)
+            lists
+        }
+
+    /** Runs [call] with the saved token; a token that has run out logs in again, once, with what was saved. */
+    private suspend fun <T> authed(call: (String) -> T): T =
         withContext(io) {
             try {
-                media(ref, token())
+                call(token())
             } catch (e: Refused) {
-                // A token that has run out: log in again, once, with what was saved.
                 val email = credentials.get(KEY_EMAIL)
                 val password = credentials.get(KEY_PASSWORD)
                 if (email == null || password == null) throw e
                 credentials.put(KEY_TOKEN, null)
                 login(email, password)
-                media(ref, token())
+                call(token())
             }
         }
 
@@ -153,6 +186,27 @@ class SignDigitalProvider(
 
     companion object {
         const val ID = "signdigital"
+        private const val PAGE = 50
+
+        /** The user id in a site token: the `sub` of its JWT payload. */
+        fun ownerOf(token: String): String {
+            val payload = token.split('.').getOrNull(1) ?: throw Refused("Token ohne Inhalt")
+            // Bad base64, a payload that is not JSON, or JSON that is not an
+            // object all throw IllegalArgumentException (SerializationException is one).
+            val sub =
+                try {
+                    val text = String(Base64.getUrlDecoder().decode(payload.trimEnd('=')), Charsets.UTF_8)
+                    Json
+                        .parseToJsonElement(text)
+                        .jsonObject["sub"]
+                        ?.jsonPrimitive
+                        ?.content
+                } catch (e: IllegalArgumentException) {
+                    throw Refused("Token nicht lesbar")
+                }
+            return sub?.takeIf { it.isNotEmpty() } ?: throw Refused("Token ohne Nutzer")
+        }
+
         private val JSON = "application/json; charset=utf-8".toMediaType()
 
         // Seen in a subscriber's JSON on 2026-09-09: "default" is what their own

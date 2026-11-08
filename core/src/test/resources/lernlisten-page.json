@@ -1,0 +1,52 @@
+{
+  "total": 2,
+  "limit": 50,
+  "skip": 0,
+  "data": [
+    {
+      "_id": "6af0ba83ba88783bc0f188cc",
+      "name": "zeigmal-test",
+      "description": null,
+      "owner": "6aa052b857086b62332eb0d4",
+      "ownerType": "users",
+      "author": "6aa052b857086b62332eb0d4",
+      "node": "6af0ba83f6b8edf69a851488",
+      "shareKey": null,
+      "learnedSigns": [],
+      "createdAt": "2026-11-08T18:08:03.932Z",
+      "updatedAt": "2026-11-08T18:08:41.621Z",
+      "__v": 0,
+      "signs": [
+        {
+          "_id": "60e7481e63f62cd51523cea2",
+          "name": "trinken",
+          "slug": "trinken",
+          "isPublic": true,
+          "edge": {
+            "signBox": { "default": "production/files/public/signs/a/products/b/trinken_sb.png" },
+            "signVideo": { "default": "production/files/public/signs/a/products/c/trinken.mp4" }
+          }
+        },
+        {
+          "_id": "60e7481e63f62c426323cecd",
+          "name": "Apfel",
+          "slug": "apfel",
+          "isPublic": true,
+          "edge": {}
+        },
+        {
+          "_id": "60e7481e63f62c0000000000",
+          "name": "ohne Slug"
+        }
+      ]
+    },
+    {
+      "_id": "6af0ba83ba88783bc0f19999",
+      "name": "Halloween",
+      "updatedAt": "2026-10-31T12:00:00.000Z",
+      "signs": [
+        { "_id": "60e7481e63f62c1111111111", "name": "sauer (Geschmack)", "slug": "sauer-geschmack" }
+      ]
+    }
+  ]
+}
