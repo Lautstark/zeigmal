@@ -209,11 +209,10 @@ class ScreensTest {
     @Test
     fun listsScreenOpensAStackAndSaysWhenThereIsNoLernliste() {
         var opened: String? = null
-        val box = SignBox.set(SignBox.BOX1)
         val kita = CardSet("sd-L1", "Kita", listOf(SignBoxWord("Jacke", "jacke", "s1"), SignBoxWord("Mama", "mama", "s3")))
         compose.setContent {
             ListsScreen(
-                lists = Lists(entries = listOf(ListEntry(kita), ListEntry(box)), fromSite = 1),
+                lists = Lists(entries = listOf(ListEntry(kita))),
                 onOpen = { opened = it },
                 onReload = {},
                 onSettings = {},
@@ -223,14 +222,14 @@ class ScreensTest {
         compose.onNodeWithTag("lists-empty").assertDoesNotExist()
         compose.onNodeWithTag("list-sd-L1").performSemanticsAction(SemanticsActions.OnClick)
         assert(opened == "sd-L1")
-        compose.onNodeWithTag("list-${SignBox.BOX1}").assertExists()
+        compose.onNodeWithTag("list-${SignBox.BOX1}").assertDoesNotExist()
     }
 
     @Test
     fun listsScreenWithoutLernlistenSaysWhereToMakeOne() {
         compose.setContent {
             ListsScreen(
-                lists = Lists(entries = listOf(ListEntry(SignBox.set(SignBox.BOX1))), fromSite = 0),
+                lists = Lists(),
                 onOpen = {},
                 onReload = {},
                 onSettings = {},

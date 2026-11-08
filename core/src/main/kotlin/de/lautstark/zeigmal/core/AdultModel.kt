@@ -60,7 +60,7 @@ data class ListEntry(
 
 /**
  * The overview the adult mode opens on: the account's Lernlisten, newest
- * first, then the sets still in the app. [lists] is the last good load,
+ * first. They are the only lists there are; [entries] is the last good load,
  * kept on the phone so the overview stands without a network.
  */
 data class Lists(
@@ -68,8 +68,6 @@ data class Lists(
     val loading: Boolean = false,
     /** Why the last load failed; the entries are then the ones loaded before. */
     val failed: String? = null,
-    /** How many of [entries] are Lernlisten; the rest are the sets in the app. */
-    val fromSite: Int = 0,
 )
 
 /**
@@ -177,15 +175,12 @@ class AdultModel(
         if (_writing.value.cardImageUrl == null) lookupCurrentCard()
     }
 
-    /** Every stack the adult can write: the Lernlisten first, then the sets in the app. */
-    private fun allSets(): List<CardSet> = siteSets + SignBox.sets
-
     /**
-     * The set with this id, wherever it comes from. An unknown id, or a list
-     * emptied on the site, is the first set in the app: the writing mode always
-     * has a card to stand on.
+     * The Lernliste with this id. An unknown id, or a list emptied on the site,
+     * is SIGNbox 1 as it was in the app: the writing mode always has a card to
+     * stand on, and the overview never offers that one.
      */
-    private fun set(id: String?): CardSet = allSets().firstOrNull { it.id == id && it.words.isNotEmpty() } ?: SignBox.set(null)
+    private fun set(id: String?): CardSet = siteSets.firstOrNull { it.id == id && it.words.isNotEmpty() } ?: SignBox.set(null)
 
     /** The overview comes up: what is known now, and a fresh load from the site. */
     fun enterLists() {
@@ -219,8 +214,7 @@ class AdultModel(
     }
 
     private fun publishLists() {
-        val entries = allSets().filter { it.words.isNotEmpty() }.map(::ListEntry)
-        _lists.update { it.copy(entries = entries, fromSite = siteSets.count { s -> s.words.isNotEmpty() }) }
+        _lists.update { it.copy(entries = siteSets.filter { s -> s.words.isNotEmpty() }.map(::ListEntry)) }
     }
 
     private fun cachedSiteSets(): List<CardSet> =

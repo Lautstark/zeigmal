@@ -36,10 +36,9 @@ import de.lautstark.zeigmal.core.ListEntry
 import de.lautstark.zeigmal.core.Lists
 
 /**
- * What the adult mode opens on: the account's Lernlisten, newest first, then
- * the sets still in the app, each with how many cards it holds. A tap opens
- * the writing mode on that stack. Nothing here changes a
- * list: they are made on sign-digital.de.
+ * What the adult mode opens on: the account's Lernlisten, newest first, each
+ * with how many cards it holds. A tap opens the writing mode on that stack.
+ * Nothing here changes a list: they are made on sign-digital.de.
  */
 @Composable
 fun ListsScreen(
@@ -82,10 +81,8 @@ fun ListsScreen(
             }
         }
         Spacer(Modifier.height(10.dp))
-        val site = lists.entries.take(lists.fromSite)
-        val inApp = lists.entries.drop(lists.fromSite)
         LazyColumn(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            if (site.isEmpty()) {
+            if (lists.entries.isEmpty()) {
                 item {
                     Box(Modifier.fillMaxWidth().padding(vertical = 18.dp).testTag("lists-empty"), contentAlignment = Alignment.Center) {
                         Text(
@@ -97,20 +94,7 @@ fun ListsScreen(
                     }
                 }
             }
-            items(site, key = { it.set.id }) { ListRow(it, onOpen) }
-            if (inApp.isNotEmpty()) {
-                item {
-                    Text(
-                        stringResource(R.string.lists_in_app).uppercase(),
-                        color = Palette.textFaint,
-                        fontSize = 11.sp,
-                        fontWeight = FontWeight.SemiBold,
-                        letterSpacing = 1.sp,
-                        modifier = Modifier.padding(top = 10.dp),
-                    )
-                }
-                items(inApp, key = { it.set.id }) { ListRow(it, onOpen) }
-            }
+            items(lists.entries, key = { it.set.id }) { ListRow(it, onOpen) }
         }
         Row(verticalAlignment = Alignment.CenterVertically) {
             TextButton(onClick = onSettings, modifier = Modifier.testTag("settings")) {

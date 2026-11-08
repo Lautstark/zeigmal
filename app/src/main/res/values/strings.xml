@@ -52,7 +52,6 @@
     <string name="lists_failed">Could not load; showing the last ones loaded</string>
     <string name="lists_reload">Reload</string>
     <string name="lists_empty">No Lernliste yet. Make one on sign-digital.de under “Lernlisten”; it shows up here.</string>
-    <string name="lists_in_app">In the app</string>
     <string name="lists_made_on_site">New lists are made on sign-digital.de</string>
     <plurals name="lists_cards">
         <item quantity="one">%1$d card</item>

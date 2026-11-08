@@ -47,7 +47,6 @@
     <string name="lists_failed">Nicht geladen, das sind die zuletzt geladenen</string>
     <string name="lists_reload">Neu laden</string>
     <string name="lists_empty">Noch keine Lernliste. Leg auf sign-digital.de unter „Lernlisten“ eine an, sie erscheint dann hier.</string>
-    <string name="lists_in_app">In der App</string>
     <string name="lists_made_on_site">Neue Listen legst du auf sign-digital.de an</string>
     <plurals name="lists_cards">
         <item quantity="one">%1$d Karte</item>

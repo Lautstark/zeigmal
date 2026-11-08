@@ -5,6 +5,8 @@ import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
+import kotlinx.serialization.builtins.ListSerializer
+import kotlinx.serialization.json.Json
 import mockwebserver3.Dispatcher
 import mockwebserver3.MockResponse
 import mockwebserver3.MockWebServer
@@ -20,6 +22,13 @@ import java.util.Base64
 class AdultModelTest {
     private val server = MockWebServer()
     private val store = InMemoryStore()
+
+    private val kita = CardSet("sd-L1", "Kita", listOf(SignBoxWord("Jacke", "jacke", "s1"), SignBoxWord("Schuhe", "schuh", "s2")))
+
+    /** Lernlisten as an earlier load left them on the phone. */
+    private fun cache(vararg sets: CardSet) =
+        store.put(AdultModel.KEY_LISTS_CACHE, Json.encodeToString(ListSerializer(CardSet.serializer()), sets.toList()))
+
     private val logger = ListLogger()
 
     @Before
@@ -238,14 +247,15 @@ class AdultModelTest {
     fun `a stack opens on its first card, and nothing is kept of where it stopped`() =
         runTest {
             store.put(SignDigitalProvider.KEY_TOKEN, "tok")
+            cache(kita, CardSet("sd-L2", "Herbst", listOf(SignBoxWord("Blatt", "blatt"), SignBoxWord("oder", "oder-variante"))))
             val m = AdultModel(this, provider(), store, logger)
             m.goTo(5)
-            m.chooseSet(SignBox.HALLOWEEN)
+            m.chooseSet("sd-L2")
             assertEquals(0, m.writing.value.index)
-            assertEquals("Halloween", m.writing.value.word.label)
-            m.goTo(2)
+            assertEquals("Blatt", m.writing.value.word.label)
+            m.goTo(1)
             assertEquals(CardRecord("signdigital", "oder-variante", "oder"), m.writing.value.record)
-            m.chooseSet(SignBox.BOX1)
+            m.chooseSet("sd-L1")
             assertEquals(0, m.writing.value.index)
             assertEquals(
                 SignBox.BOX1,
@@ -260,12 +270,12 @@ class AdultModelTest {
         runTest {
             store.put(SignDigitalProvider.KEY_TOKEN, "tok")
             val log = MemoryWriteLog()
+            cache(CardSet("sd-L3", "Fasching", listOf(SignBoxWord("Kostüm", "kostum"), SignBoxWord("verkleiden", "kostum"))))
             val m = AdultModel(this, provider(), store, logger, log)
-            m.chooseSet(SignBox.HALLOWEEN)
-            m.goTo(SignBox.halloween.indexOfFirst { it.label == "Kostüm" })
+            m.chooseSet("sd-L3")
             m.onWrite(WriteOutcome.Written(TagId("04aabbccddeeff"), m.writing.value.record))
             advanceUntilIdle()
-            m.goTo(SignBox.halloween.indexOfFirst { it.label == "verkleiden" })
+            m.goTo(1)
             m.onWrite(WriteOutcome.Written(TagId("04aabbccddee00"), m.writing.value.record))
             advanceUntilIdle()
             assertEquals(2, m.writing.value.counts["kostum"])
@@ -341,7 +351,7 @@ class AdultModelTest {
     }
 
     @Test
-    fun `the overview shows the Lernlisten first, then the sets in the app`() =
+    fun `the overview shows the Lernlisten and nothing else`() =
         runTest {
             store.put(SignDigitalProvider.KEY_TOKEN, jwt("user-1"))
             site()
@@ -349,8 +359,7 @@ class AdultModelTest {
             m.enterLists()
             advanceUntilIdle()
             val lists = m.lists.value
-            assertEquals(listOf("Kita", "SIGNbox 1", "Halloween"), lists.entries.map { it.set.title })
-            assertEquals(1, lists.fromSite)
+            assertEquals(listOf("Kita"), lists.entries.map { it.set.title })
             assertEquals(3, lists.entries.first().total)
             assertEquals(null, lists.failed)
         }
