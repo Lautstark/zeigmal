@@ -246,7 +246,11 @@ port_n = max(phone_t / 2, port_bar + port_h / 2);      // [G] the pills' centre 
 // runs directly behind the left one (see top_screws in section 6).
 top_screw_margin = 6.0;   // [K] from the frame's outer edge, both ends
 top_screw_u      = 77.0;  // [K] all three on this line, up the plane
-top_cb_d      = 4.2;             // counterbore for the head, in the rail
+top_cb_d      = 4.8;             // counterbore for the head, in the rail. 4.2 left
+                                 // 0.2 mm round a 3.8 head, and the frame prints
+                                 // face down, so the counterbore's mouth is the
+                                 // squashed first layer: one of three heads stuck
+                                 // at the rim (Stefanie, 2026-11-08)
 top_cb_depth  = 6.5;             // deep enough for M2 x 10 to bite the plate
 
 // M2 screws — the ones on the shelf. From underneath, through the floor
