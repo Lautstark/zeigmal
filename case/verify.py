@@ -272,30 +272,31 @@ def compute(p, bed, phone_mass, fill):
             note='3.0 left the power key overlapped by about 1 mm')
     b.check(g, 'window clears the first volume key', G('key_vol_up')[0] - w0, '>=', 2.0)
     b.info(g, 'key window', 'x %.0f..%.0f: volume keys and power key both reachable' % (w0, w1))
-    # the closed right end: the openings and the posts between and around them
+    # the closed right end: two pills through the rail, the face in front of
+    # them and a bar behind them whole, posts between and around them
     u_lo, u_hi = -G('play') - G('frame_wall'), G('u_hi')
-    ports = sorted((p0 - m, p1 + m, w) for p0, p1, m, w in G('ports'))
-    edges = [u_lo] + [v for p in ports for v in p[:2]] + [u_hi]
-    names = ['jack', 'USB-C', 'speaker']
+    names = ['USB-C', 'speaker']
+    feats = [G('usb_u'), G('speaker_u')]
+    pills = [(uc - l / 2, uc + l / 2) for uc, l in G('ports')]
+    edges = [u_lo] + [v for p in sorted(pills) for v in p] + [u_hi]
     for i in range(0, len(edges) - 1, 2):
         what = 'post below %s' % names[i // 2] if i // 2 < len(names) else 'post above the top opening'
         b.check(g, 'right end: %s' % what, edges[i + 1] - edges[i], '>=', G('frame_wall'),
                 note='the rail has no material left between the openings')
-    # A cut that reaches past the lip meets the screen's window and leaves the
-    # rail between two openings connected to nothing. Only one opening may
-    # wrap, and only where the face above it carries the post.
-    lip_cutters = [n for (a0, a1, w), n in zip(ports, names) if w > G('frame_over')]
-    b.check(g, 'at most one opening cuts the lip', float(len(lip_cutters)), '<=', 1.0, unit='',
-            note='the posts between the others would be loose pieces: %s' % ', '.join(lip_cutters))
-    for (a0, a1, w), n in zip(ports, names):
-        if w > G('frame_over'):
-            b.check(g, '%s: face above the wrap carries the post' % n,
-                    (G('phone_h') - G('frame_over')) - a1, '>=', 0.0,
-                    note='nothing above this opening is attached')
-        b.check(g, '%s opening takes a plug' % n, a1 - a0, '>=', 8.0 if n != 'speaker' else 12.0)
+    n0, n1 = G('port_n') - G('port_h') / 2, G('port_n') + G('port_h') / 2
+    b.check(g, 'bar behind the pills', n0, '>=', 1.2, note='a sliver against the plate')
+    b.check(g, 'pills stay behind the face', G('face_n0') - n1, '>=', 0.0,
+            note='the face over the right end is cut, and the end is posts again')
+    b.check(g, 'USB-C shell inside the pill, depth',
+            G('port_h') / 2 - abs(G('port_n') - G('phone_t') / 2), '>=', 1.2 + 0.5)
+    b.check(g, 'USB-C pill takes an overmoulded plug', G('port_h'), '>=', 6.0)
+    for (a0, a1), (f0, f1), n in zip(pills, feats, names):
+        b.check(g, '%s pill covers the feature, below' % n, f0 - a0, '>=', 1.0)
+        b.check(g, '%s pill covers the feature, above' % n, a1 - f1, '>=', 1.0)
         b.check(g, '%s opening clears the phone\'s edge' % n, G('x_right') - G('phone_l'), '>=', 2.0,
                 note='the plug has no room beside the phone')
-        b.info(g, '%s opening' % n, 'u %.1f .. %.1f, %.0f mm around the corner' % (a0, a1, w))
+        b.info(g, '%s opening' % n, 'u %.1f .. %.1f, n %.1f .. %.1f' % (a0, a1, n0, n1))
+    b.info(g, 'jack', 'u %.0f..%.0f stays covered - nobody plugs into it' % tuple(G('jack_u')))
     b.info(g, 'microphone', 'u %.0f..%.0f stays covered - the station never records' % tuple(G('mic_u')))
     # screws from the front through the top rail into the plate: each must
     # land in solid plate — left of the slot, or right of the funnel's reach

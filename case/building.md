@@ -14,8 +14,8 @@ with them.
 
 | Part | What it does | Outer size | Volume |
 |---|---|---|---|
-| **Body** | the wedge: the plate the phone lies on, the funnel and slot cut into its top, a 60° back cut off 13 mm above the table so it ends on an edge rather than a feather, hollow inside with two ribs | 164.3 × 97.3 × 94.0 mm, standing on 92.5 | 180 cm³ |
-| **Frame** | the front, from the table to the holder's top edge: a 2.4 mm face with a 3 mm lip over the screen, rails round all four edges, openings for jack, USB-C and speaker, one window over the keys | 164.3 × 103.9 × 10.6 mm | 44 cm³ |
+| **Body** | the wedge: the plate the phone lies on, the funnel and slot cut into its top, a 60° back cut off 13 mm above the table so it ends on an edge rather than a feather and closed there by a wall down to the table, hollow inside with two ribs | 164.3 × 97.3 × 94.0 mm, standing on 92.5 | 180 cm³ |
+| **Frame** | the front, from the table to the holder's top edge: a 2.4 mm face with a 3 mm lip over the screen, rails round all four edges, two rounded openings for USB-C and speaker, one window over the keys | 164.3 × 103.9 × 10.6 mm | 44 cm³ |
 
 Plus M2 × 10, five pieces: two from underneath, three from the front.
 
@@ -77,13 +77,16 @@ The top rail has one window over the volume keys and the power key, 25 to
 power key was accepted on 2026-09-16, and the window is 3 mm longer at that
 end because the rail overlapped the key by about a millimetre.
 
-The right end is closed, with three openings straight through rail and face:
-the 3.5 mm jack, the USB-C plug, and the speaker. Only the speaker's opening
-wraps round the corner onto the face — a plug does not need it, and every
-opening that reaches past the lip meets the screen's window behind it and
-leaves the rail between two openings attached to nothing.
+The right end is closed, with two openings through the rail: one for the
+USB-C plug, one for the speaker. Both are the same pill, 13 × 6.4 mm, rounded
+at both ends; the face in front of them and a 1.2 mm bar behind them stay
+whole, so the end is one closed ring. The first print had three square
+notches straight through rail and face, and the speaker's wrapped round onto
+the lip: the end flexed, and above the speaker nothing tied the rail to the
+face (2026-11-08).
 
-The microphone stays covered. The station never records.
+The jack and the microphone stay covered. Nobody plugs into the jack, and the
+station never records.
 
 To take the phone out: five screws, lift the frame, lift the phone.
 
@@ -178,7 +181,7 @@ All clearances are named variables in section 3 of the `.scad`.
 | The camera island in its pocket | `cam_play` | 0.30 mm | what is left of the wall under the pocket is the thinnest place in the part |
 | Frame lip over the screen | `frame_over` | 3.00 mm | holds the phone; costs 0.5 mm of picture per side |
 | Key window | `key_win_left` / `key_win_right` | 3.00 / 6.00 mm | a fingertip finds the keys, and a guessed position still fits |
-| Jack, USB-C, speaker | `ports` | 3.0 / 4.0 / 1.5 mm | a plug goes in without aiming; the speaker is tight because it needs no plug |
+| USB-C, speaker | `ports`, `port_h` | 13 × 6.4 mm pills | a USB-C overmould is about 12 × 6; the speaker gets the same pill so the end looks designed |
 
 If the printer generally prints fat, do **not** fiddle here but calibrate the
 extrusion multiplier. These numbers are design dimensions, not printer
@@ -243,7 +246,7 @@ tries a correction before it is written into the file.
 | `cam_x0..cam_u1`, `cam_h` | 8–30 × 45.6–67.6, 1.2 proud | the camera island in landscape; its pocket in the plate |
 | `key_vol_up`, `key_vol_dn`, `key_power` | 28–38, 40–48, 56–66 from the left end | one window over all three (25–72) |
 | `key_proud` | 0.5 mm | how far a key stands out of the edge |
-| `jack_u`, `usb_u`, `speaker_u` | 8–14, 30–40, 55–68 from the bottom | the three openings in the right rail |
+| `jack_u`, `usb_u`, `speaker_u` | 8–14, 30–40, 53–61 from the bottom | the jack is covered; the two pills are centred on the other two. The speaker's range was read off a photo of the first print |
 
 ### The card
 
