@@ -81,9 +81,9 @@ The right end is closed, with two openings through the rail; the face in
 front of both stays whole. The speaker's is a pill, 13 × 6.4 mm, with a
 1.2 mm bar of rail behind it. The USB-C opening is 13 mm wide and open to the
 plate, because the plug lies on it; its two corners toward the face are
-rounded, and so are its edges where it meets the plate. It reaches 1 mm past
-the plug toward the face, where the old notch left about 3, so 4.4 mm of rail
-and face stand in front of it. The first print had three square
+rounded, and so are its edges where it meets the plate. It reaches through
+the whole rail to the face, so a plug up to 8.5 mm thick fits centred on the
+port; v3 stopped 2 mm short of the face and the plug did not go in. The first print had three square
 notches straight through rail and face, and the speaker's wrapped round onto
 the lip: the end flexed, and above the speaker nothing tied the rail to the
 face (2026-11-08).
@@ -184,7 +184,7 @@ All clearances are named variables in section 3 of the `.scad`.
 | The camera island in its pocket | `cam_play` | 0.30 mm | what is left of the wall under the pocket is the thinnest place in the part |
 | Frame lip over the screen | `frame_over` | 3.00 mm | holds the phone; costs 0.5 mm of picture per side |
 | Key window | `key_win_left` / `key_win_right` | 3.00 / 6.00 mm | a fingertip finds the keys, and a guessed position still fits |
-| USB-C | `usb_port`, `usb_top` | 13 mm wide, open to the plate, 1 mm over the plug | a USB-C overmould is about 12 wide, and Stefanie's lies on the plate |
+| USB-C | `usb_port`, `usb_top` | 14 mm wide, open to the plate, up to the face | a USB-C overmould is about 12 wide and up to 8.5 thick |
 | Speaker | `speaker_port`, `port_h` | 13 × 6.4 mm pill | the speaker needs no plug |
 
 If the printer generally prints fat, do **not** fiddle here but calibrate the
@@ -250,7 +250,7 @@ tries a correction before it is written into the file.
 | `cam_x0..cam_u1`, `cam_h` | 8–30 × 45.6–67.6, 1.2 proud | the camera island in landscape; its pocket in the plate |
 | `key_vol_up`, `key_vol_dn`, `key_power` | 28–38, 40–48, 56–66 from the left end | one window over all three (25–72) |
 | `key_proud` | 0.5 mm | how far a key stands out of the edge |
-| `jack_u`, `usb_u`, `speaker_u` | 8–14, 30–40, 53–61 from the bottom | the jack is covered; the two openings are centred on the other two. The speaker's range was read off a photo of the first print |
+| `jack_u`, `usb_u`, `speaker_u` | 8–14, 31.7–41.7, 53–61 from the bottom | the jack is covered; the two openings are centred on the other two. The USB-C and speaker ranges were read off photos of the printed frames |
 
 ### The card
 

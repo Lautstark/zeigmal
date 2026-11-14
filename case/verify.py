@@ -292,6 +292,8 @@ def compute(p, bed, phone_mass, fill):
             note='the face over the right end is cut, and the end is posts again')
     b.check(g, 'USB-C shell inside the opening, depth',
             G('usb_top') - (G('phone_t') / 2 + 1.2), '>=', 1.0)
+    b.check(g, 'an 8 mm plug fits centred on the port', G('usb_top') - G('phone_t') / 2, '>=', 4.0,
+            note='v3 left 2.5 mm past the port\'s centre and the plug did not go in')
     b.check(g, 'USB-C front corners fit the opening', usb_l - 2 * G('usb_r'), '>=', 0.0)
     for (a0, a1), (f0, f1), n in zip([(usb_c - usb_l / 2, usb_c + usb_l / 2), spk],
                                       [G('usb_u'), G('speaker_u')], ['USB-C', 'speaker']):

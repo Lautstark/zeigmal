@@ -93,7 +93,9 @@ key_proud  =  0.5;           // [A] how far a key stands out of the edge
 // Everything here must stay open: the speaker fires out of it.
 jack_u    = [ 8.0, 14.0];   // [A] 3.5 mm jack — covered, see `ports`
 mic_u     = [21.0, 23.0];   // [A]
-usb_u     = [30.0, 40.0];   // [A] USB-C
+usb_u     = [31.7, 41.7];   // [M] USB-C, read off a photo of the v3 frame, 2026-11-14,
+                            //     with the speaker pill as the scale: the port sat
+                            //     1.7 mm further toward the speaker than 30..40
 speaker_u = [53.0, 61.0];   // [A] read off a photo of the printed frame, 2026-11-08:
                             //     the grille's holes sat in the lower half of
                             //     the old 55..68 guess
@@ -241,10 +243,13 @@ port_n = max(phone_t / 2, port_bar + port_h / 2);      // [G] the pill's centre 
 // USB-C is open to the plate: the plug lies on it (Stefanie's cable,
 // 2026-11-08), so a bar there, as the pill had, would stop it. Rounded at
 // the two corners toward the face, and where the opening meets the plate
-// its edges are rounded off too. In front, the old notch left about 3 mm
-// above the plug; 1 mm is enough, and the rest stays as rail.
-usb_port   = [(usb_u[0] + usb_u[1]) / 2, 13.0];   // [K] a USB-C overmould is about 12 wide
-usb_top    = phone_t + play - 2.0;   // [M] n of the opening's front edge: 1 mm over the plug
+// its edges are rounded off too. Toward the face it takes the whole rail, so
+// a plug up to 8.5 mm thick fits centred on the port.
+usb_port   = [(usb_u[0] + usb_u[1]) / 2, 14.0];   // [K] a USB-C overmould is about 12 wide
+usb_top    = phone_t + play;         // [K] n of the opening's front edge: right up to the
+                                     //     face, which stays whole. v3 stopped 2 mm short
+                                     //     of it, 2.5 mm past the port's centre, and the
+                                     //     plug did not go in (2026-11-14)
 usb_r      = 3.0;                    // [K] its two front corners
 usb_fillet = 1.0;                    // [K] the edges where it meets the plate
 
