@@ -85,7 +85,7 @@ class SignDigitalProvider(
 
     /**
      * The Lernlisten of the account the app is logged in with, newest first.
-     * Read only: zeigmal never writes to the account. The owner is the token's
+     * The owner is the token's
      * `sub`, which is the user id the site's own list page asks with (checked
      * 2026-11-08), so a login from before this existed needs nothing new.
      */
@@ -112,6 +112,93 @@ class SignDigitalProvider(
             } while (page.isNotEmpty() && lists.size < total)
             lists
         }
+
+    /**
+     * Signs whose name holds [text], as the site's own search finds them. It
+     * wants the login since 2026-10-31.
+     */
+    suspend fun search(text: String): List<ListSign> =
+        authed { token ->
+            val url =
+                "$baseUrl/search/query"
+                    .toHttpUrl()
+                    .newBuilder()
+                    .addQueryParameter("text", text)
+                    .addQueryParameter("categories", "alle")
+                    .addQueryParameter("\$skip", "0")
+                    .addQueryParameter("\$limit", SEARCH_LIMIT.toString())
+                    .build()
+                    .toString()
+            Lernliste.signs(request("GET", url, null, token).jsonObject)
+        }
+
+    /**
+     * Changes which signs a list holds, on the site. The site takes a list back
+     * whole (measured 2026-11-08), so it is read fresh right before, [change] is
+     * applied to the sign ids read then, and it is read once more after: what
+     * comes back is the list as the site now has it, or this throws. [change]
+     * must not mind running twice, since a token that ran out runs it again.
+     */
+    suspend fun changeSigns(
+        listId: String,
+        change: (List<String>) -> List<String>,
+    ): Lernliste =
+        authed { token ->
+            val doc = listDoc(listId, token)
+            val before = ids(doc["signs"])
+            val after = change(before)
+            if (after != before) {
+                val body =
+                    JsonObject(
+                        doc +
+                            mapOf(
+                                "signs" to JsonArray(after.map(::JsonPrimitive)),
+                                "learnedSigns" to JsonArray(ids(doc["learnedSigns"]).map(::JsonPrimitive)),
+                            ),
+                    )
+                request("PATCH", listUrl(listId), body.toString(), token)
+            }
+            val fresh = listDoc(listId, token)
+            if (ids(fresh["signs"]) != after) throw IOException("Die Liste ist nach dem Speichern anders als gedacht")
+            Lernliste.one(fresh) ?: throw IOException("Liste ohne Kennung")
+        }
+
+    /**
+     * Deletes a list on the site. The site deletes the list's entry in its
+     * folders, and the list goes with it (measured 2026-11-08: the list is 404
+     * after); so does this, and checks it is gone.
+     */
+    suspend fun deleteList(listId: String) =
+        authed { token ->
+            val node = (listDoc(listId, token)["node"] as? JsonPrimitive)?.content ?: throw IOException("Liste ohne Ordner-Eintrag")
+            request("DELETE", "$baseUrl/api/file-nodes/${node.urlSegment()}", null, token)
+            try {
+                listDoc(listId, token)
+                throw IOException("Die Liste ist nach dem Löschen noch da")
+            } catch (e: NotFound) {
+                // Gone, as it should be.
+            }
+        }
+
+    private fun listUrl(listId: String) = "$baseUrl/api/lists/${listId.urlSegment()}"
+
+    private fun listDoc(
+        listId: String,
+        token: String,
+    ): JsonObject = request("GET", listUrl(listId), null, token).jsonObject
+
+    /** A list's signs come back filled in and go out as ids; either reads as the ids. */
+    private fun ids(signs: kotlinx.serialization.json.JsonElement?): List<String> =
+        (signs as? JsonArray).orEmpty().mapNotNull { sign ->
+            when (sign) {
+                is JsonPrimitive -> sign.content
+                is JsonObject -> (sign["_id"] as? JsonPrimitive)?.content
+                else -> null
+            }
+        }
+
+    /** An id from the site goes into a path: anything but letters and digits would make it another path. */
+    private fun String.urlSegment(): String = also { require(all(Char::isLetterOrDigit)) { "keine Kennung: $it" } }
 
     /** Runs [call] with the saved token; a token that has run out logs in again, once, with what was saved. */
     private suspend fun <T> authed(call: (String) -> T): T =
@@ -172,21 +259,26 @@ class SignDigitalProvider(
         if (token != null) builder.header("Authorization", token)
         when (method) {
             "POST" -> builder.post((body ?: "").toRequestBody(JSON))
+            "PATCH" -> builder.patch((body ?: "").toRequestBody(JSON))
+            "DELETE" -> builder.delete()
             else -> builder.get()
         }
         client.newCall(builder.build()).execute().use { response ->
             val text = response.body.string()
             when {
                 response.code == 401 || response.code == 403 -> throw Refused("${response.code} für $method ${url.substringBefore('?')}")
+                response.code == 404 -> throw NotFound("404 für $method ${url.substringBefore('?')}")
                 !response.isSuccessful -> throw IOException("HTTP ${response.code} für $method ${url.substringBefore('?')}")
             }
-            return Json.parseToJsonElement(text)
+            // A DELETE may answer with nothing.
+            return if (text.isBlank()) kotlinx.serialization.json.JsonNull else Json.parseToJsonElement(text)
         }
     }
 
     companion object {
         const val ID = "signdigital"
         private const val PAGE = 50
+        private const val SEARCH_LIMIT = 30
 
         /** The user id in a site token: the `sub` of its JWT payload. */
         fun ownerOf(token: String): String {

@@ -213,4 +213,99 @@ class SignDigitalProviderTest {
             server.enqueue(MockResponse(body = listPage(1, "Kita")))
             assertEquals(listOf("Kita"), provider.lists().map { it.name })
         }
+
+    // --- writing to a list ---
+
+    /** A list as GET /api/lists/<id> returns it: signs filled in, learnedSigns as the site keeps them. */
+    private fun listDoc(vararg signs: String) =
+        """{"_id":"L1","name":"Kita","node":"N1","owner":"u1","ownerType":"users","learnedSigns":[{"_id":"s1"}],"signs":[""" +
+            signs.joinToString(",") { """{"_id":"$it","slug":"slug-$it","name":"Name $it"}""" } + "]}"
+
+    @Test
+    fun `search asks the site's search with the text and the token`() =
+        runTest {
+            store.put(SignDigitalProvider.KEY_TOKEN, "tok")
+            server.enqueue(MockResponse(body = """{"total":1,"data":[{"_id":"a1","slug":"keineahnung","name":"keineAhnung"}]}"""))
+            assertEquals(listOf("keineahnung"), provider.search("keine Ahnung").map { it.slug })
+            val request = server.takeRequest()
+            assertEquals("/search/query", request.url.encodedPath)
+            assertEquals("keine Ahnung", request.url.queryParameter("text"))
+            assertEquals("alle", request.url.queryParameter("categories"))
+            assertEquals("tok", request.headers["Authorization"])
+        }
+
+    @Test
+    fun `a change reads the list fresh, sends it whole with ids, and reads it back`() =
+        runTest {
+            store.put(SignDigitalProvider.KEY_TOKEN, "tok")
+            server.enqueue(MockResponse(body = listDoc("s1", "s2")))
+            server.enqueue(MockResponse(body = "{}"))
+            server.enqueue(MockResponse(body = listDoc("s1", "s2", "s3")))
+            val list = provider.changeSigns("L1") { it + "s3" }
+            assertEquals(listOf("slug-s1", "slug-s2", "slug-s3"), list.signs.map { it.slug })
+            assertEquals("GET", server.takeRequest().method)
+            val patch = server.takeRequest()
+            assertEquals("PATCH", patch.method)
+            assertEquals("/api/lists/L1", patch.url.encodedPath)
+            val body =
+                kotlinx.serialization.json.Json
+                    .parseToJsonElement(patch.body!!.utf8())
+                    .toString()
+            assertTrue(body, body.contains("\"signs\":[\"s1\",\"s2\",\"s3\"]"))
+            assertTrue(body, body.contains("\"learnedSigns\":[\"s1\"]"))
+            // The rest of the document goes back as it came.
+            assertTrue(body, body.contains("\"node\":\"N1\""))
+            assertEquals("GET", server.takeRequest().method)
+        }
+
+    @Test
+    fun `a change the site did not take throws`() =
+        runTest {
+            store.put(SignDigitalProvider.KEY_TOKEN, "tok")
+            server.enqueue(MockResponse(body = listDoc("s1")))
+            server.enqueue(MockResponse(body = "{}"))
+            server.enqueue(MockResponse(body = listDoc("s1")))
+            try {
+                provider.changeSigns("L1") { it + "s2" }
+                fail("expected the check to fail")
+            } catch (e: java.io.IOException) {
+                assertTrue(e.message!!.contains("anders"))
+            }
+        }
+
+    @Test
+    fun `a change that changes nothing sends nothing`() =
+        runTest {
+            store.put(SignDigitalProvider.KEY_TOKEN, "tok")
+            server.enqueue(MockResponse(body = listDoc("s1")))
+            server.enqueue(MockResponse(body = listDoc("s1")))
+            provider.changeSigns("L1") { it.filter { id -> id != "s9" } }
+            assertEquals(listOf("GET", "GET"), listOf(server.takeRequest().method, server.takeRequest().method))
+        }
+
+    @Test
+    fun `deleting a list deletes its folder entry and checks the list is gone`() =
+        runTest {
+            store.put(SignDigitalProvider.KEY_TOKEN, "tok")
+            server.enqueue(MockResponse(body = listDoc("s1")))
+            server.enqueue(MockResponse(body = ""))
+            server.enqueue(MockResponse(code = 404))
+            provider.deleteList("L1")
+            server.takeRequest()
+            val delete = server.takeRequest()
+            assertEquals("DELETE", delete.method)
+            assertEquals("/api/file-nodes/N1", delete.url.encodedPath)
+        }
+
+    @Test
+    fun `an id that is not one never reaches a path`() =
+        runTest {
+            store.put(SignDigitalProvider.KEY_TOKEN, "tok")
+            try {
+                provider.deleteList("../file-nodes/x")
+                fail("expected a refusal")
+            } catch (e: IllegalArgumentException) {
+                assertEquals(0, server.requestCount)
+            }
+        }
 }

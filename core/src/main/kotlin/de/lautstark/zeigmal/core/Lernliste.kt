@@ -9,7 +9,7 @@ import kotlinx.serialization.json.jsonObject
  * A sign as a Lernliste holds it. [id] is SIGNdigital's own and survives a
  * renamed slug, so what has been written is kept by it; [slug] is what goes on
  * the sticker; [name] is the site's name for the sign, which is the card's word
- * here: the list is read, never edited, so there is no other word to use.
+ * here: Lernlisten have no word of their own per entry.
  */
 data class ListSign(
     val id: String,
@@ -20,9 +20,8 @@ data class ListSign(
 )
 
 /**
- * One of the family's Lernlisten on sign-digital.de, as the site keeps it. It is
- * made and changed there; zeigmal only reads it (see the plan in
- * docs/mocks/eigene-listen.html).
+ * One of the family's Lernlisten on sign-digital.de, as the site keeps it. The
+ * site holds it; zeigmal reads it and changes it there (ADR 0013).
  */
 data class Lernliste(
     val id: String,
@@ -52,17 +51,22 @@ data class Lernliste(
          * in the list's order. A sign without a slug cannot be written, so it is
          * left out rather than failing the list; so is a list without an id.
          */
-        fun page(json: JsonObject): List<Lernliste> =
-            json["data"]?.jsonArray.orEmpty().mapNotNull { element ->
-                val list = element as? JsonObject ?: return@mapNotNull null
-                val id = list.string("_id") ?: return@mapNotNull null
-                Lernliste(
-                    id = id,
-                    name = list.string("name") ?: "",
-                    updatedAt = list.string("updatedAt") ?: "",
-                    signs = list["signs"]?.jsonArray.orEmpty().mapNotNull { sign(it as? JsonObject) },
-                )
-            }
+        fun page(json: JsonObject): List<Lernliste> = json["data"]?.jsonArray.orEmpty().mapNotNull { one(it as? JsonObject) }
+
+        /** One list as `GET /api/lists/<id>` returns it, signs filled in; null without an id. */
+        fun one(list: JsonObject?): Lernliste? {
+            if (list == null) return null
+            val id = list.string("_id") ?: return null
+            return Lernliste(
+                id = id,
+                name = list.string("name") ?: "",
+                updatedAt = list.string("updatedAt") ?: "",
+                signs = list["signs"]?.jsonArray.orEmpty().mapNotNull { sign(it as? JsonObject) },
+            )
+        }
+
+        /** The hits of `GET /search/query`, which come in the same shape as a list's signs. */
+        fun signs(json: JsonObject): List<ListSign> = json["data"]?.jsonArray.orEmpty().mapNotNull { sign(it as? JsonObject) }
 
         private fun sign(json: JsonObject?): ListSign? {
             if (json == null) return null
