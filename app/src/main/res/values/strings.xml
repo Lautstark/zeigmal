@@ -57,4 +57,21 @@
         <item quantity="one">%1$d card</item>
         <item quantity="other">%1$d cards</item>
     </plurals>
+    <string name="search_hint">Search a sign</string>
+    <string name="search_none">Nothing found.</string>
+    <string name="search_failed">The search did not work. Are you logged in and online?</string>
+    <string name="add_to_list">+ List</string>
+    <string name="add_to_list_title">“%1$s” into a list</string>
+    <string name="in_list">✓ in it</string>
+    <string name="add">add</string>
+    <string name="remove_from">Take out of “%1$s”</string>
+    <string name="again">This card once more</string>
+    <string name="spent_hint">The reader waits until you choose the next card.</string>
+    <string name="delete_list">Delete list …</string>
+    <string name="delete_title">Delete “%1$s”?</string>
+    <string name="delete_text">The list goes from sign-digital.de and from the Gebärden app as well. This cannot be undone. Your stickers keep playing.</string>
+    <string name="delete">Delete</string>
+    <string name="keep">Keep</string>
+    <string name="saving">saving …</string>
+    <string name="save_failed">Not saved: %1$s</string>
 </resources>

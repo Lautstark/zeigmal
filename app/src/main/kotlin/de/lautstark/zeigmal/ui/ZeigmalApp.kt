@@ -94,18 +94,27 @@ fun ZeigmalApp(model: ZeigmalViewModel) {
             Mode.LISTS -> {
                 BackHandler { model.leaveAdult() }
                 val lists by model.adult.lists.collectAsState()
+                val search by model.adult.search.collectAsState()
+                val writing by model.adult.writing.collectAsState()
                 ListsScreen(
                     lists = lists,
                     onOpen = model::openList,
                     onReload = model.adult::loadLists,
                     onSettings = model::openSettings,
                     onDone = model::leaveAdult,
+                    search = search,
+                    counts = writing.counts,
+                    onSearch = model.adult::search,
+                    onHit = model::openHit,
+                    onDelete = model.adult::deleteList,
                 )
             }
 
             Mode.WRITE -> {
                 BackHandler { model.openLists() }
                 val writing by model.adult.writing.collectAsState()
+                val search by model.adult.search.collectAsState()
+                val lists by model.adult.lists.collectAsState()
                 val showLog by model.showLog.collectAsState()
                 val log by model.log.collectAsState()
                 WriteScreen(
@@ -118,6 +127,13 @@ fun ZeigmalApp(model: ZeigmalViewModel) {
                     onDone = model::leaveAdult,
                     log = if (showLog) log else null,
                     onLists = model::openLists,
+                    search = search,
+                    lists = lists,
+                    onSearch = model.adult::search,
+                    onHit = model::openHit,
+                    onAddTo = { setId -> writing.word?.id?.let { model.adult.addToList(setId, it) } },
+                    onRemoveFrom = model.adult::removeFromList,
+                    onAgain = model.adult::again,
                 )
             }
         }

@@ -5,9 +5,11 @@ import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -26,14 +28,20 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
@@ -50,6 +58,9 @@ import androidx.compose.ui.unit.sp
 import coil3.compose.AsyncImage
 import de.lautstark.zeigmal.LogLine
 import de.lautstark.zeigmal.R
+import de.lautstark.zeigmal.core.ListSign
+import de.lautstark.zeigmal.core.Lists
+import de.lautstark.zeigmal.core.Search
 import de.lautstark.zeigmal.core.WriteStatus
 import de.lautstark.zeigmal.core.Writing
 
@@ -71,8 +82,16 @@ fun WriteScreen(
     onDone: () -> Unit,
     log: List<LogLine>?,
     onLists: () -> Unit = {},
+    search: Search = Search(),
+    lists: Lists = Lists(),
+    onSearch: (String) -> Unit = {},
+    onHit: (ListSign) -> Unit = {},
+    onAddTo: (String) -> Unit = {},
+    onRemoveFrom: (String, String) -> Unit = { _, _ -> },
+    onAgain: () -> Unit = {},
 ) {
     val w = writing
+    var picking by remember { mutableStateOf(false) }
     Row(
         Modifier
             .fillMaxSize()
@@ -82,7 +101,11 @@ fun WriteScreen(
             .testTag("write"),
         horizontalArrangement = Arrangement.spacedBy(18.dp),
     ) {
-        WordList(w, onGoTo, onLists, onSettings, Modifier.width(170.dp).fillMaxHeight())
+        if (w.fromSearch) {
+            SearchColumn(w, search, onSearch, onHit, onLists, Modifier.width(210.dp).fillMaxHeight())
+        } else {
+            WordList(w, onGoTo, onLists, onSettings, onRemoveFrom, Modifier.width(170.dp).fillMaxHeight())
+        }
         CardImage(w.cardImageUrl, w.lookupFailed, w.status, Modifier.fillMaxHeight(0.92f).aspectRatio(2f / 3f))
         Column(Modifier.weight(1f).fillMaxHeight()) {
             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -149,8 +172,29 @@ fun WriteScreen(
                     Spacer(Modifier.weight(1f))
                 }
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End, verticalAlignment = Alignment.CenterVertically) {
-                    TextButton(onClick = onSkip, enabled = !w.busy, modifier = Modifier.testTag("skip")) {
-                        Text(stringResource(R.string.skip), color = if (w.busy) Palette.textFaint else Palette.accentStrong, maxLines = 1)
+                    if (w.word?.id != null) {
+                        TextButton(
+                            onClick = { picking = true },
+                            enabled = !w.busy && !lists.saving,
+                            modifier = Modifier.testTag("add-to-list"),
+                        ) {
+                            Text(stringResource(R.string.add_to_list), color = Palette.textDim, maxLines = 1)
+                        }
+                    }
+                    Spacer(Modifier.weight(1f))
+                    if (w.spent) {
+                        Button(
+                            onClick = onAgain,
+                            modifier = Modifier.testTag("again"),
+                        ) { Text(stringResource(R.string.again), maxLines = 1) }
+                    } else if (!w.fromSearch) {
+                        TextButton(onClick = onSkip, enabled = !w.busy, modifier = Modifier.testTag("skip")) {
+                            Text(
+                                stringResource(R.string.skip),
+                                color = if (w.busy) Palette.textFaint else Palette.accentStrong,
+                                maxLines = 1,
+                            )
+                        }
                     }
                     if (status is WriteStatus.Failed) {
                         Spacer(Modifier.width(8.dp))
@@ -161,14 +205,49 @@ fun WriteScreen(
                     }
                 }
             }
-            LinearProgressIndicator(
-                // Where in the stack, not how much is done: nothing keeps that.
-                progress = { (w.index + 1).toFloat() / w.total },
-                color = Palette.accentStrong,
-                trackColor = Palette.surface2,
-                modifier = Modifier.fillMaxWidth().padding(top = 6.dp).height(3.dp),
-            )
+            if (!w.fromSearch) {
+                LinearProgressIndicator(
+                    // Where in the stack, not how much is done: nothing keeps that.
+                    progress = { (w.index + 1).toFloat() / w.total },
+                    color = Palette.accentStrong,
+                    trackColor = Palette.surface2,
+                    modifier = Modifier.fillMaxWidth().padding(top = 6.dp).height(3.dp),
+                )
+            }
         }
+    }
+    val word = w.word
+    val signId = word?.id
+    if (picking && word != null && signId != null) {
+        val holding = lists.holding(signId)
+        AlertDialog(
+            onDismissRequest = { picking = false },
+            title = { Text(stringResource(R.string.add_to_list_title, word.label)) },
+            text = {
+                Column {
+                    for (entry in lists.entries) {
+                        val inIt = entry.set.id in holding
+                        Row(
+                            Modifier
+                                .fillMaxWidth()
+                                .clickable(enabled = !lists.saving) {
+                                    if (inIt) onRemoveFrom(entry.set.id, signId) else onAddTo(entry.set.id)
+                                }.padding(vertical = 12.dp)
+                                .testTag("pick-${entry.set.id}"),
+                        ) {
+                            Text(entry.set.title, modifier = Modifier.weight(1f), maxLines = 1, overflow = TextOverflow.Ellipsis)
+                            Text(
+                                stringResource(if (inIt) R.string.in_list else R.string.add),
+                                color = if (inIt) Palette.accentStrong else Palette.textFaint,
+                            )
+                        }
+                    }
+                    if (lists.saving) Text(stringResource(R.string.saving), color = Palette.textFaint, fontSize = 13.sp)
+                    lists.saveFailed?.let { Text(stringResource(R.string.save_failed, it), color = Palette.danger, fontSize = 13.sp) }
+                }
+            },
+            confirmButton = { TextButton(onClick = { picking = false }) { Text(stringResource(R.string.done)) } },
+        )
     }
 }
 
@@ -177,8 +256,8 @@ fun WriteScreen(
 private fun StatusLine(w: Writing) {
     val status = w.status
     Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(top = 14.dp).fillMaxWidth()) {
-        when (status) {
-            is WriteStatus.Busy -> {
+        when {
+            status is WriteStatus.Busy -> {
                 CircularProgressIndicator(
                     color = Palette.accentStrong,
                     trackColor = Palette.accentSoft,
@@ -189,7 +268,8 @@ private fun StatusLine(w: Writing) {
                 Text(stringResource(R.string.writing_busy), color = Palette.text, fontSize = 20.sp, modifier = Modifier.testTag("busy"))
             }
 
-            is WriteStatus.Done -> {
+            // A card from the search stays "written" until the next one is chosen.
+            status is WriteStatus.Done || w.spent -> {
                 Text("✓", color = Palette.accentStrong, fontSize = 24.sp, fontWeight = FontWeight.Bold)
                 Spacer(Modifier.width(10.dp))
                 Text(
@@ -200,7 +280,7 @@ private fun StatusLine(w: Writing) {
                 )
             }
 
-            is WriteStatus.Failed -> {
+            status is WriteStatus.Failed -> {
                 Box(Modifier.size(14.dp).clip(RoundedCornerShape(7.dp)).background(Palette.danger))
                 Spacer(Modifier.width(12.dp))
                 Text(stringResource(R.string.write_failed), color = Palette.danger, fontSize = 20.sp, modifier = Modifier.testTag("failed"))
@@ -224,10 +304,12 @@ private fun StatusLine(w: Writing) {
     }
     // The small print under the line: what to do, or what went wrong.
     val sub =
-        when (status) {
-            is WriteStatus.Busy -> stringResource(R.string.writing_busy_hint)
-            is WriteStatus.Done -> "${status.outcome.tag} · " + stringResource(R.string.next_up, w.word?.label.orEmpty())
-            is WriteStatus.Failed -> status.outcome.reason
+        when {
+            status is WriteStatus.Busy -> stringResource(R.string.writing_busy_hint)
+            status is WriteStatus.Done && w.fromSearch -> "${status.outcome.tag} · " + stringResource(R.string.spent_hint)
+            status is WriteStatus.Done -> "${status.outcome.tag} · " + stringResource(R.string.next_up, w.word?.label.orEmpty())
+            status is WriteStatus.Failed -> status.outcome.reason
+            w.spent -> stringResource(R.string.spent_hint)
             else -> null
         }
     if (sub != null) {
@@ -235,15 +317,45 @@ private fun StatusLine(w: Writing) {
     }
 }
 
+/** Beside a card from the search: the search itself, so the next card is a word away. */
+@Composable
+private fun SearchColumn(
+    w: Writing,
+    search: Search,
+    onSearch: (String) -> Unit,
+    onHit: (ListSign) -> Unit,
+    onLists: () -> Unit,
+    modifier: Modifier,
+) {
+    Column(modifier, verticalArrangement = Arrangement.spacedBy(6.dp)) {
+        Text(
+            "‹ " + stringResource(R.string.lists),
+            color = if (w.busy) Palette.textFaint else Palette.textDim,
+            fontSize = 13.sp,
+            maxLines = 1,
+            modifier =
+                Modifier
+                    .clickable(enabled = !w.busy, onClick = onLists)
+                    .padding(vertical = 4.dp)
+                    .testTag("lists"),
+        )
+        SearchField(search.text, onSearch, Modifier.fillMaxWidth())
+        Hits(search, w.counts, { if (!w.busy) onHit(it) }, Modifier.weight(1f), chosen = w.word?.ref)
+    }
+}
+
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun WordList(
     w: Writing,
     onGoTo: (Int) -> Unit,
     onLists: () -> Unit,
     onSettings: () -> Unit,
+    onRemoveFrom: (String, String) -> Unit,
     modifier: Modifier,
 ) {
     val list = rememberLazyListState()
+    var menuAt by remember { mutableStateOf<Int?>(null) }
     LaunchedEffect(w.index) { list.animateScrollToItem((w.index - 3).coerceAtLeast(0)) }
     Column(modifier) {
         // Back to the lists, and the one being written. Still while the reader writes.
@@ -278,13 +390,30 @@ private fun WordList(
                 val count = w.count(word)
                 val current = i == w.index
                 val next = i == w.index + 1
+                // A long press takes the card out of the list, on the site.
+                Box {
+                    DropdownMenu(expanded = menuAt == i, onDismissRequest = { menuAt = null }) {
+                        DropdownMenuItem(
+                            text = { Text(stringResource(R.string.remove_from, w.set.title), color = Palette.danger) },
+                            onClick = {
+                                menuAt = null
+                                word.id?.let { onRemoveFrom(w.set.id, it) }
+                            },
+                            modifier = Modifier.testTag("remove-${word.ref}"),
+                        )
+                    }
+                }
                 Row(
                     Modifier
                         .fillMaxWidth()
                         .clip(RoundedCornerShape(6.dp))
                         .background(if (current) Palette.accentSoft else Color.Transparent)
-                        .clickable { onGoTo(i) }
-                        .padding(horizontal = 8.dp, vertical = 6.dp),
+                        .combinedClickable(
+                            enabled = !w.busy,
+                            onClick = { onGoTo(i) },
+                            onLongClick = { if (word.id != null) menuAt = i },
+                        ).padding(horizontal = 8.dp, vertical = 6.dp)
+                        .testTag("word-$i"),
                 ) {
                     Text(
                         word.label,

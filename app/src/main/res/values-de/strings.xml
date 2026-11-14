@@ -52,4 +52,21 @@
         <item quantity="one">%1$d Karte</item>
         <item quantity="other">%1$d Karten</item>
     </plurals>
+    <string name="search_hint">Gebärde suchen</string>
+    <string name="search_none">Nichts gefunden.</string>
+    <string name="search_failed">Die Suche ging nicht. Bist du angemeldet und online?</string>
+    <string name="add_to_list">+ Liste</string>
+    <string name="add_to_list_title">„%1$s“ in eine Liste</string>
+    <string name="in_list">✓ drin</string>
+    <string name="add">hinzufügen</string>
+    <string name="remove_from">Aus „%1$s“ nehmen</string>
+    <string name="again">Noch einmal diese Karte</string>
+    <string name="spent_hint">Der Leser wartet, bis du die nächste Karte wählst.</string>
+    <string name="delete_list">Liste löschen …</string>
+    <string name="delete_title">„%1$s“ löschen?</string>
+    <string name="delete_text">Die Liste verschwindet auch auf sign-digital.de und aus der Gebärden-App. Das lässt sich nicht rückgängig machen. Deine Aufkleber spielen weiter.</string>
+    <string name="delete">Löschen</string>
+    <string name="keep">Behalten</string>
+    <string name="saving">speichert …</string>
+    <string name="save_failed">Nicht gespeichert: %1$s</string>
 </resources>

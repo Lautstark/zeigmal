@@ -12,14 +12,17 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performSemanticsAction
 import androidx.compose.ui.test.performTextInput
+import de.lautstark.zeigmal.core.AdultModel
 import de.lautstark.zeigmal.core.CardRecord
 import de.lautstark.zeigmal.core.CardSet
 import de.lautstark.zeigmal.core.ListCard
 import de.lautstark.zeigmal.core.ListEntry
+import de.lautstark.zeigmal.core.ListSign
 import de.lautstark.zeigmal.core.Lists
 import de.lautstark.zeigmal.core.Login
 import de.lautstark.zeigmal.core.Phase
 import de.lautstark.zeigmal.core.Round
+import de.lautstark.zeigmal.core.Search
 import de.lautstark.zeigmal.core.StationState
 import de.lautstark.zeigmal.core.TagId
 import de.lautstark.zeigmal.core.WriteOutcome
@@ -249,5 +252,100 @@ class ScreensTest {
             )
         }
         compose.onNodeWithTag("lists-empty").assertExists()
+    }
+
+    @Test
+    fun listsScreenShowsHitsWhileSearchingAndOpensOne() {
+        var opened: ListSign? = null
+        val hit = ListSign("a1", "keineahnung", "keineAhnung", null)
+        compose.setContent {
+            ListsScreen(
+                lists = Lists(entries = listOf(ListEntry(box))),
+                onOpen = {},
+                onReload = {},
+                onSettings = {},
+                onDone = {},
+                search = Search(text = "ahnung", hits = listOf(hit)),
+                counts = mapOf("keineahnung" to 2),
+                onHit = { opened = it },
+            )
+        }
+        compose.onNodeWithTag("list-sd-B").assertDoesNotExist()
+        compose.onNodeWithText("2×").assertExists()
+        compose.onNodeWithTag("hit-keineahnung").performSemanticsAction(SemanticsActions.OnClick)
+        assert(opened == hit)
+    }
+
+    @Test
+    fun deletingAListAsksFirst() {
+        var deleted: String? = null
+        compose.setContent {
+            ListsScreen(
+                lists = Lists(entries = listOf(ListEntry(box))),
+                onOpen = {},
+                onReload = {},
+                onSettings = {},
+                onDone = {},
+                onDelete = { deleted = it },
+            )
+        }
+        compose.onNodeWithTag("list-sd-B").performSemanticsAction(SemanticsActions.OnLongClick)
+        compose.onNodeWithTag("delete-list").performSemanticsAction(SemanticsActions.OnClick)
+        assert(deleted == null)
+        compose.onNodeWithTag("delete-confirm").performSemanticsAction(SemanticsActions.OnClick)
+        assert(deleted == "sd-B")
+    }
+
+    @Test
+    fun aCardFromTheSearchOnceWrittenOffersItAgain() {
+        var again = false
+        val one = CardSet(AdultModel.SEARCH_SET, "", listOf(ListCard("keineAhnung", "keineahnung", "a1")))
+        compose.setContent {
+            WriteScreen(
+                Writing(set = one, spent = true),
+                onGoTo = {},
+                onSkip = {},
+                onRetry = {},
+                onOverwrite = {},
+                onSettings = {},
+                onDone = {},
+                log = null,
+                search = Search(text = "ahnung"),
+                onAgain = { again = true },
+            )
+        }
+        compose.onNodeWithTag("written").assertExists()
+        compose.onNodeWithTag("skip").assertDoesNotExist()
+        compose.onNodeWithTag("search").assertExists()
+        compose.onNodeWithTag("again").performSemanticsAction(SemanticsActions.OnClick)
+        assert(again)
+    }
+
+    @Test
+    fun theListPickerSaysWhereTheCardIsAlready() {
+        var added: String? = null
+        var removed: Pair<String, String>? = null
+        val kita = CardSet("sd-K", "Kita", listOf(ListCard("Jacke", "jacke", "s1")))
+        val other = CardSet("sd-H", "Halloween", listOf(ListCard("Kürbis", "kurbis", "s9")))
+        compose.setContent {
+            WriteScreen(
+                Writing(set = kita),
+                onGoTo = {},
+                onSkip = {},
+                onRetry = {},
+                onOverwrite = {},
+                onSettings = {},
+                onDone = {},
+                log = null,
+                lists = Lists(entries = listOf(ListEntry(kita), ListEntry(other))),
+                onAddTo = { added = it },
+                onRemoveFrom = { list, sign -> removed = list to sign },
+            )
+        }
+        compose.onNodeWithTag("add-to-list").performSemanticsAction(SemanticsActions.OnClick)
+        compose.onNodeWithTag("pick-sd-H").performSemanticsAction(SemanticsActions.OnClick)
+        assert(added == "sd-H")
+        compose.onNodeWithTag("pick-sd-K").performSemanticsAction(SemanticsActions.OnClick)
+        assert(removed == ("sd-K" to "s1"))
     }
 }

@@ -5,6 +5,7 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import de.lautstark.zeigmal.core.AdultModel
 import de.lautstark.zeigmal.core.KeyValueStore
+import de.lautstark.zeigmal.core.ListSign
 import de.lautstark.zeigmal.core.Logger
 import de.lautstark.zeigmal.core.Login
 import de.lautstark.zeigmal.core.MemoryWriteLog
@@ -136,6 +137,11 @@ class ZeigmalViewModel(
     /** A stack chosen in the overview: the writing mode, on its first card. A list gone meanwhile stays in the overview. */
     fun openList(id: String) {
         if (adult.chooseSet(id)) _mode.value = Mode.WRITE
+    }
+
+    /** A hit from the search: the writing mode on that one card. */
+    fun openHit(sign: ListSign) {
+        if (adult.chooseHit(sign)) _mode.value = Mode.WRITE
     }
 
     fun leaveAdult() {
