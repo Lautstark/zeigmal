@@ -68,6 +68,22 @@ data class Lists(
     val loading: Boolean = false,
     /** Why the last load failed; the entries are then the ones loaded before. */
     val failed: String? = null,
+    /** A change is on its way to the site. */
+    val saving: Boolean = false,
+    /** Why the last change did not reach the site; nothing of it was kept. */
+    val saveFailed: String? = null,
+) {
+    /** The ids of the lists that hold this sign, by the site's id for it. */
+    fun holding(signId: String?): Set<String> =
+        if (signId == null) emptySet() else entries.filter { e -> e.set.words.any { it.id == signId } }.map { it.set.id }.toSet()
+}
+
+/** The search in the overview: what was typed, and what the site found for it. */
+data class Search(
+    val text: String = "",
+    val hits: List<ListSign> = emptyList(),
+    val loading: Boolean = false,
+    val failed: String? = null,
 )
 
 /**
@@ -84,7 +100,15 @@ data class Writing(
     val status: WriteStatus = WriteStatus.Waiting,
     val counts: Map<String, Int> = emptyMap(),
     val overwriteNext: Boolean = false,
+    /**
+     * A card from the search has gone on a sticker: the reader writes nothing
+     * more until another card is chosen or [AdultModel.again] asks for this one.
+     */
+    val spent: Boolean = false,
 ) {
+    /** A stack of one, from the search, rather than a list. */
+    val fromSearch: Boolean get() = set.id == AdultModel.SEARCH_SET
+
     /** The card on top of the stack; none before a list is chosen. */
     val word: ListCard? get() = set.words.getOrNull(index)
     val total: Int get() = set.words.size
@@ -127,6 +151,10 @@ class AdultModel(
     private val _lists = MutableStateFlow(Lists())
     val lists: StateFlow<Lists> = _lists
 
+    private val _search = MutableStateFlow(Search())
+    val search: StateFlow<Search> = _search
+    private var searching: Job? = null
+
     /* The reader's timing is too fast to see and the box's too fast to check;
        these three jobs slow the screen down to the adult's pace. */
     private var busyHold: Job? = null
@@ -136,7 +164,7 @@ class AdultModel(
 
     /** What the reader should do while the writing mode is up. */
     fun tagMode(active: Boolean): TagMode =
-        _writing.value.record?.takeIf { active && _login.value is Login.In }?.let {
+        _writing.value.record?.takeIf { active && _login.value is Login.In && !_writing.value.spent }?.let {
             TagMode.Write(
                 it,
                 overwrite = _writing.value.overwriteNext,
@@ -186,15 +214,8 @@ class AdultModel(
         scope.launch {
             try {
                 val loaded = signDigital.lists().map(Lernliste::toCardSet)
-                siteSets = loaded
-                store.put(KEY_LISTS_CACHE, Json.encodeToString(ListSerializer(CardSet.serializer()), loaded))
+                keep(loaded)
                 logger.log("lernlisten: ${loaded.size} geladen")
-                // The list being written may have changed on the site: take the new one, keep the place.
-                val current = _writing.value.set
-                val fresh = loaded.firstOrNull { it.id == current.id }
-                if (fresh != null && fresh != current && fresh.words.isNotEmpty() && !_writing.value.busy) {
-                    _writing.update { it.copy(set = fresh, index = it.index.coerceAtMost(fresh.words.lastIndex)) }
-                }
                 _lists.update { it.copy(loading = false, failed = null) }
             } catch (e: Exception) {
                 logger.log("lernlisten: ${e.message}")
@@ -204,8 +225,115 @@ class AdultModel(
         }
     }
 
+    /** The lists as the site now has them, kept for the next start; the list being written follows, in its place. */
+    private fun keep(sets: List<CardSet>) {
+        siteSets = sets
+        store.put(KEY_LISTS_CACHE, Json.encodeToString(ListSerializer(CardSet.serializer()), sets))
+        val current = _writing.value.set
+        val fresh = sets.firstOrNull { it.id == current.id }
+        if (fresh != null && fresh != current && fresh.words.isNotEmpty() && !_writing.value.busy) {
+            _writing.update { it.copy(set = fresh, index = it.index.coerceAtMost(fresh.words.lastIndex)) }
+        }
+    }
+
+    /**
+     * Something typed into the search. The site is asked once the typing
+     * pauses; an empty field shows the lists again.
+     */
+    fun search(text: String) {
+        searching?.cancel()
+        if (text.isBlank()) {
+            _search.value = Search(text = text)
+            return
+        }
+        _search.update { it.copy(text = text, loading = true, failed = null) }
+        searching =
+            scope.launch {
+                delay(SEARCH_PAUSE_MILLIS)
+                try {
+                    val hits = signDigital.search(text.trim())
+                    _search.update { if (it.text == text) it.copy(hits = hits, loading = false) else it }
+                } catch (e: Exception) {
+                    logger.log("suche: ${e.message}")
+                    _search.update { if (it.text == text) it.copy(loading = false, failed = e.message ?: e.javaClass.simpleName) else it }
+                }
+            }
+    }
+
+    /** A hit chosen: the writing mode on that one card. */
+    fun chooseHit(sign: ListSign): Boolean {
+        if (_writing.value.busy) return false
+        doneHold?.cancel()
+        val card =
+            ListCard(
+                label =
+                    sign.name
+                        .replace(Regex("\\s+"), " ")
+                        .trim()
+                        .ifEmpty { sign.slug },
+                ref = sign.slug,
+                id = sign.id,
+            )
+        _writing.value = Writing(set = CardSet(SEARCH_SET, "", listOf(card)), counts = counts())
+        lookupCurrentCard()
+        return true
+    }
+
+    /** The card from the search once more, for a second sticker of it. */
+    fun again() = _writing.update { it.copy(spent = false, status = WriteStatus.Waiting) }
+
+    /** Puts a sign into a list, at its end, unless it is there already. */
+    fun addToList(
+        setId: String,
+        signId: String,
+    ) = change(setId, "$signId in $setId") { ids -> if (signId in ids) ids else ids + signId }
+
+    /** Takes a sign out of a list. */
+    fun removeFromList(
+        setId: String,
+        signId: String,
+    ) = change(setId, "$signId aus $setId") { ids -> ids.filter { it != signId } }
+
+    private fun change(
+        setId: String,
+        what: String,
+        change: (List<String>) -> List<String>,
+    ) = save(what) {
+        val fresh = signDigital.changeSigns(setId.removePrefix(Lernliste.SET_PREFIX), change).toCardSet()
+        keep(siteSets.map { if (it.id == fresh.id) fresh else it })
+    }
+
+    /** Deletes a list on the site, after the adult said so. */
+    fun deleteList(setId: String) =
+        save("löschen $setId") {
+            signDigital.deleteList(setId.removePrefix(Lernliste.SET_PREFIX))
+            keep(siteSets.filter { it.id != setId })
+            if (_writing.value.set.id == setId) _writing.value = Writing(counts = counts())
+        }
+
+    /** One change to the site at a time; a failure is said and keeps nothing. */
+    private fun save(
+        what: String,
+        work: suspend () -> Unit,
+    ) {
+        if (_lists.value.saving) return
+        _lists.update { it.copy(saving = true, saveFailed = null) }
+        scope.launch {
+            try {
+                work()
+                logger.log("lernlisten: gespeichert, $what")
+                _lists.update { it.copy(saving = false) }
+            } catch (e: Exception) {
+                logger.log("lernlisten: nicht gespeichert, $what: ${e.message}")
+                _lists.update { it.copy(saving = false, saveFailed = e.message ?: e.javaClass.simpleName) }
+            }
+            publishLists()
+        }
+    }
+
     private fun publishLists() {
-        _lists.update { it.copy(entries = siteSets.filter { s -> s.words.isNotEmpty() }.map(::ListEntry)) }
+        // An empty list shows too: it can be filled or deleted from here, just not written.
+        _lists.update { it.copy(entries = siteSets.map(::ListEntry)) }
     }
 
     private fun cachedSiteSets(): List<CardSet> =
@@ -315,7 +443,7 @@ class AdultModel(
                         slug = outcome.record.ref,
                         label = outcome.record.label,
                         signId = word?.id,
-                        list = set.title,
+                        list = set.title.takeUnless { set.id == SEARCH_SET },
                         tag = outcome.tag.hex,
                     ),
                 )
@@ -327,7 +455,9 @@ class AdultModel(
                 val advance = outcome.record == _writing.value.record
                 val here = _writing.value.index
                 val next = if (advance) (here + 1).coerceAtMost(set.words.lastIndex) else here
-                _writing.update { it.copy(counts = counts, status = WriteStatus.Done(outcome), overwriteNext = false, index = next) }
+                _writing.update {
+                    it.copy(counts = counts, status = WriteStatus.Done(outcome), overwriteNext = false, index = next, spent = it.fromSearch)
+                }
                 rememberSticker(outcome)
                 doneHold =
                     scope.launch {
@@ -390,6 +520,12 @@ class AdultModel(
 
     companion object {
         const val KEY_LISTS_CACHE = "lernlisten.cache"
+
+        /** The set id of a card from the search, which is no list. */
+        const val SEARCH_SET = "search"
+
+        /** The search asks the site once the typing has paused this long. */
+        const val SEARCH_PAUSE_MILLIS = 350L
 
         /** "Schreibt …" stays at least this long, or it is a flicker nobody reads. */
         const val MIN_BUSY_MILLIS = 400L
