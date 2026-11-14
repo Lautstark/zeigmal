@@ -79,7 +79,7 @@ end because the rail overlapped the key by about a millimetre.
 
 The right end is closed, with two openings through the rail; the face in
 front of both stays whole. The speaker's is a pill, 13 × 6.4 mm, with a
-1.2 mm bar of rail behind it. The USB-C opening is 13 mm wide and open to the
+1.2 mm bar of rail behind it. The USB-C opening is 16 mm wide and open to the
 plate, because the plug lies on it; its two corners toward the face are
 rounded, and so are its edges where it meets the plate. It reaches through
 the whole rail to the face, so a plug up to 8.5 mm thick fits centred on the
@@ -184,7 +184,7 @@ All clearances are named variables in section 3 of the `.scad`.
 | The camera island in its pocket | `cam_play` | 0.30 mm | what is left of the wall under the pocket is the thinnest place in the part |
 | Frame lip over the screen | `frame_over` | 3.00 mm | holds the phone; costs 0.5 mm of picture per side |
 | Key window | `key_win_left` / `key_win_right` | 3.00 / 6.00 mm | a fingertip finds the keys, and a guessed position still fits |
-| USB-C | `usb_port`, `usb_top` | 14 mm wide, open to the plate, up to the face | a USB-C overmould is about 12 wide and up to 8.5 thick |
+| USB-C | `usb_port`, `usb_top` | 16 mm wide, open to the plate, up to the face | a USB-C overmould is about 12 wide and up to 8.5 thick |
 | Speaker | `speaker_port`, `port_h` | 13 × 6.4 mm pill | the speaker needs no plug |
 
 If the printer generally prints fat, do **not** fiddle here but calibrate the

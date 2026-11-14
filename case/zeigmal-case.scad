@@ -245,7 +245,8 @@ port_n = max(phone_t / 2, port_bar + port_h / 2);      // [G] the pill's centre 
 // the two corners toward the face, and where the opening meets the plate
 // its edges are rounded off too. Toward the face it takes the whole rail, so
 // a plug up to 8.5 mm thick fits centred on the port.
-usb_port   = [(usb_u[0] + usb_u[1]) / 2, 14.0];   // [K] a USB-C overmould is about 12 wide
+usb_port   = [(usb_u[0] + usb_u[1]) / 2, 16.0];   // [K] a USB-C overmould is about 12 wide;
+                                                 //     16 is Stefanie's call, 2026-11-14
 usb_top    = phone_t + play;         // [K] n of the opening's front edge: right up to the
                                      //     face, which stays whole. v3 stopped 2 mm short
                                      //     of it, 2.5 mm past the port's centre, and the
