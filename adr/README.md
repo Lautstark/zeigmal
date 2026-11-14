@@ -19,4 +19,5 @@ repository's own.
 | [0009](0009-the-phone-writes-the-stickers.md) | The phone writes the stickers |
 | [0010](0010-a-shelf-shows-two-cards-and-there-are-several-shelves.md) | A shelf shows two cards, and there are several shelves |
 | [0011](0011-a-card-set-is-a-list-of-words-and-slugs-in-the-app.md) | ~~A card set is a list of words and slugs in the app~~ (superseded by 0012) |
-| [0012](0012-a-list-is-a-lernliste-on-the-site-and-the-phone-only-reads-it.md) | A list is a Lernliste on the site, and the phone only reads it |
+| [0012](0012-a-list-is-a-lernliste-on-the-site-and-the-phone-only-reads-it.md) | A list is a Lernliste on the site, and the phone only reads it (amended by 0013) |
+| [0013](0013-the-phone-changes-the-lists-on-the-site-the-way-the-site-does.md) | The phone changes the lists on the site, the way the site does |

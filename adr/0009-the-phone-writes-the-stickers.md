@@ -42,4 +42,6 @@ provider's login, because the card picture comes from the provider.
 ## Not to be "fixed" later
 
 "Let the writing mode search SIGNdigital for any word." That is a search box
-in front of a provider's catalogue, and the line ADR 0001 drew.
+in front of a provider's catalogue, and the line ADR 0001 drew. (Moved on
+2026-11-14 by ADR 0013: the search is the site's own, behind the login the
+app already has, and what it finds is written as the site names it.)

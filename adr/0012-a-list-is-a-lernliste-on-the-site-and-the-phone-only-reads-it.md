@@ -1,6 +1,6 @@
 # ADR 0012 — A list is a Lernliste on the site, and the phone only reads it
 
-**Status:** accepted · **Date:** 2026-11-08 · **Supersedes:** [0011](0011-a-card-set-is-a-list-of-words-and-slugs-in-the-app.md) · **Applies to:** `core/Lernliste.kt`, `core/CardSet.kt`, `core/SignDigitalProvider.kt`, `core/AdultModel.kt`, `core/WriteLog.kt`, `app/ui/ListsScreen.kt`
+**Status:** accepted, amended by [0013](0013-the-phone-changes-the-lists-on-the-site-the-way-the-site-does.md): the phone now changes lists too · **Date:** 2026-11-08 · **Supersedes:** [0011](0011-a-card-set-is-a-list-of-words-and-slugs-in-the-app.md) · **Applies to:** `core/Lernliste.kt`, `core/CardSet.kt`, `core/SignDigitalProvider.kt`, `core/AdultModel.kt`, `core/WriteLog.kt`, `app/ui/ListsScreen.kt`
 
 ## Context
 
